@@ -210,16 +210,14 @@ footer .mono{color:#a49c88}
           survives the trip?</b>
         </p>
         <p>
-          It models the whole path. States are density matrices, so decoherence is real
-          rather than decorative: depolarising, dephasing and amplitude-damping channels act
+          It models the whole path. States are density matrices, so decoherence is modelled directly: depolarising, dephasing and amplitude-damping channels act
           on them, links attenuate with distance, memories relax on T1 and lose phase on T2,
           and weak entanglement has to be distilled back to something usable before a key can
           be extracted from it.
         </p>
         <p>
           Placement decides whether a route works. A repeater chain is only as good as its worst
-          link, and every swap costs fidelity &mdash; so the interesting work is arithmetic
-          about where the nodes go, not a picture of a glowing qubit.
+          link, and every swap costs fidelity, so the work is arithmetic about where the nodes go.
         </p>
       </div>
       <div>
@@ -381,8 +379,7 @@ py -m quantumnet all   <span class="c"># every protocol demo</span></pre>
           </tr>
           <tr>
             <td colspan="2" style="color:var(--ink-2)">
-              <b>Not a claim:</b> nothing here asserts a physical implementation would hit these
-              numbers. It is a simulator for reasoning about placement and fidelity.
+              <b>Scope:</b> these are simulator results. They do not predict what physical hardware would achieve.
             </td>
           </tr>
         </table>

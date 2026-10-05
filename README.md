@@ -15,12 +15,10 @@ QEL is the quantum layer underneath a mesh network. Where Vantablack routes
 packets, QEL asks the harder question: *if the links were quantum, where do you
 put the repeaters, and what fidelity survives the trip?*
 
-It models the whole path. Quantum states are density matrices, so
-decoherence is real rather than decorative: depolarising, dephasing and
+It models the whole path. Quantum states are density matrices, so decoherence is modelled directly: depolarising, dephasing and
 amplitude-damping channels act on them, links attenuate with distance, memories
 relax on T1 and lose phase on T2, and entanglement must be distilled back to
-something usable before a key can be extracted. Nothing is hand-waved into
-working.
+something usable before a key can be extracted.
 
 ## The stack
 
@@ -64,11 +62,8 @@ The 15 commands: `bb84`, `e91`, `teleport`, `superdense`, `swap`, `shor`,
   channels, the stabilizer formalism, the error-correcting codes, the
   distillation algorithms, and the fidelity arithmetic all behave as written.
 - **Simulated:** the hardware and the network. There are no photons, no fibre
-  and no sockets; `ipc_node` uses real processes, but the links between them are
-  modelled rather than physical.
-- **Not a claim:** nothing here asserts that a physical implementation would
-  hit these numbers. It is a simulator for reasoning about placement and
-  fidelity, not a hardware specification.
+  and no sockets; `ipc_node` uses real processes, but the links between them are modelled.
+- **Scope:** these are simulator results. They do not predict what physical hardware would achieve.
 
 ## Layout
 
