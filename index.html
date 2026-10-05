@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quantum Entanglement Link &mdash; QEL &mdash; Keller Systems</title>
+<meta name="description" content="QEL is a quantum communication network simulation stack: qubits, noise and error correction, the standard protocols, and repeater placement with fidelity-constrained entanglement routing over a live Ghost Net topology.">
+<meta name="theme-color" content="#f6f1e6">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..900&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f6f1e6; --plate:#fffdf8; --ink:#141310; --ink-2:#4a463c; --ink-3:#7c7768;
+  --rule:#d8d1c0; --signal:#ffb000; --signal-ink:#9a5200; --signal-wash:#ffe9bd;
+  --font-display:"Archivo","Arial Black",system-ui,sans-serif;
+  --font-ui:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"Geist Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  --wrap:1180px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-ui);
+  font-size:1rem;line-height:1.6;-webkit-font-smoothing:antialiased;
+}
+a{color:inherit}
+.skip{position:absolute;left:-9999px}
+.skip:focus{left:1rem;top:1rem;z-index:99;background:var(--ink);color:var(--paper);padding:.6em 1em;font-family:var(--font-mono);font-size:.75rem}
+.wrap{width:100%;max-width:var(--wrap);margin-inline:auto;padding-inline:clamp(1rem,4vw,2.5rem)}
+h1,h2,h3{font-family:var(--font-display);font-variation-settings:"wdth" 108;font-weight:800;letter-spacing:-.02em;line-height:.94;margin:0}
+h1{font-size:clamp(2.1rem,5.7vw,4.15rem);font-weight:900;text-transform:uppercase;letter-spacing:-.035em;font-variation-settings:"wdth" 100}
+h2{font-size:clamp(1.6rem,3.4vw,2.6rem);text-transform:uppercase}
+h3{font-size:1.05rem;font-family:var(--font-ui);font-weight:600;letter-spacing:0;text-transform:none;line-height:1.35}
+p{margin:0 0 1rem}
+.mono{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.rule{height:2px;background:var(--ink);border:0;margin:0}
+
+/* header */
+.top{position:sticky;top:0;z-index:20;background:var(--paper);border-bottom:2px solid var(--ink)}
+.toprow{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding-block:.85rem}
+.brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+.brand svg{width:34px;height:34px;flex:0 0 auto}
+.brand b{font-family:var(--font-display);font-variation-settings:"wdth" 110;font-weight:900;font-size:1.02rem;letter-spacing:-.01em;display:block;line-height:1.05}
+.brand span{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);display:block}
+.nav{display:flex;align-items:center;gap:1.25rem}
+.nav a{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.13em;text-transform:uppercase;text-decoration:none;color:var(--ink-2)}
+.nav a:hover{color:var(--ink)}
+.btn{
+  display:inline-flex;align-items:center;gap:.5em;font-family:var(--font-mono);
+  font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;
+  padding:.85em 1.15em;border:2px solid var(--ink);background:var(--ink);color:var(--paper);
+  box-shadow:4px 4px 0 var(--signal);transition:transform .14s,box-shadow .14s;
+}
+.btn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--signal)}
+.btn-quiet{background:transparent;color:var(--ink);box-shadow:none;border-color:var(--ink)}
+.btn-quiet:hover{background:var(--ink);color:var(--paper);transform:none;box-shadow:none}
+.btn-sm{padding:.7em .95em;font-size:.68rem}
+
+/* hero */
+.hero{padding-block:clamp(2.5rem,7vw,5.5rem) 0}
+.hero-grid>div,.hero-grid>figure{min-width:0}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:clamp(1.5rem,4vw,3.5rem);align-items:center}
+.tag{display:inline-flex;align-items:center;gap:.55rem;border:1px solid var(--ink);background:var(--plate);
+  font-family:var(--font-mono);font-size:.64rem;letter-spacing:.15em;text-transform:uppercase;
+  padding:.45em .7em;margin-bottom:1.4rem}
+.tag i{width:7px;height:7px;background:var(--signal);display:block}
+h1 em{font-style:normal;color:var(--signal-ink)}
+h1 br{display:block}
+.lead{font-size:clamp(1rem,1.6vw,1.16rem);color:var(--ink-2);max-width:44ch;margin-top:1.4rem}
+.ctas{display:flex;flex-wrap:wrap;gap:.8rem;margin-top:1.8rem}
+.plate{position:relative;background:var(--plate);border:2px solid var(--ink);box-shadow:8px 8px 0 var(--ink);margin:0}
+.plate svg{display:block;width:100%;height:auto}
+.node{fill:var(--plate);stroke:var(--ink);stroke-width:2.5}
+.nodeon{fill:var(--signal);stroke:var(--ink);stroke-width:2.5}
+.ln{stroke:var(--ink);stroke-width:1.6}
+.thin{stroke:var(--ink-3);stroke-width:1.3;fill:none}
+.route{stroke:var(--signal);stroke-width:3.5;fill:none}
+.acc{fill:none;stroke:var(--signal);stroke-width:2.4}
+.lbl{font-family:var(--font-mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;fill:var(--ink-3)}
+.facts{display:flex;flex-wrap:wrap;gap:0;margin-top:clamp(2rem,5vw,3.5rem);border:2px solid var(--ink);border-bottom:0}
+.facts div{flex:1 1 160px;padding:1rem 1.15rem;border-right:1px solid var(--rule)}
+.facts div:last-child{border-right:0}
+.facts b{font-family:var(--font-display);font-size:1.5rem;font-weight:900;display:block;line-height:1}
+.facts span{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+
+/* sections */
+section{padding-block:clamp(3rem,7vw,5.5rem)}
+.sec-head{border-top:2px solid var(--ink);padding-top:1rem;margin-bottom:2.2rem;display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:0;border:2px solid var(--ink)}
+.col{padding:1.5rem 1.4rem;border-right:1px solid var(--rule)}
+.col:last-child{border-right:0}
+.col .k{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;color:var(--signal-ink);margin-bottom:.6rem}
+.col ul{list-style:none;margin:1rem 0 0;padding:0}
+.col li{font-size:.9rem;color:var(--ink-2);padding:.5rem 0;border-top:1px solid var(--rule)}
+.col li b{color:var(--ink);font-family:var(--font-mono);font-size:.74rem;letter-spacing:.04em}
+.quote{border-left:6px solid var(--signal);padding:.2rem 0 .2rem 1.3rem;margin:2rem 0;
+  font-family:var(--font-display);font-size:clamp(1.05rem,2.1vw,1.5rem);font-weight:600;line-height:1.3;max-width:52ch}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(1.5rem,4vw,3.5rem)}
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:1rem;margin-top:1rem}
+.card{background:var(--plate);border:1px solid var(--rule);border-top:3px solid var(--ink);padding:1rem 1.05rem}
+.card h3{margin-bottom:.35rem}
+.card p{font-size:.86rem;color:var(--ink-2);margin:0}
+.card .m{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);display:block;margin-bottom:.5rem}
+pre{background:var(--ink);color:var(--paper);padding:1.2rem 1.3rem;overflow-x:auto;margin:0;
+  font-family:var(--font-mono);font-size:.78rem;line-height:1.85;border-left:6px solid var(--signal)}
+pre .c{color:#a49c88}
+table{width:100%;border-collapse:collapse;margin-top:1rem;font-size:.9rem}
+th,td{text-align:left;padding:.75rem .9rem;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);border-bottom:2px solid var(--ink)}
+td b{font-weight:600}
+.strip{height:14px;background:repeating-linear-gradient(45deg,var(--signal) 0 9px,var(--ink) 9px 18px)}
+footer{background:var(--ink);color:var(--paper);padding-block:2.5rem}
+footer .wrap{display:flex;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;align-items:flex-end}
+footer a{color:var(--paper);text-decoration:none;border-bottom:1px solid var(--signal)}
+footer .mono{color:#a49c88}
+@media (max-width:900px){
+  .hero-grid,.two{grid-template-columns:minmax(0,1fr)}
+  .col{border-right:0;border-bottom:1px solid var(--rule)}
+  .nav{display:none}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top">
+  <div class="wrap toprow">
+    <a class="brand" href="https://kellersystems.dev">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <rect width="64" height="64" fill="#141310"/>
+        <rect x="6" y="6" width="52" height="52" fill="none" stroke="#ffb000" stroke-width="3"/>
+        <path d="M18 32 a14 14 0 0 1 28 0" fill="none" stroke="#f6f1e6" stroke-width="3"/>
+        <path d="M18 32 a14 14 0 0 0 28 0" fill="none" stroke="#f6f1e6" stroke-width="3"/>
+        <circle cx="18" cy="32" r="5" fill="#ffb000"/><circle cx="46" cy="32" r="5" fill="#ffb000"/>
+      </svg>
+      <span>
+        <b>Quantum Entanglement Link</b>
+        <span>QEL &middot; Keller Systems</span>
+      </span>
+    </a>
+    <nav class="nav">
+      <a href="#what">What it is</a>
+      <a href="#stack">Stack</a>
+      <a href="#protocols">Protocols</a>
+      <a href="#bridge">Mesh bridge</a>
+      <a href="#run">Run it</a>
+      <a class="btn btn-sm" href="https://github.com/KELLERBABG/QEL">GitHub &#8599;</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="tag"><i></i>Quantum networking &middot; simulation stack</span>
+      <h1>Quantum<br>Entanglement<br><em>Link</em></h1>
+      <p class="lead">
+        A simulator for quantum communication networks, all the way up: density-matrix
+        states and noise channels at the bottom, the standard protocols in the middle,
+        and repeater placement with fidelity-constrained entanglement routing at the top.
+        No hardware, no optics, no sockets &mdash; it runs on a laptop.
+      </p>
+      <div class="ctas">
+        <a class="btn" href="#run">Run it</a>
+        <a class="btn btn-quiet" href="https://github.com/KELLERBABG/QEL">Read the source</a>
+      </div>
+    </div>
+    <figure class="plate">
+      <svg viewBox="0 0 640 240" role="img" aria-label="A quantum repeater chain: six nodes joined by entangled links, with a fidelity-constrained route highlighted in amber across the first four and a Bell-state swap at the middle repeater.">
+        <path class="ln" d="M60 112 H164"/><path class="ln" d="M164 112 H268"/><path class="ln" d="M268 112 H372"/><path class="ln" d="M372 112 H476"/><path class="ln" d="M476 112 H580"/>
+        <path class="thin" d="M97 84 A 15 13 0 0 1 127 84"/><path class="thin" d="M97 84 A 15 13 0 0 0 127 84"/><path class="thin" d="M201 84 A 15 13 0 0 1 231 84"/><path class="thin" d="M201 84 A 15 13 0 0 0 231 84"/><path class="thin" d="M305 84 A 15 13 0 0 1 335 84"/><path class="thin" d="M305 84 A 15 13 0 0 0 335 84"/><path class="thin" d="M409 84 A 15 13 0 0 1 439 84"/><path class="thin" d="M409 84 A 15 13 0 0 0 439 84"/><path class="thin" d="M513 84 A 15 13 0 0 1 543 84"/><path class="thin" d="M513 84 A 15 13 0 0 0 543 84"/>
+        <path class="route" d="M60 112 H372"/>
+        <circle class="node" cx="60" cy="112" r="13"/><circle class="node" cx="164" cy="112" r="13"/><circle class="node" cx="268" cy="112" r="13"/><circle class="node" cx="372" cy="112" r="13"/><circle class="node" cx="476" cy="112" r="13"/><circle class="node" cx="580" cy="112" r="13"/>
+        <circle class="nodeon" cx="60" cy="112" r="13"/><circle class="nodeon" cx="164" cy="112" r="13"/><circle class="nodeon" cx="268" cy="112" r="13"/><circle class="nodeon" cx="372" cy="112" r="13"/>
+        <path class="acc" d="M268 94 L286 112 L268 130 L250 112 Z"/>
+        <text class="lbl" x="60" y="172" text-anchor="middle">edge</text><text class="lbl" x="164" y="172" text-anchor="middle">repeater</text><text class="lbl" x="268" y="172" text-anchor="middle">repeater</text><text class="lbl" x="372" y="172" text-anchor="middle">repeater</text><text class="lbl" x="476" y="172" text-anchor="middle">repeater</text><text class="lbl" x="580" y="172" text-anchor="middle">edge</text>
+        <text class="lbl" x="268" y="200" text-anchor="middle">Bell-state swap</text>
+        <text class="lbl" x="60" y="224">fidelity-constrained route</text>
+        <text class="lbl" x="580" y="224" text-anchor="end">QEL / quantumnet</text>
+      </svg>
+    </figure>
+  </div>
+  <div class="wrap">
+    <div class="facts">
+      <div><b>122</b><span>tests passing</span></div>
+      <div><b>15</b><span>CLI commands</span></div>
+      <div><b>13</b><span>protocols &amp; codes</span></div>
+      <div><b>9</b><span>core primitives</span></div>
+      <div><b>0</b><span>hardware required</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="what">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>What it is</h2>
+      <span class="mono">01 / orientation</span>
+    </div>
+    <div class="two">
+      <div>
+        <p>
+          QEL is the quantum layer underneath a mesh network. Where a classical mesh asks
+          <em>which path does the packet take</em>, QEL asks the harder question:
+          <b>if the links were quantum, where do the repeaters go, and what fidelity
+          survives the trip?</b>
+        </p>
+        <p>
+          It models that path honestly. States are density matrices, so decoherence is real
+          rather than decorative: depolarising, dephasing and amplitude-damping channels act
+          on them, links attenuate with distance, memories relax on T1 and lose phase on T2,
+          and weak entanglement has to be distilled back to something usable before a key can
+          be extracted from it. Nothing is hand-waved into working.
+        </p>
+        <p>
+          The point is placement and budget. A repeater chain is only as good as its worst
+          link, and every swap costs fidelity &mdash; so the interesting work is arithmetic
+          about where the nodes go, not a picture of a glowing qubit.
+        </p>
+      </div>
+      <div>
+        <blockquote class="quote">
+          Entanglement cannot be copied, only moved and spent. Everything in this stack
+          follows from taking that seriously.
+        </blockquote>
+        <table>
+          <tr><th>Property</th><th>How it is modelled</th></tr>
+          <tr><td><b>State</b></td><td>Density matrices, with quantum information metrics</td></tr>
+          <tr><td><b>Noise</b></td><td>Depolarising, dephasing, amplitude damping</td></tr>
+          <tr><td><b>Link</b></td><td>Distance-dependent attenuation and hardware impairments</td></tr>
+          <tr><td><b>Memory</b></td><td>T1 relaxation and T2 dephasing over a buffer</td></tr>
+          <tr><td><b>Route</b></td><td>End-to-end fidelity after every swap and decay</td></tr>
+          <tr><td><b>Key</b></td><td>BB84 run at the route's real noise level</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="stack">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>The stack</h2>
+      <span class="mono">02 / three layers</span>
+    </div>
+    <div class="cols">
+      <div class="col">
+        <div class="k">Layer one</div>
+        <h3>Core primitives</h3>
+        <ul>
+          <li><b>qubit</b> density-matrix states, entropy and fidelity metrics</li>
+          <li><b>gate</b> unitary gates, Pauli algebra, tensor products</li>
+          <li><b>measurement</b> projective and POVM, with state collapse</li>
+          <li><b>noise</b> depolarising, dephasing, amplitude damping</li>
+          <li><b>channel</b> quantum and classical links, attenuation</li>
+          <li><b>physical</b> fibre and hardware impairment models</li>
+          <li><b>stabilizer</b> Clifford tableau for efficient QEC</li>
+          <li><b>scheduler</b> asynchronous discrete-event core</li>
+          <li><b>ipc_node</b> one process per node</li>
+        </ul>
+      </div>
+      <div class="col">
+        <div class="k">Layer two</div>
+        <h3>Protocols</h3>
+        <ul>
+          <li><b>bb84</b> QKD with an intercept-resend eavesdropper</li>
+          <li><b>e91</b> Ekert entanglement-based QKD</li>
+          <li><b>bell</b> Bell preparation and CHSH inequality tests</li>
+          <li><b>teleportation</b> state transfer over an EPR pair</li>
+          <li><b>superdense</b> two classical bits through one qubit</li>
+          <li><b>swapping</b> entanglement between nodes that never met</li>
+          <li><b>distillation</b> BBPSSW and Deutsch purification</li>
+          <li><b>memory</b> T1/T2 buffer dynamics</li>
+          <li><b>shor / steane</b> 9-qubit and 7-qubit CSS codes</li>
+        </ul>
+      </div>
+      <div class="col">
+        <div class="k">Layer three</div>
+        <h3>Topology</h3>
+        <ul>
+          <li><b>graph</b> nodes, optical links, fidelity models</li>
+          <li><b>routing</b> fidelity-constrained entanglement routing</li>
+          <li><b>schedule</b> time-aware distribution plans</li>
+          <li><b>visualize</b> dependency-free ASCII output</li>
+          <li><b>ghostnet</b> import a live mesh topology and route over it</li>
+        </ul>
+        <p style="margin-top:1.2rem;font-size:.86rem;color:var(--ink-2)">
+          Placement is the product here: given a graph, the topology layer answers where the
+          repeaters go and what the surviving fidelity is along each route.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="protocols">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Protocols &amp; codes</h2>
+      <span class="mono">03 / what is implemented</span>
+    </div>
+    <div class="grid-cards">
+      <div class="card"><span class="m">QKD</span><h3>BB84</h3><p>Single-qubit key distribution with basis reconciliation, QBER estimation and an intercept-resend eavesdropper to detect.</p></div>
+      <div class="card"><span class="m">QKD</span><h3>E91</h3><p>Ekert's entanglement-based key distribution, security argued from Bell inequality violation rather than state preparation.</p></div>
+      <div class="card"><span class="m">Verification</span><h3>Bell states &amp; CHSH</h3><p>The four Bell states, Bell measurement, and CHSH inequality tests as an entanglement witness.</p></div>
+      <div class="card"><span class="m">Transfer</span><h3>Teleportation</h3><p>An unknown state moved with a shared EPR pair and two classical bits &mdash; no matter transported.</p></div>
+      <div class="card"><span class="m">Capacity</span><h3>Superdense coding</h3><p>Two classical bits carried by one qubit through Bell-state encoding.</p></div>
+      <div class="card"><span class="m">Repeaters</span><h3>Entanglement swapping</h3><p>A middle node performs a Bell measurement to entangle two nodes that never interacted.</p></div>
+      <div class="card"><span class="m">Purity</span><h3>Distillation</h3><p>BBPSSW and Deutsch protocols: N weakly entangled pairs in, one high-purity pair out.</p></div>
+      <div class="card"><span class="m">Storage</span><h3>Quantum memory</h3><p>Buffer dynamics with T1 relaxation and T2 dephasing, so waiting costs fidelity.</p></div>
+      <div class="card"><span class="m">QEC</span><h3>Shor 9-qubit</h3><p>Encoding, syndrome measurement and recovery for the original nine-qubit code.</p></div>
+      <div class="card"><span class="m">QEC</span><h3>Steane 7-qubit</h3><p>The seven-qubit CSS code, correcting both bit and phase flips.</p></div>
+      <div class="card"><span class="m">Simulation</span><h3>Stabilizer formalism</h3><p>Clifford tableau simulation under the Gottesman&ndash;Knill theorem, for circuits too large to track as vectors.</p></div>
+      <div class="card"><span class="m">Physics</span><h3>Physical layer</h3><p>Fibre attenuation and hardware metrics turned into an impairment budget.</p></div>
+      <div class="card"><span class="m">Theory</span><h3>No-cloning</h3><p>The reason any of this is secure: unknown quantum states cannot be copied, so eavesdropping leaves traces.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="bridge">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Bridge to the mesh</h2>
+      <span class="mono">04 / classical discovery, quantum keys</span>
+    </div>
+    <div class="two">
+      <div>
+        <p>
+          <b>Ghost-Net bridge.</b> QEL imports a live topology export from Global Ghost Net and
+          routes entanglement across exactly the nodes it describes. The same map that carries
+          packets decides where quantum links could exist.
+        </p>
+        <p>
+          A route's end-to-end fidelity is the scheduled value once every swap and every memory
+          decay on the path is accounted for. If that is too low for QKD to extract a key, the
+          route is distilled &mdash; BBPSSW rounds over 256 pairs &mdash; until it is. Then a real
+          BB84 exchange runs at the route's own noise level and produces key material.
+        </p>
+        <p class="mono" style="margin-top:1.5rem">Classical mesh discovery in &middot; quantum key material out</p>
+      </div>
+      <div>
+<pre><span class="c"># route entanglement over a live mesh export</span>
+py -m quantumnet ghost-net --topology mesh.json
+
+<span class="c"># derive key material at an explicit fidelity</span>
+py -m quantumnet qkd-derive --fidelity 0.94 --out key.bin
+
+<span class="c"># build and route a topology, ASCII out</span>
+py -m quantumnet topology --nodes 12 --route 0 11</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="run">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Run it</h2>
+      <span class="mono">05 / sixty seconds</span>
+    </div>
+    <div class="two">
+      <div>
+        <p>Python 3.11 or newer. The only runtime dependency is NumPy.</p>
+<pre>git clone https://github.com/KELLERBABG/QEL
+cd QEL
+py -m pip install -e ".[dev]"
+
+py -m pytest -q        <span class="c"># 122 tests, ~80 s</span>
+py -m quantumnet all   <span class="c"># every protocol demo</span></pre>
+        <p class="mono" style="margin-top:1.2rem">Verify the claim rather than take it</p>
+      </div>
+      <div>
+        <table>
+          <tr><th>Real</th><th>Simulated</th></tr>
+          <tr>
+            <td>Quantum mechanics: states, gates, measurement collapse, noise channels, the stabilizer formalism, the error-correcting codes, distillation, and all fidelity arithmetic.</td>
+            <td>Hardware and network: there are no photons, no fibre and no sockets. <b>ipc_node</b> uses real processes, but the links between them are modelled.</td>
+          </tr>
+          <tr>
+            <td colspan="2" style="color:var(--ink-2)">
+              <b>Not a claim:</b> nothing here asserts a physical implementation would hit these
+              numbers. It is a simulator for reasoning about placement and fidelity.
+            </td>
+          </tr>
+        </table>
+        <p style="margin-top:1.2rem">
+          Started inside <a href="https://github.com/KELLERBABG/Vantablack">Vantablack</a> as the
+          quantum layer for the same mesh, and now its own system &mdash; part of
+          <a href="https://kellersystems.dev">Keller Systems</a>.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<div class="strip" aria-hidden="true"></div>
+<footer>
+  <div class="wrap">
+    <div>
+      <div class="mono">Quantum Entanglement Link</div>
+      <p style="margin:.5rem 0 0;font-family:var(--font-display);font-weight:800;font-size:1.4rem;text-transform:uppercase">
+        Quantum networking, simulated end to end.
+      </p>
+    </div>
+    <div style="text-align:right">
+      <a href="https://github.com/KELLERBABG/QEL">Source</a> &nbsp;
+      <a href="https://kellersystems.dev">All systems</a>
+      <p class="mono" style="margin:.8rem 0 0">122 tests &middot; 15 commands &middot; 0 hardware</p>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
