@@ -210,22 +210,21 @@ footer .mono{color:#a49c88}
           survives the trip?</b>
         </p>
         <p>
-          It models that path honestly. States are density matrices, so decoherence is real
+          It models the whole path. States are density matrices, so decoherence is real
           rather than decorative: depolarising, dephasing and amplitude-damping channels act
           on them, links attenuate with distance, memories relax on T1 and lose phase on T2,
           and weak entanglement has to be distilled back to something usable before a key can
-          be extracted from it. Nothing is hand-waved into working.
+          be extracted from it.
         </p>
         <p>
-          The point is placement and budget. A repeater chain is only as good as its worst
+          Placement decides whether a route works. A repeater chain is only as good as its worst
           link, and every swap costs fidelity &mdash; so the interesting work is arithmetic
           about where the nodes go, not a picture of a glowing qubit.
         </p>
       </div>
       <div>
         <blockquote class="quote">
-          Entanglement cannot be copied, only moved and spent. Everything in this stack
-          follows from taking that seriously.
+          Entanglement cannot be copied. Each link has to be created, spent and replaced.
         </blockquote>
         <table>
           <tr><th>Property</th><th>How it is modelled</th></tr>
@@ -305,7 +304,7 @@ footer .mono{color:#a49c88}
     </div>
     <div class="grid-cards">
       <div class="card"><span class="m">QKD</span><h3>BB84</h3><p>Single-qubit key distribution with basis reconciliation, QBER estimation and an intercept-resend eavesdropper to detect.</p></div>
-      <div class="card"><span class="m">QKD</span><h3>E91</h3><p>Ekert's entanglement-based key distribution, security argued from Bell inequality violation rather than state preparation.</p></div>
+      <div class="card"><span class="m">QKD</span><h3>E91</h3><p>Ekert's entanglement-based key distribution, security argued from Bell inequality violation.</p></div>
       <div class="card"><span class="m">Verification</span><h3>Bell states &amp; CHSH</h3><p>The four Bell states, Bell measurement, and CHSH inequality tests as an entanglement witness.</p></div>
       <div class="card"><span class="m">Transfer</span><h3>Teleportation</h3><p>An unknown state moved with a shared EPR pair and two classical bits &mdash; no matter transported.</p></div>
       <div class="card"><span class="m">Capacity</span><h3>Superdense coding</h3><p>Two classical bits carried by one qubit through Bell-state encoding.</p></div>
@@ -371,7 +370,7 @@ py -m pip install -e ".[dev]"
 
 py -m pytest -q        <span class="c"># 122 tests, ~80 s</span>
 py -m quantumnet all   <span class="c"># every protocol demo</span></pre>
-        <p class="mono" style="margin-top:1.2rem">Verify the claim rather than take it</p>
+        <p class="mono" style="margin-top:1.2rem">122 tests, about 80 seconds</p>
       </div>
       <div>
         <table>
@@ -405,7 +404,7 @@ py -m quantumnet all   <span class="c"># every protocol demo</span></pre>
     <div>
       <div class="mono">Quantum Entanglement Link</div>
       <p style="margin:.5rem 0 0;font-family:var(--font-display);font-weight:800;font-size:1.4rem;text-transform:uppercase">
-        Quantum networking, simulated end to end.
+        Simulates quantum communication networks end to end.
       </p>
     </div>
     <div style="text-align:right">

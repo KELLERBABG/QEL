@@ -15,7 +15,7 @@ QEL is the quantum layer underneath a mesh network. Where Vantablack routes
 packets, QEL asks the harder question: *if the links were quantum, where do you
 put the repeaters, and what fidelity survives the trip?*
 
-It models the whole path honestly. Quantum states are density matrices, so
+It models the whole path. Quantum states are density matrices, so
 decoherence is real rather than decorative: depolarising, dephasing and
 amplitude-damping channels act on them, links attenuate with distance, memories
 relax on T1 and lose phase on T2, and entanglement must be distilled back to
