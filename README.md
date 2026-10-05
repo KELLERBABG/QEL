@@ -6,7 +6,7 @@ placement and fidelity-constrained entanglement routing at the top. Everything
 runs in Python on a laptop — no hardware, no optics, no network sockets.
 
 ```
-122 tests passing · 15 CLI commands · 13 protocols and codes · 9 core primitives
+122 tests passing · 15 CLI commands · 10 protocols and codes · 9 core primitives
 ```
 
 ## What it is
