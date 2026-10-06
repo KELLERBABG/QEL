@@ -93,7 +93,7 @@ code{font-family:var(--mono);font-size:.85em;color:var(--frost)}
 .step .cost b{color:var(--warn);font-weight:400}
 .step .cost i{color:var(--ok);font-style:normal}
 .step pre{margin:1rem 0 0;background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--flux);
-  padding:.85rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.74rem;line-height:1.8;color:var(--frost)}
+  padding:.85rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.71rem;line-height:1.8;color:var(--frost)}
 .step pre .c{color:var(--dim)}
 
 /* ── the close ────────────────────────────────────────── */
@@ -116,6 +116,16 @@ code{font-family:var(--mono);font-size:.85em;color:var(--frost)}
   .stick{position:sticky;top:0;height:auto;padding:1.2rem 0;background:var(--void);z-index:5;border-bottom:1px solid var(--line)}
   .step{min-height:auto;padding:2.4rem 0}
 }
+
+/* ---- scrollbars, in the site's own colours --------------------------- */
+html{scrollbar-color:#243356 #080b18;scrollbar-width:thin}
+::-webkit-scrollbar{width:12px;height:12px}
+::-webkit-scrollbar-track{background:#080b18}
+::-webkit-scrollbar-thumb{background:#243356;border:3px solid #080b18}
+::-webkit-scrollbar-thumb:hover{background:#4de2ff}
+::-webkit-scrollbar-corner{background:#080b18}
+/* ---- code wraps rather than scrolling sideways ---------------------- */
+pre{white-space:pre-wrap;overflow-wrap:anywhere;overflow-x:hidden}
 </style>
 </head>
 <body>
