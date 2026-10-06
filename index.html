@@ -176,10 +176,10 @@ code{font-family:var(--mono);font-size:.85em;color:var(--frost)}
         <line class="axis" x1="40" y1="100" x2="40" y2="20"/>
         <polyline class="curve" id="curve" points=""/>
         <circle class="mark" id="mark" cx="40" cy="100" r="4.5"/>
-        <line class="axis" id="thresh" x1="40" y1="52" x2="540" y2="52" stroke-dasharray="4 4"/>
+        <line class="axis" id="thresh" x1="40" y1="60" x2="540" y2="60" stroke-dasharray="4 4"/>
         <text class="lab" x="546" y="55" text-anchor="end">key threshold</text>
         <text class="lab" x="40" y="114">created</text>
-        <text class="lab" x="300" y="114" text-anchor="middle">spent &rarr; held &rarr; distilled</text>
+        <text class="lab" x="300" y="114" text-anchor="middle">spent &middot; held &middot; distilled</text>
         <text class="lab" x="540" y="114" text-anchor="end">key</text>
       </svg>
     </div>
@@ -396,21 +396,30 @@ py -m pytest -q        <span style="color:var(--dim)"># about 80 seconds, 122 te
   }
   function fmt(v){ return v.toFixed(3); }
 
+  var THRESHOLD = 0.94;
+  var threshEl = document.getElementById('thresh');
+
   function frame(){
     var vh = window.innerHeight;
     var mid = window.scrollY + vh * 0.5;
     var idx = 0, local = 0;
     for (var i = 0; i < steps.length; i++) {
-      var top = steps[i].offsetTop, h = steps[i].offsetHeight;
+      var r = steps[i].getBoundingClientRect();
+      var top = r.top + window.scrollY, h = r.height;
       if (mid >= top) {
         idx = i;
         local = Math.max(0, Math.min(1, (mid - top) / h));
       }
     }
-    var from = idx === 0 ? WAY[0] : WAY[idx - 1];
-    var to = WAY[idx];
-    var fid = from.fid + (to.fid - from.fid) * local;
-    var note = local > 0.5 ? to.note : from.note;
+    /* Hold the stage's own value while it is being read, then travel to the
+       next one. The marker walks the same parameter as the value, so it sits
+       on the plotted segment instead of drifting off it. */
+    var e = local < 0.7 ? 0 : (local - 0.7) / 0.3;
+    e = e * e * (3 - 2 * e);
+    var from = WAY[idx];
+    var to = WAY[Math.min(idx + 1, WAY.length - 1)];
+    var fid = from.fid + (to.fid - from.fid) * e;
+    var note = e > 0.5 ? to.note : from.note;
 
     fidEl.textContent = fmt(fid);
     fidEl.classList.toggle('low', fid < 0.94);
@@ -418,7 +427,7 @@ py -m pytest -q        <span style="color:var(--dim)"># about 80 seconds, 122 te
     noteEl.textContent = note;
     if (heroFid) heroFid.textContent = fmt(fid);
 
-    var cx = X0 + (X1 - X0) * ((idx + local) / (WAY.length - 1));
+    var cx = xAt(idx + e);
     mark.setAttribute('cx', cx.toFixed(1));
     mark.setAttribute('cy', yAt(fid).toFixed(1));
 
@@ -427,6 +436,11 @@ py -m pytest -q        <span style="color:var(--dim)"># about 80 seconds, 122 te
     hops.forEach(function(t, i){ t.textContent = i < live ? 'entangled' : ''; });
   }
 
+  if (threshEl) {
+    var ty = yAt(THRESHOLD).toFixed(1);
+    threshEl.setAttribute('y1', ty);
+    threshEl.setAttribute('y2', ty);
+  }
   window.addEventListener('scroll', frame, { passive: true });
   window.addEventListener('resize', frame);
   frame();
