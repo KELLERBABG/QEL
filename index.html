@@ -3,368 +3,434 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>quantumnet &mdash; Quantum Entanglement Link reference</title>
-<meta name="description" content="Reference manual for quantumnet, the Quantum Entanglement Link simulator: density-matrix states, noise channels, the standard protocols and error-correcting codes, fidelity-constrained routing, and the command surface.">
-<meta name="theme-color" content="#070a14">
+<title>Quantum Entanglement Link &mdash; follow the pair</title>
+<meta name="description" content="QEL simulates a quantum link from the moment a Bell pair is created to the moment a key comes out. Scroll the page and watch the fidelity fall and recover: swaps, memory decay, distillation, routing.">
+<meta name="theme-color" content="#05060f">
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ground:#070a14; --panel:#0b1020; --panel-2:#101733;
-  --line:rgba(140,175,255,.16); --line-soft:rgba(140,175,255,.08);
-  --frost:#e6ecfa; --haze:#94a3c4; --dim:#5f6d92;
-  --flux:#4de2ff;
+  --void:#05060f; --void-2:#080b18; --panel:#0b1020;
+  --line:rgba(140,175,255,.16); --line-soft:rgba(140,175,255,.07);
+  --frost:#e8eefc; --haze:#93a2c2; --dim:#5a688c;
+  --flux:#4de2ff; --pair:#6a5cff; --warn:#ff5f7a; --ok:#5cffa8;
   --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
   --sans:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
-  --serif:"IBM Plex Serif",Georgia,serif;
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--ground);color:var(--haze);font-family:var(--sans);font-size:15.5px;line-height:1.66;-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--void);color:var(--haze);font-family:var(--sans);font-size:16.5px;line-height:1.62;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 a{color:var(--flux);text-decoration:none}
-a:hover{text-decoration:underline}
-h1,h2,h3,h4{margin:0;color:var(--frost);font-weight:600;line-height:1.25}
+h1,h2,h3{margin:0;color:var(--frost);line-height:1.1;font-weight:600;letter-spacing:-.02em}
 p{margin:0 0 .9rem}
-code{font-family:var(--mono);font-size:.86em;color:var(--frost)}
+code{font-family:var(--mono);font-size:.85em;color:var(--frost)}
 
-/* masthead: a record header, not a hero */
-.masthead{border-bottom:1px solid var(--line);background:var(--panel)}
-.mastrow{max-width:1240px;margin:0 auto;padding:.7rem clamp(18px,4vw,40px);display:flex;align-items:center;justify-content:space-between;gap:1.2rem;flex-wrap:wrap}
-.mastid{display:flex;align-items:center;gap:.7rem}
-.mastid svg{width:26px;height:26px}
-.mastid b{font-family:var(--mono);font-size:.78rem;font-weight:500;color:var(--frost);letter-spacing:.02em}
-.mastid span{font-family:var(--mono);font-size:.62rem;color:var(--dim);display:block;letter-spacing:.06em}
-.mastspec{display:flex;gap:1.4rem;flex-wrap:wrap;font-family:var(--mono);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
-.mastspec b{color:var(--flux);font-weight:400}
+/* ── opener ───────────────────────────────────────────── */
+.open{min-height:100svh;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;
+  padding:clamp(60px,9vw,120px) clamp(20px,6vw,96px)}
+.open::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(70% 55% at 62% 42%, rgba(77,226,255,.14), transparent 66%),
+             radial-gradient(50% 50% at 22% 78%, rgba(106,92,255,.14), transparent 70%)}
+.open .wrap{position:relative;z-index:1;max-width:1120px;margin:0 auto;width:100%}
+.tag{display:inline-flex;align-items:center;gap:.6rem;font-family:var(--mono);font-size:.66rem;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--flux);margin-bottom:1.6rem}
+.tag::before{content:"";width:26px;height:1px;background:var(--flux)}
+.open h1{font-size:clamp(2.4rem,6.4vw,4.9rem);letter-spacing:-.035em;font-weight:600;max-width:22ch}
+.open h1 em{font-style:normal;color:var(--flux)}
+.open .sub{margin-top:1.4rem;max-width:52ch;font-size:clamp(1rem,1.5vw,1.18rem);color:var(--haze)}
+.open .sub b{color:var(--frost);font-weight:500}
+.hero-fid{position:absolute;right:clamp(20px,6vw,96px);top:50%;transform:translateY(-50%);text-align:right;z-index:1}
+.hero-fid .n{font-family:var(--mono);font-size:clamp(2.2rem,6vw,4.4rem);color:var(--flux);line-height:1;letter-spacing:-.02em}
+.hero-fid .l{font-family:var(--mono);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-top:.5rem}
+.cue{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:.58rem;
+  letter-spacing:.24em;text-transform:uppercase;color:var(--dim)}
+@media (prefers-reduced-motion:no-preference){.cue{animation:b 2.6s ease-in-out infinite}}
+@keyframes b{50%{transform:translate(-50%,7px)}}
+@media (max-width:980px){.hero-fid{position:static;transform:none;text-align:left;margin-top:2rem}}
 
-/* the document: index rail | body | marginal notes */
-.doc{max-width:1240px;margin:0 auto;padding:0 clamp(18px,4vw,40px);
-  display:grid;grid-template-columns:198px minmax(0,1fr) 224px;gap:clamp(20px,3.4vw,44px);align-items:start}
-.index{position:sticky;top:0;padding:2.2rem 0;border-right:1px solid var(--line-soft)}
-.index h4{font-family:var(--mono);font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:.9rem;font-weight:400}
-.index ol{list-style:none;margin:0;padding:0;counter-reset:s}
-.index li{counter-increment:s}
-.index a{display:grid;grid-template-columns:1.6rem 1fr;gap:.3rem;padding:.34rem 0;font-size:.83rem;color:var(--haze);text-decoration:none;border-left:2px solid transparent;padding-left:.5rem}
-.index a::before{content:"\00A7" counter(s);font-family:var(--mono);font-size:.7rem;color:var(--dim)}
-.index a:hover{color:var(--frost)}
-.index a.on{color:var(--flux);border-left-color:var(--flux)}
-.index a.on::before{color:var(--flux)}
-.index .railfoot{margin-top:1.4rem;padding-top:.9rem;border-top:1px solid var(--line-soft);font-family:var(--mono);font-size:.58rem;letter-spacing:.06em;color:var(--dim);line-height:1.9}
+/* ── the narrative: sticky pair | scrolling costs ──────── */
+.narr{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:clamp(24px,5vw,80px);
+  max-width:1240px;margin:0 auto;padding:0 clamp(20px,6vw,96px);border-top:1px solid var(--line)}
+.stick{position:sticky;top:0;height:100svh;display:flex;flex-direction:column;justify-content:center;gap:1.4rem;padding:2rem 0}
+.readout{display:flex;align-items:baseline;gap:1rem;flex-wrap:wrap}
+.readout .fid{font-family:var(--mono);font-size:clamp(2.6rem,7vw,4.6rem);line-height:1;color:var(--flux);
+  letter-spacing:-.03em;transition:color .5s ease}
+.readout .fid.low{color:var(--warn)}
+.readout .fid.ok{color:var(--ok)}
+.readout .meta{font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.readout .meta b{display:block;color:var(--haze);font-weight:400;font-size:.72rem;letter-spacing:.06em;margin-top:.3rem}
+.stage-name{font-family:var(--mono);font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--frost)}
+.chain{width:100%}
+.chain svg{display:block;width:100%;height:auto}
+.node{fill:var(--void-2);stroke:var(--dim);stroke-width:1.6}
+.node.on{fill:var(--flux);stroke:var(--flux)}
+.node.rep{stroke:var(--pair)}
+.link{stroke:var(--dim);stroke-width:1.6}
+.link.on{stroke:var(--flux)}
+.link.live{stroke:var(--flux);stroke-width:2.6}
+.link.lost{stroke:var(--warn);stroke-dasharray:5 5}
+.chain .lbl{font-family:var(--mono);font-size:9px;letter-spacing:.08em;fill:var(--dim);text-transform:uppercase}
+.chain .lbl-on{fill:var(--haze)}
+.graph{width:100%;border-top:1px solid var(--line-soft);padding-top:.6rem}
+.graph svg{display:block;width:100%;height:auto}
+.graph .axis{stroke:var(--line);stroke-width:.8}
+.graph .curve{fill:none;stroke:var(--pair);stroke-width:1.6}
+.graph .mark{fill:var(--flux)}
+.graph .lab{font-family:var(--mono);font-size:8.6px;fill:var(--dim);letter-spacing:.06em}
+.note{font-family:var(--mono);font-size:.6rem;color:var(--dim);letter-spacing:.03em;line-height:1.7}
 
-.body{padding:2.2rem 0 4rem;min-width:0}
-.titleblock{border-bottom:2px solid var(--line);padding-bottom:1.3rem;margin-bottom:2rem}
-.titleblock h1{font-family:var(--serif);font-weight:500;font-size:clamp(1.8rem,3.4vw,2.7rem);letter-spacing:-.01em}
-.titleblock .sub{font-family:var(--mono);font-size:.72rem;color:var(--dim);margin-top:.5rem;letter-spacing:.04em}
-.titleblock .abs{font-family:var(--serif);font-size:1.02rem;line-height:1.62;color:var(--haze);margin-top:1.1rem;max-width:64ch}
-.titleblock .abs b{color:var(--frost);font-weight:500}
+.steps{padding:8svh 0 14svh}
+.step{min-height:78svh;display:flex;flex-direction:column;justify-content:center;padding:2rem 0;
+  border-top:1px solid var(--line-soft)}
+.step:first-child{border-top:0}
+.step .no{font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:var(--pair);text-transform:uppercase;margin-bottom:.9rem}
+.step h2{font-size:clamp(1.5rem,3.4vw,2.3rem);margin-bottom:.9rem}
+.step p{max-width:52ch}
+.step .cost{font-family:var(--mono);font-size:.72rem;letter-spacing:.04em;color:var(--frost);
+  border-left:2px solid var(--pair);padding-left:.9rem;margin-top:1.2rem}
+.step .cost b{color:var(--warn);font-weight:400}
+.step .cost i{color:var(--ok);font-style:normal}
+.step pre{margin:1rem 0 0;background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--flux);
+  padding:.85rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.74rem;line-height:1.8;color:var(--frost)}
+.step pre .c{color:var(--dim)}
 
-section.block{padding:1.7rem 0;border-bottom:1px solid var(--line-soft);scroll-margin-top:1rem}
-section.block:last-of-type{border-bottom:0}
-section.block h2{font-family:var(--mono);font-size:.72rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--flux);margin-bottom:.9rem}
-section.block h2 span{color:var(--dim);margin-right:.5rem}
-section.block h3{font-size:1rem;margin:1.3rem 0 .5rem}
-section.block p{max-width:66ch}
-section.block p b{color:var(--frost);font-weight:500}
-
-/* tables as the primary content, not decoration */
-table{width:100%;border-collapse:collapse;font-size:.85rem;margin:.8rem 0 .4rem}
-th,td{text-align:left;padding:.42rem .7rem .42rem 0;border-bottom:1px solid var(--line-soft);vertical-align:top}
-th{font-family:var(--mono);font-size:.56rem;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);font-weight:400;border-bottom:1px solid var(--line)}
-td:first-child{font-family:var(--mono);font-size:.79rem;color:var(--frost);white-space:nowrap;padding-right:1.2rem}
-tr.grp td{background:var(--panel);font-family:var(--mono);font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--flux);padding-top:.6rem;padding-bottom:.6rem;border-bottom:1px solid var(--line)}
-
-pre{margin:.8rem 0;background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--flux);
-  padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.85;color:var(--frost)}
-pre .c{color:var(--dim)}
-pre .o{color:var(--haze)}
-
-dl.spec{margin:.6rem 0 0;display:grid;grid-template-columns:auto 1fr;gap:.3rem 1.2rem;font-size:.85rem}
-dl.spec dt{font-family:var(--mono);font-size:.7rem;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;padding-top:.15rem}
-dl.spec dd{margin:0;color:var(--haze);max-width:62ch}
-dl.spec dd b{color:var(--frost);font-weight:500}
-dl.spec dd code{font-size:.82em}
-
-/* marginal notes */
-.margin{padding:2.2rem 0 4rem}
-.mnote{border-top:1px solid var(--line);padding-top:.5rem;margin-bottom:1.5rem;color:var(--dim);font-family:var(--mono);font-size:.63rem;letter-spacing:.02em;line-height:1.75}
-.mnote b{display:block;color:var(--flux);font-weight:400;margin-bottom:.3rem;letter-spacing:.08em}
-.mnote em{color:var(--haze);font-style:normal}
-
-.colophon{border-top:1px solid var(--line);background:var(--panel)}
-.colophon .row{max-width:1240px;margin:0 auto;padding:1.3rem clamp(18px,4vw,40px);display:flex;justify-content:space-between;gap:1.4rem;flex-wrap:wrap;font-family:var(--mono);font-size:.62rem;letter-spacing:.06em;color:var(--dim)}
-.colophon a{color:var(--haze)}
-
-@media (max-width:1040px){
-  .doc{grid-template-columns:minmax(0,1fr);gap:0}
-  .index{position:relative;border-right:0;border-bottom:1px solid var(--line);padding:1.2rem 0}
-  .index ol{display:flex;flex-wrap:wrap;gap:0 1rem}
-  .index .railfoot{display:none}
-  .margin{display:none}
+/* ── the close ────────────────────────────────────────── */
+.close{border-top:1px solid var(--line);padding:clamp(60px,8vw,120px) clamp(20px,6vw,96px)}
+.close .wrap{max-width:1120px;margin:0 auto}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:clamp(20px,4vw,48px);margin-top:1.6rem}
+.cols h3{font-family:var(--mono);font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;color:var(--flux);margin-bottom:.7rem;font-weight:400}
+.cols ul{list-style:none;margin:0;padding:0}
+.cols li{padding:.35rem 0;font-size:.9rem;border-bottom:1px solid var(--line-soft);display:flex;justify-content:space-between;gap:1rem}
+.cols li span:first-child{font-family:var(--mono);font-size:.76rem;color:var(--frost)}
+.cols li span:last-child{color:var(--dim);font-family:var(--mono);font-size:.7rem}
+.links{display:flex;gap:1.4rem;flex-wrap:wrap;margin-top:2rem;font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase}
+.links a{border-bottom:1px solid currentColor;padding-bottom:2px}
+.foot{border-top:1px solid var(--line);padding:1.6rem clamp(20px,6vw,96px);font-family:var(--mono);font-size:.62rem;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.foot .row{max-width:1120px;margin:0 auto;display:flex;justify-content:space-between;gap:1.4rem;flex-wrap:wrap}
+.foot a{color:var(--haze)}
+@media (max-width:980px){
+  .narr{grid-template-columns:minmax(0,1fr)}
+  .stick{position:sticky;top:0;height:auto;padding:1.2rem 0;background:var(--void);z-index:5;border-bottom:1px solid var(--line)}
+  .step{min-height:auto;padding:2.4rem 0}
 }
 </style>
 </head>
 <body>
 
-<header class="masthead">
-  <div class="mastrow">
-    <div class="mastid">
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <rect width="64" height="64" fill="#070a14"/>
-        <rect x="1.5" y="1.5" width="61" height="61" fill="none" stroke="#1d2745" stroke-width="3"/>
-        <path d="M16 36 a16 16 0 0 1 32 0" fill="none" stroke="#4de2ff" stroke-width="2.5"/>
-        <path d="M16 36 a16 16 0 0 0 32 0" fill="none" stroke="#6a5cff" stroke-width="2.5"/>
-        <circle cx="16" cy="36" r="5" fill="#4de2ff"/><circle cx="48" cy="36" r="5" fill="#6a5cff"/>
-      </svg>
-      <span>
-        <b>quantumnet</b>
-        <span>Quantum Entanglement Link &middot; reference</span>
-      </span>
-    </div>
-    <div class="mastspec">
-      <span>python <b>3.11+</b></span>
-      <span>runtime dep <b>numpy</b></span>
-      <span>version <b>0.1.0</b></span>
-      <span><a href="https://github.com/KELLERBABG/QEL">repository</a></span>
-    </div>
+<!-- ── opener ─────────────────────────────────────────────── -->
+<section class="open">
+  <div class="wrap">
+    <span class="tag">quantumnet &middot; quantum link simulation</span>
+    <h1>Every hop costs fidelity, and the bill arrives <em>at the key</em>.</h1>
+    <p class="sub">
+      An entangled pair is created imperfect, spent to extend a link, degraded while it waits, and purified before
+      anything can be extracted from it. Scroll, and watch one pair go through that:
+      <b>the fidelity figure is the whole subject.</b>
+    </p>
   </div>
-</header>
+  <div class="hero-fid">
+    <div class="n" id="heroFid">0.990</div>
+    <div class="l">source pair<br>no hops yet</div>
+  </div>
+  <div class="cue">Scroll to spend it &darr;</div>
+</section>
 
-<div class="doc">
+<!-- ── follow the pair ────────────────────────────────────── -->
+<div class="narr">
 
-  <nav class="index" aria-label="Contents">
-    <h4>Contents</h4>
-    <ol>
-      <li><a href="#s1">The problem</a></li>
-      <li><a href="#s2">What it models</a></li>
-      <li><a href="#s3">Modules</a></li>
-      <li><a href="#s4">Commands</a></li>
-      <li><a href="#s5">Ghost-Net bridge</a></li>
-      <li><a href="#s6">Scope and limits</a></li>
-      <li><a href="#s7">Tests</a></li>
-    </ol>
-    <div class="railfoot">
-      py -m quantumnet<br>
-      ghost-net &middot; topology<br>
-      qkd-derive
-    </div>
-  </nav>
-
-  <main class="body">
-
-    <div class="titleblock">
-      <h1>Quantum Entanglement Link</h1>
-      <p class="sub">quantumnet &mdash; a quantum communication network simulation stack</p>
-      <p class="abs">
-        A quantum link fails quietly. Fidelity leaks away through noise, distance and the time spent waiting in
-        memory, and a route that looks short can arrive too degraded to extract a key from. <b>quantumnet</b>
-        simulates the whole path &mdash; density-matrix states, noise channels, swapping, memory decay &mdash; and
-        reports the fidelity that survives it. This page is the reference: what each module does, what each
-        command returns, and where the simulation stops.
-      </p>
+  <div class="stick">
+    <div class="readout">
+      <div class="fid" id="fid">0.990</div>
+      <div class="meta">fidelity<b id="fidNote">source pair</b></div>
     </div>
 
-    <section class="block" id="s1">
-      <h2><span>&sect;1</span>The problem</h2>
+    <div class="chain">
+      <svg viewBox="0 0 560 120" role="img" aria-label="A repeater chain. Nodes light up as the link is extended, and the active link changes colour as fidelity is lost or recovered.">
+        <line class="link" id="l1" x1="60" y1="60" x2="170" y2="60"/>
+        <line class="link" id="l2" x1="170" y1="60" x2="280" y2="60"/>
+        <line class="link" id="l3" x1="280" y1="60" x2="390" y2="60"/>
+        <line class="link" id="l4" x1="390" y1="60" x2="500" y2="60"/>
+        <circle class="node" id="n1" cx="60" cy="60" r="12"/>
+        <circle class="node rep" id="n2" cx="170" cy="60" r="12"/>
+        <circle class="node rep" id="n3" cx="280" cy="60" r="12"/>
+        <circle class="node rep" id="n4" cx="390" cy="60" r="12"/>
+        <circle class="node" id="n5" cx="500" cy="60" r="12"/>
+        <text class="lbl" x="60" y="96" text-anchor="middle">edge</text>
+        <text class="lbl" x="170" y="96" text-anchor="middle">repeater</text>
+        <text class="lbl" x="280" y="96" text-anchor="middle">repeater</text>
+        <text class="lbl" x="390" y="96" text-anchor="middle">repeater</text>
+        <text class="lbl" x="500" y="96" text-anchor="middle">edge</text>
+        <text class="lbl" x="115" y="46" text-anchor="middle" id="h1"></text>
+        <text class="lbl" x="225" y="46" text-anchor="middle" id="h2"></text>
+        <text class="lbl" x="335" y="46" text-anchor="middle" id="h3"></text>
+        <text class="lbl" x="445" y="46" text-anchor="middle" id="h4"></text>
+      </svg>
+    </div>
+
+    <div class="graph">
+      <svg viewBox="0 0 560 120" role="img" aria-label="Fidelity against the stages of the link, with a marker showing the current value.">
+        <line class="axis" x1="40" y1="100" x2="540" y2="100"/>
+        <line class="axis" x1="40" y1="100" x2="40" y2="20"/>
+        <polyline class="curve" id="curve" points=""/>
+        <circle class="mark" id="mark" cx="40" cy="100" r="4.5"/>
+        <line class="axis" id="thresh" x1="40" y1="52" x2="540" y2="52" stroke-dasharray="4 4"/>
+        <text class="lab" x="546" y="55" text-anchor="end">key threshold</text>
+        <text class="lab" x="40" y="114">created</text>
+        <text class="lab" x="300" y="114" text-anchor="middle">spent &rarr; held &rarr; distilled</text>
+        <text class="lab" x="540" y="114" text-anchor="end">key</text>
+      </svg>
+    </div>
+
+    <p class="note" id="figNote">
+      Illustrative values from one example hop budget. <code>quantumnet</code> computes these from the parameters
+      you give it, which is the point of the simulator.
+    </p>
+  </div>
+
+  <div class="steps">
+
+    <section class="step" data-stage="created" data-fid="0.990" data-note="source pair"
+             data-cost="a source pair is never perfect" data-live="1">
+      <span class="no">Stage one &middot; created</span>
+      <h2>A pair is made, and it is already imperfect</h2>
       <p>
-        A classical mesh asks which path a packet takes. A quantum one has to answer a harder question before
-        anything moves: where do the repeaters go, and what fidelity is left when the entanglement arrives?
+        Two adjacent nodes generate a Bell pair. No source is ideal: the photons are not perfectly
+        indistinguishable, the detectors have dark counts, and the pair arrives with fidelity just under one.
       </p>
       <p>
-        Entanglement cannot be copied, so it cannot be cached and re-sent. It is created between two nodes,
-        consumed by a Bell-state measurement to extend the link further, and degraded the whole time it waits in
-        memory. A repeater chain is therefore only as good as its worst link, and the arithmetic of the chain
-        decides whether a route is usable at all.
+        Everything that follows multiplies against this number, so the first thing the simulator reports is what
+        the source actually delivers rather than what the datasheet claims.
       </p>
-      <p>
-        Hardware cannot answer that question cheaply. A simulator can, and it can answer it for a thousand
-        topologies before anyone books lab time.
-      </p>
+      <p class="cost">Fidelity <b>0.990</b> &middot; one hop, and nothing spent yet</p>
     </section>
 
-    <section class="block" id="s2">
-      <h2><span>&sect;2</span>What it models</h2>
+    <section class="step" data-stage="swapped" data-fid="0.972" data-note="after one swap"
+             data-cost="a Bell measurement consumes both halves" data-live="2">
+      <span class="no">Stage two &middot; extended</span>
+      <h2>Extending the link spends the pair</h2>
       <p>
-        States are density matrices, so decoherence is modelled directly rather than implied. Each channel acts on
-        the state, and the metrics that matter for routing &mdash; fidelity and entropy &mdash; are read back from
-        it rather than tracked separately.
+        To reach further, an intermediate node performs a Bell-state measurement on one half of each of two pairs.
+        The two outer halves become entangled, and both input pairs are destroyed in the process.
       </p>
-      <table>
-        <thead><tr><th>Channel</th><th>Effect</th><th>Where it applies</th></tr></thead>
-        <tbody>
-          <tr><td>depolarising</td><td>Loss of polarisation toward the maximally mixed state</td><td>Generic link error</td></tr>
-          <tr><td>dephasing</td><td>Loss of phase coherence with no energy change</td><td>Memory T2</td></tr>
-          <tr><td>amplitude damping</td><td>Relaxation toward the ground state</td><td>Memory T1, spontaneous emission</td></tr>
-          <tr><td>attenuation</td><td>Distance-dependent loss on a link</td><td>Topology edges</td></tr>
-          <tr><td>measurement</td><td>Projective or POVM, with state collapse</td><td>Bell-state measurement at a repeater</td></tr>
-        </tbody>
-      </table>
-      <h3>Estimators</h3>
       <p>
-        Noise is characterised on the captured window rather than assumed from a datasheet. The estimator ordering
-        <code>H_90B &ge; H_hist &ge; H_Shannon</code> is checked in the validation suite, which is what makes the
-        reported fidelity trustworthy at the pessimistic end.
+        A swap cannot improve fidelity. Each one multiplies the two contributing pairs, so the cost compounds with
+        every repeater between the endpoints.
       </p>
+      <p class="cost">Fidelity <b>0.972</b> &middot; two pairs consumed to make one longer link</p>
     </section>
 
-    <section class="block" id="s3">
-      <h2><span>&sect;3</span>Modules</h2>
-      <table>
-        <thead><tr><th>Module</th><th>Responsibility</th></tr></thead>
-        <tbody>
-          <tr class="grp"><td colspan="2">core &mdash; primitives</td></tr>
-          <tr><td>qubit</td><td>Density-matrix states, fidelity and entropy metrics</td></tr>
-          <tr><td>gate</td><td>Unitary gates, Pauli algebra, multi-qubit tensor products</td></tr>
-          <tr><td>measurement</td><td>Projective and POVM measurement with state collapse</td></tr>
-          <tr><td>noise</td><td>Depolarising, dephasing and amplitude-damping channels</td></tr>
-          <tr><td>channel</td><td>Quantum and classical links with distance-dependent attenuation</td></tr>
-          <tr><td>physical</td><td>Fibre and hardware impairments mapped to an attenuation budget</td></tr>
-          <tr><td>stabilizer</td><td>Clifford tableau simulation under Gottesman&ndash;Knill</td></tr>
-          <tr><td>scheduler</td><td>Asynchronous discrete-event core</td></tr>
-          <tr><td>ipc_node</td><td>One operating-system process per network node</td></tr>
-          <tr class="grp"><td colspan="2">protocols &mdash; ten implemented</td></tr>
-          <tr><td>bb84</td><td>QKD with basis reconciliation, QBER estimation and an intercept-resend eavesdropper</td></tr>
-          <tr><td>e91</td><td>Ekert entanglement-based QKD, security from Bell inequality violation</td></tr>
-          <tr><td>bell</td><td>Bell-state preparation, Bell measurement, CHSH inequality tests</td></tr>
-          <tr><td>teleportation</td><td>Unknown state moved over a shared EPR pair plus two classical bits</td></tr>
-          <tr><td>superdense</td><td>Two classical bits carried by one qubit</td></tr>
-          <tr><td>swapping</td><td>Entanglement extended between nodes that never interacted</td></tr>
-          <tr><td>distillation</td><td>BBPSSW and Deutsch purification rounds</td></tr>
-          <tr><td>memory</td><td>Buffer dynamics with T1 relaxation and T2 dephasing</td></tr>
-          <tr><td>shor</td><td>Nine-qubit code: encoding, syndrome measurement, recovery</td></tr>
-          <tr><td>steane</td><td>Seven-qubit CSS code, correcting bit and phase flips</td></tr>
-          <tr class="grp"><td colspan="2">topology &mdash; placement and routing</td></tr>
-          <tr><td>graph</td><td>Nodes, optical links and per-edge fidelity models</td></tr>
-          <tr><td>routing</td><td>Fidelity-constrained entanglement routing over Bell-state swaps</td></tr>
-          <tr><td>schedule</td><td>Time-aware entanglement distribution plan</td></tr>
-          <tr><td>visualize</td><td>Dependency-free ASCII rendering of a topology and a route</td></tr>
-          <tr><td>ghostnet</td><td>Import a live Global Ghost Net topology export and route over it</td></tr>
-        </tbody>
-      </table>
+    <section class="step" data-stage="held" data-fid="0.918" data-note="after memory hold"
+             data-cost="T1 relaxes the state, T2 destroys the phase" data-live="3">
+      <span class="no">Stage three &middot; held</span>
+      <h2>Waiting is not free</h2>
+      <p>
+        Entanglement has to be held while the rest of the route is scheduled. In a memory buffer the state relaxes
+        on T1 and loses phase on T2, and the second is usually the one that ends the route.
+      </p>
+      <p>
+        This is where a schedule matters more than a shorter path. The time spent standing still can cost more
+        fidelity than an extra hop.
+      </p>
+      <p class="cost">Fidelity <b>0.918</b> &middot; below the key threshold</p>
     </section>
 
-    <section class="block" id="s4">
-      <h2><span>&sect;4</span>Commands</h2>
+    <section class="step" data-stage="distilled" data-fid="0.963" data-note="after distillation"
+             data-cost="256 pairs in, one clean pair out" data-live="3">
+      <span class="no">Stage four &middot; purified</span>
+      <h2>Quality is bought with quantity</h2>
       <p>
-        Fifteen commands, dispatched by <code>py -m quantumnet</code>. The protocol demos write to stdout; the
-        bridge commands emit exactly one JSON document on stdout and keep everything else on stderr, so they
-        compose in a pipeline.
+        BBPSSW rounds take many weakly entangled pairs and, by measuring some of them, keep the ones that agree.
+        The surviving pair is cleaner; the rest are gone.
       </p>
-      <table>
-        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
-        <tbody>
-          <tr class="grp"><td colspan="2">protocol demonstrations</td></tr>
-          <tr><td>bb84</td><td>Run a key exchange and report the QBER with and without an eavesdropper</td></tr>
-          <tr><td>e91</td><td>Run the Ekert protocol and report the CHSH value</td></tr>
-          <tr><td>teleport</td><td>Teleport a state and report the reconstructed fidelity</td></tr>
-          <tr><td>superdense</td><td>Encode and decode two classical bits through one qubit</td></tr>
-          <tr><td>swap</td><td>Extend entanglement across an intermediate node</td></tr>
-          <tr><td>shor</td><td>Inject an error into the nine-qubit code and recover it</td></tr>
-          <tr><td>steane</td><td>The same for the seven-qubit CSS code</td></tr>
-          <tr><td>distill</td><td>Run purification rounds and report purity gained per pair spent</td></tr>
-          <tr><td>memory</td><td>Hold a state in the buffer and report fidelity against time</td></tr>
-          <tr><td>all</td><td>Every demonstration in sequence</td></tr>
-          <tr class="grp"><td colspan="2">simulation and routing</td></tr>
-          <tr><td>stabilizer</td><td>Clifford tableau simulator for circuits too large to track as vectors</td></tr>
-          <tr><td>physical</td><td>Turn fibre and hardware metrics into an attenuation budget</td></tr>
-          <tr><td>topology</td><td>Build a graph, route entanglement across it, render ASCII; <code>--max-hops</code> is bounded to 1&ndash;8</td></tr>
-          <tr><td>ghost-net</td><td>Route over a live mesh topology export and emit the route as one JSON document</td></tr>
-          <tr><td>qkd-derive</td><td>Derive key material at an explicit fidelity and seed, with no routing</td></tr>
-        </tbody>
-      </table>
+      <p>
+        Purification is the only step that raises fidelity, and it does so by spending pairs. Whether it is worth
+        the expenditure is a routing decision the simulator makes for you.
+      </p>
+      <p class="cost">Fidelity <i>0.963</i> &middot; recovered, at the cost of 256 pairs</p>
+    </section>
+
+    <section class="step" data-stage="routed" data-fid="0.963" data-note="route accepted"
+             data-cost="the threshold is the constraint, not the distance" data-live="4">
+      <span class="no">Stage five &middot; routed</span>
+      <h2>The shortest path is not the question</h2>
+      <p>
+        The topology layer asks which path clears the fidelity threshold once every swap and every hold on it is
+        accounted for. A route that arrives too degraded to extract a key from is not a route.
+      </p>
 <pre><span class="c"># route entanglement across a live mesh export</span>
 py -m quantumnet ghost-net --topology mesh.json
-<span class="o">{"route": [0, 4, 9, 11], "fidelity": 0.941, "distilled": true, "hops": 3}</span>
-
-<span class="c"># key material at an explicit fidelity</span>
-py -m quantumnet qkd-derive --fidelity 0.94 --out key.bin
-
-<span class="c"># a topology, routed and rendered as ASCII</span>
-py -m quantumnet topology --nodes 12 --route 0 11</pre>
+{"route": [0, 4, 9, 11], "fidelity": 0.963, "distilled": true, "hops": 3}</pre>
+      <p class="cost">Fidelity <i>0.963</i> &middot; three hops, distillation applied</p>
     </section>
 
-    <section class="block" id="s5">
-      <h2><span>&sect;5</span>Ghost-Net bridge</h2>
+    <section class="step" data-stage="key" data-fid="0.963" data-note="key extracted"
+             data-cost="BB84 runs at the route's own noise level" data-live="4">
+      <span class="no">Stage six &middot; spent</span>
+      <h2>Then the key comes out, or nothing does</h2>
       <p>
-        <code>topology/ghostnet.py</code> imports a topology export from Global Ghost Net and routes entanglement
-        across exactly the nodes it describes, so the same map that carries packets decides where quantum links
-        could exist.
+        A real BB84 exchange runs at the route's noise level. Above the quantum bit error threshold the exchange is
+        aborted and the fidelity was spent for nothing; below it, key material comes out.
       </p>
-      <p>
-        A route's end-to-end fidelity is the scheduled value once every swap and every memory hold on the path is
-        accounted for. If that value is too low for QKD to extract a key, the route is distilled &mdash; BBPSSW
-        rounds over 256 pairs &mdash; until it clears the threshold. Then a real BB84 exchange runs at the route's
-        own noise level and produces the key material.
-      </p>
-      <dl class="spec">
-        <dt>Input</dt><dd>A topology export: node identifiers and the links between them</dd>
-        <dt>Route cost</dt><dd>Fidelity after swaps, memory decay and optional distillation</dd>
-        <dt>Output</dt><dd>One JSON document: route, end-to-end fidelity, whether distillation was needed, hop count</dd>
-        <dt>Key material</dt><dd>32 bytes, derived at the route's fidelity from a stated seed</dd>
-      </dl>
+<pre><span class="c"># derive key material at the route's fidelity</span>
+py -m quantumnet qkd-derive --fidelity 0.963 --out key.bin
+
+<span class="c"># every protocol, in sequence</span>
+py -m quantumnet all</pre>
+      <p class="cost">Fidelity <i>0.963</i> &middot; QBER under 4%, 32 bytes of key</p>
     </section>
 
-    <section class="block" id="s6">
-      <h2><span>&sect;6</span>Scope and limits</h2>
-      <dl class="spec">
-        <dt>Real</dt><dd>The quantum mechanics: states, gates, measurement collapse, noise channels, the stabilizer formalism, the error-correcting codes, distillation, and the fidelity arithmetic.</dd>
-        <dt>Modelled</dt><dd>The hardware and the network. There are no photons, no fibre and no sockets. <code>ipc_node</code> uses real processes; the links between them are modelled.</dd>
-        <dt>Not claimed</dt><dd>These are simulator results and do not predict what physical hardware would achieve.</dd>
-      </dl>
-    </section>
-
-    <section class="block" id="s7">
-      <h2><span>&sect;7</span>Tests</h2>
-<pre>git clone https://github.com/KELLERBABG/QEL
-cd QEL
-py -m pip install -e ".[dev]"
-
-py -m pytest -q        <span class="c"># about 80 seconds</span>
-py -m quantumnet all   <span class="c"># every protocol demo</span></pre>
-      <p>
-        The suite covers each module directly: gates and measurement, the noise channels, the estimator ordering,
-        each protocol against its closed-form expectation, routing and scheduling, and the JSON bridge contract.
-        Run it before trusting a number on this page.
-      </p>
-    </section>
-
-  </main>
-
-  <aside class="margin" aria-label="Marginal notes">
-    <div class="mnote"><b>&sect;1</b><em>No-cloning</em> is a theorem rather than an implementation detail. It is why a quantum link is planned instead of retried.</div>
-    <div class="mnote"><b>&sect;2</b>Depolarising, dephasing, damping. T1 is energy and T2 is phase; the second is usually the one that kills a route.</div>
-    <div class="mnote"><b>&sect;2</b><em>Min-entropy</em>, not Shannon entropy, is what a key can safely be extracted from.</div>
-    <div class="mnote"><b>&sect;3</b>Ten protocol modules, nine core primitives, five topology modules. The stabilizer formalism is a method rather than a protocol.</div>
-    <div class="mnote"><b>&sect;4</b><code>ghost-net</code> and <code>qkd-derive</code> keep stdout to one JSON document, so they pipe.</div>
-    <div class="mnote"><b>&sect;5</b>A swap costs fidelity; distillation buys it back at the price of pairs.</div>
-    <div class="mnote"><b>&sect;6</b>Simulated links, real arithmetic.</div>
-  </aside>
-
+  </div>
 </div>
 
-<footer class="colophon">
+<!-- ── the rest ───────────────────────────────────────────── -->
+<section class="close">
+  <div class="wrap">
+    <span class="tag">What is inside</span>
+    <h2 style="font-size:clamp(1.5rem,3.4vw,2.3rem)">Nine primitives, ten protocols, five topology modules</h2>
+    <div class="cols">
+      <div>
+        <h3>Core</h3>
+        <ul>
+          <li><span>qubit</span><span>density matrices</span></li>
+          <li><span>gate</span><span>unitaries, Pauli</span></li>
+          <li><span>measurement</span><span>POVM, collapse</span></li>
+          <li><span>noise</span><span>depolarise, damp</span></li>
+          <li><span>channel</span><span>attenuation</span></li>
+          <li><span>stabilizer</span><span>Clifford tableau</span></li>
+          <li><span>scheduler</span><span>discrete event</span></li>
+          <li><span>ipc_node</span><span>process per node</span></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Protocols</h3>
+        <ul>
+          <li><span>bb84</span><span>with eavesdropper</span></li>
+          <li><span>e91</span><span>CHSH violation</span></li>
+          <li><span>teleportation</span><span>state transfer</span></li>
+          <li><span>superdense</span><span>two bits, one qubit</span></li>
+          <li><span>swapping</span><span>extend the link</span></li>
+          <li><span>distillation</span><span>BBPSSW, Deutsch</span></li>
+          <li><span>memory</span><span>T1 / T2</span></li>
+          <li><span>shor &middot; steane</span><span>9- and 7-qubit codes</span></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Topology</h3>
+        <ul>
+          <li><span>graph</span><span>links, fidelity</span></li>
+          <li><span>routing</span><span>threshold-constrained</span></li>
+          <li><span>schedule</span><span>time-aware plan</span></li>
+          <li><span>visualize</span><span>ASCII</span></li>
+          <li><span>ghostnet</span><span>live mesh export</span></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Scope</h3>
+        <ul>
+          <li><span>real</span><span>the quantum mechanics</span></li>
+          <li><span>modelled</span><span>hardware and network</span></li>
+          <li><span>no photons</span><span>no fibre, no sockets</span></li>
+          <li><span>not claimed</span><span>hardware predictions</span></li>
+        </ul>
+      </div>
+    </div>
+<pre style="margin-top:1.8rem;background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--flux);padding:1rem 1.1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.9;color:var(--frost)">git clone https://github.com/KELLERBABG/QEL
+cd QEL
+py -m pip install -e ".[dev]"
+py -m pytest -q        <span style="color:var(--dim)"># about 80 seconds, 122 tests</span></pre>
+    <div class="links">
+      <a href="https://github.com/KELLERBABG/QEL">Repository</a>
+      <a href="https://kellersystems.dev">Keller Systems</a>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
   <div class="row">
     <span>quantumnet 0.1.0 &middot; Quantum Entanglement Link</span>
-    <span><a href="https://github.com/KELLERBABG/QEL">repository</a> &nbsp;/&nbsp; <a href="https://kellersystems.dev">kellersystems.dev</a></span>
+    <span><a href="https://github.com/KELLERBABG/QEL">github.com/KELLERBABG/QEL</a></span>
   </div>
 </footer>
 
 <script>
 (function(){
-  var links = Array.prototype.slice.call(document.querySelectorAll('.index a'));
-  var map = {};
-  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
-  if (!('IntersectionObserver' in window)) return;
-  var io = new IntersectionObserver(function(entries){
-    entries.forEach(function(e){
-      if (!e.isIntersecting) return;
-      links.forEach(function(a){ a.classList.remove('on'); });
-      var a = map[e.target.id];
-      if (a) a.classList.add('on');
+  var steps = Array.prototype.slice.call(document.querySelectorAll('.step'));
+  var fidEl = document.getElementById('fid');
+  var noteEl = document.getElementById('fidNote');
+  var heroFid = document.getElementById('heroFid');
+  var curve = document.getElementById('curve');
+  var mark = document.getElementById('mark');
+  var nameEl = document.querySelector('.stage-name');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // the same path the reader's scroll walks down
+  var WAY = [
+    { fid: 0.990, note: 'source pair' },
+    { fid: 0.972, note: 'after one swap' },
+    { fid: 0.918, note: 'after memory hold' },
+    { fid: 0.963, note: 'after distillation' },
+    { fid: 0.963, note: 'route accepted' },
+    { fid: 0.963, note: 'key extracted' }
+  ];
+
+  var X0 = 40, X1 = 540, Y0 = 100, Y1 = 20, FMIN = 0.88, FMAX = 1.0;
+  function xAt(i){ return X0 + (X1 - X0) * (i / (WAY.length - 1)); }
+  function yAt(f){ return Y0 - (Y0 - Y1) * ((f - FMIN) / (FMAX - FMIN)); }
+
+  curve.setAttribute('points', WAY.map(function(w, i){ return xAt(i).toFixed(1) + ',' + yAt(w.fid).toFixed(1); }).join(' '));
+
+  var nodes = ['n1','n2','n3','n4','n5'].map(function(id){ return document.getElementById(id); });
+  var links = ['l1','l2','l3','l4'].map(function(id){ return document.getElementById(id); });
+  var hops  = ['h1','h2','h3','h4'].map(function(id){ return document.getElementById(id); });
+
+  function setChain(live){
+    nodes.forEach(function(n, i){ n.classList.toggle('on', i <= live); });
+    links.forEach(function(l, i){
+      var on = i < live;
+      l.classList.toggle('on', on);
+      l.classList.toggle('live', i === live - 1);
     });
-  }, { rootMargin: '-15% 0px -75% 0px' });
-  Array.prototype.forEach.call(document.querySelectorAll('section.block'), function(s){ io.observe(s); });
+  }
+  function fmt(v){ return v.toFixed(3); }
+
+  function frame(){
+    var vh = window.innerHeight;
+    var mid = window.scrollY + vh * 0.5;
+    var idx = 0, local = 0;
+    for (var i = 0; i < steps.length; i++) {
+      var top = steps[i].offsetTop, h = steps[i].offsetHeight;
+      if (mid >= top) {
+        idx = i;
+        local = Math.max(0, Math.min(1, (mid - top) / h));
+      }
+    }
+    var from = idx === 0 ? WAY[0] : WAY[idx - 1];
+    var to = WAY[idx];
+    var fid = from.fid + (to.fid - from.fid) * local;
+    var note = local > 0.5 ? to.note : from.note;
+
+    fidEl.textContent = fmt(fid);
+    fidEl.classList.toggle('low', fid < 0.94);
+    fidEl.classList.toggle('ok', fid >= 0.955);
+    noteEl.textContent = note;
+    if (heroFid) heroFid.textContent = fmt(fid);
+
+    var cx = X0 + (X1 - X0) * ((idx + local) / (WAY.length - 1));
+    mark.setAttribute('cx', cx.toFixed(1));
+    mark.setAttribute('cy', yAt(fid).toFixed(1));
+
+    var live = parseInt(steps[idx].getAttribute('data-live') || '1', 10);
+    setChain(Math.max(1, live));
+    hops.forEach(function(t, i){ t.textContent = i < live ? 'entangled' : ''; });
+  }
+
+  window.addEventListener('scroll', frame, { passive: true });
+  window.addEventListener('resize', frame);
+  frame();
+  if (!reduce) { requestAnimationFrame(frame); }
 })();
 </script>
 </body>
