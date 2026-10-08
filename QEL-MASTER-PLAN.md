@@ -2722,3 +2722,57 @@ the next step is a minimum-weight pairing rather than another guess.
 **825 passing.** `core/tjoin.py` is standalone and unwired.
 
 ---
+
+### 3.17 Round 6: two more real defects -- 152 -> 14 at d=3 p=0.003
+
+Round 6 implemented minimum-weight pairing and then found that the *graph* was the
+larger problem. Both are now fixed and the decoder is **20x better than at the start
+of the round**.
+
+**Defect 1: parallel mechanisms were merged, discarding observables.** The graph
+combined every mechanism sharing a detector pair into one edge, with probability
+``1 - prod(1 - p_i)`` and observables **XOR'd**. Parallel mechanisms need not share a
+signature, so an *even* number carrying the observable cancels and the signature is
+lost. At d=3 the pair ``(-1, 14)`` is 35 mechanisms of which **16 carry the
+observable** -- an even count, so XOR discarded it and the decoder treated a family of
+observable-flipping errors as though none of them flipped anything.
+
+Measured: **64 raw mechanisms carry the observable, but only 12 merged edges did.**
+The signature was the decoder over-flipping -- 0 errors on event-free shots but 58 on
+the 224 shots with events, against ~33 expected. Keeping mechanisms separate raises
+observable-carrying edges to **144 of 556** and is what makes attribution correct.
+
+**Defect 2: greedy pairing.** Valid but heavy, as established in §3.16. Replaced by
+`pair_minimum_weight`, which enumerates every perfect matching of the events plus a
+boundary slot and takes the cheapest -- exact, and reporting ``exact=False`` when the
+instance exceeds ``max_events`` rather than silently approximating. A pairing may send
+any single event to the boundary, so each event is tried in turn as the terminated one
+with the remainder matched among themselves.
+
+**Progression at d=3, p=0.003 (reference = 1 per 1000):**
+
+| state | errors / 1000 |
+|---|---|
+| greedy pairing + merged graph | 152 |
+| minimum-weight + merged graph | 58 |
+| **minimum-weight + unmerged graph** | **14** |
+
+**At 2000 shots:**
+
+```
+  d=3 p=0.001:  reference 0/2000   t-join 11/2000
+  d=3 p=0.003:  reference 5/2000   t-join 30/2000
+  d=5 p=0.003:  reference 1/2000   t-join 79/2000
+```
+
+**Honest reading: still not competitive, and the gap is not uniform.** At d=3,
+p=0.001 the reference makes *zero* errors in 2000 shots while this makes 11 -- a real
+difference but a small absolute rate. At d=5 the gap is 79x, and the d=5 rate (3.95%)
+is still above the physical rate, so it could not yet recover a threshold. The
+remaining causes are not yet isolated, but they are now in a decoder that is **valid
+by construction** (§3.16) and whose quality responds as expected to each fix, which is
+the opposite of the previous four rounds.
+
+**825 passing.**
+
+---
