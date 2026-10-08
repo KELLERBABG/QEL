@@ -36,9 +36,15 @@ _IMPORTERS: dict[str, type[TopologyImporter]] = {
 #: ends with (``.sequence.json`` before ``.json``-ish aliases).
 _EXTENSIONS: dict[str, str] = {
     ".qel.json": "qel-json",
+    ".qeljs": "qel-json",
+    # A plain `.json` is treated as QEL JSON. The native schema is self-describing via
+    # its `schema_version` field, and a file written by `topology build --out` must be
+    # readable by `import` without the caller knowing to spell the suffix a particular
+    # way. Registered last so `.sequence.json` and `.qel.json` still win, since the
+    # longest matching suffix is checked first.
+    ".json": "qel-json",
     ".sequence.json": "sequencer",
     ".seq.json": "sequencer",
-    ".qeljs": "qel-json",
     ".ggn": "ghostnet",
     ".dot": "dot",
     ".gv": "dot",
@@ -63,7 +69,12 @@ def importer_for(path: str, schema_id: str | None = None) -> type[TopologyImport
         return importer
 
     suffix = path.lower()
-    for ext, schema in _EXTENSIONS.items():
+    # **Longest suffix first.** A plain ``.json`` is registered so that files written by
+    # ``topology build --out`` are readable without spelling the suffix a particular way,
+    # but ``.sequence.json`` and ``.qel.json`` are more specific and must win. Iterating
+    # in insertion order would let ``.json`` shadow them, which would silently route a
+    # SeQUeNCe document to the wrong importer.
+    for ext, schema in sorted(_EXTENSIONS.items(), key=lambda kv: -len(kv[0])):
         if suffix.endswith(ext):
             return _IMPORTERS[schema]
     raise TopologyParseException(

@@ -28,6 +28,7 @@ from .topology.importers import parse as load_topology
 from .topology import (
     QuantumTopology,
     best_route,
+    build_topology,
     distribute,
     render_topology,
     rank_routes,
@@ -218,15 +219,31 @@ def _hex_int(value: str) -> int:
 def _do_topology(args):
     """Build a topology and (optionally) route entanglement over it."""
     if args.topology_command == "build":
+        # All four builders go through the registry, so a shape added to
+        # `topology/shapes.py` is reachable here without touching the CLI.
         if args.shape == "ring":
             n = max(4, args.nodes)
             node_ids = (["A", "B"] +
                         [f"R{i}" for i in range(min(args.repeaters, max(0, n - 2)))] +
                         [chr(ord("C") + i) for i in range(max(0, n - 2 - args.repeaters))])
-            node_ids = node_ids[:n]
-            topo = QuantumTopology.ring(node_ids, radius_km=args.radius)
+            topo = build_topology("ring", nodes=node_ids[:n], radius_km=args.radius)
+        elif args.shape == "grid":
+            topo = build_topology("grid", rows=args.rows, cols=args.cols,
+                                  spacing_km=args.spacing)
+        elif args.shape == "fattree":
+            topo = build_topology("fattree", k=args.k, link_km=args.link_km)
         else:
-            topo = QuantumTopology.grid(args.rows, args.cols, spacing_km=args.spacing)
+            topo = build_topology("bcube", n=args.bcube_n, k=args.k,
+                                  link_km=args.link_km)
+
+        if args.out:
+            from .topology.qel_json_export import write_qel_json
+
+            written = write_qel_json(topo, args.out)
+            print(f"wrote {written} "
+                  f"({len(topo.nodes)} nodes, {len(topo.links)} links, qel-json)")
+            return True
+
         print(topo.summary())
         print()
         print(render_topology(topo))
@@ -870,15 +887,26 @@ def main():
     topo_sub = topo_p.add_subparsers(dest="topology_command")
     _active_sub = topo_sub  # build/route belong to `topology`, not the root
 
-    _layout_help("build", "Build a deterministic ring or grid topology",
-                 "--shape", {"type": str, "choices": ["ring", "grid"], "default": "ring"},
+    _layout_help("build", "Build a deterministic topology, optionally writing it out",
+                 "--shape", {"type": str,
+                             "choices": ["ring", "grid", "fattree", "bcube"],
+                             "default": "ring",
+                             "help": "ring/grid take --nodes/--rows; "
+                                     "fattree takes --k; bcube takes --bcube-n/--k"},
                  "--nodes", {"type": int, "default": 8},
                  "--repeaters", {"type": int, "default": 3,
                                  "help": "number of nodes named R0..Rk-1 (repeaters)"},
                  "--radius", {"type": float, "default": 20.0, "help": "ring radius (km)"},
                  "--rows", {"type": int, "default": 3},
                  "--cols", {"type": int, "default": 4},
-                 "--spacing", {"type": float, "default": 5.0, "help": "grid spacing (km)"})
+                 "--spacing", {"type": float, "default": 5.0, "help": "grid spacing (km)"},
+                 "--k", {"type": int, "default": 2, "help": "fattree radix / bcube radix"},
+                 "--bcube-n", {"dest": "bcube_n", "type": int, "default": 2,
+                               "help": "bcube ports per level"},
+                 "--link-km", {"dest": "link_km", "type": float, "default": 1.0},
+                 "--out", {"type": str, "default": None,
+                           "help": "write the topology to this file in QEL JSON; "
+                                   "`import`/`route`/`bench` can consume it"})
 
     _layout_help("route", "Best fidelity route + swap schedule",
                  "--shape", {"type": str, "choices": ["ring", "grid"], "default": "ring"},

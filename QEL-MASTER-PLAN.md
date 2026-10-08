@@ -636,8 +636,8 @@ solves the wrong problem. This was the old roadmap's best judgement and it still
 |---|---|---|---|---|
 | P2.1 | **Routing as a pluggable interface.** `topology/strategies.py`: a `RoutingStrategy` base, a name registry usable as a decorator, and four policies — fidelity-optimal (`-log W`), shortest-distance (the incumbent's stock policy, kept as the control), fewest-hops, and a static table. A third party adds a policy without editing the module. | A third-party strategy drops in without editing routing code | M | **Done** |
 | P2.2 | **Topologies as first-class objects.** `topology/shapes.py` adds FatTree and BCube alongside ring/grid, with a builder registry and a connectivity report. **NetworkX interop deliberately declined** — see §2.9. | A user supplies a network without writing Python | M | **Done** |
-| P2.3 | **Config generators.** `topology build` exists; `build_topology(shape, **kw)` covers ring/grid/fattree/bcube for programmatic generation. Emitting a file from the CLI for the new shapes is still outstanding. | `bench`/`plan` consume a generated file end to end | S | **Partial** |
-| P2.4 | **SeQUeNCe config import/export** (§4.5). Emit `RouterNetTopo` **dicts**; honour distance-halving, delay-averaging, and the mandatory classical channel. | Same topology runs in both tools | S | Todo |
+| P2.3 | **Config generators.** `topology build` exists and now handles **all four shapes** through the builder registry (ring/grid/fattree/bcube) and writes them out with `--out`; `topology/qel_json_export.py` supplies the exporter the native schema was missing. | `bench`/`plan` consume a generated file end to end | S | **Done** |
+| P2.4 | **SeQUeNCe config import/export** (§4.5). Emit `RouterNetTopo` **dicts**; honour distance-halving, delay-averaging, and the mandatory classical channel. The exporter existed but was **untested**; it now has coverage asserting a classical companion for every quantum link and cross-schema agreement on the node set. | Same topology runs in both tools | S | **Done** |
 | P2.5 | **Validation / calibrated presets.** Ship published platform parameters; reproduce one published fibre key-rate-vs-distance dataset and publish the comparison. | A figure comparing prediction to measurement | M | Partial (presets exist) |
 
 ### Phase 3 — The distinctive work
@@ -3442,3 +3442,52 @@ monotonicity properties rather than on a rate difference, and the tests say so i
 implying otherwise.
 
 **974 tests passing**, 57 modules.
+
+
+### 3.29 P2.3 closed: the schema had an importer and no exporter
+
+The one item genuinely missing. P2.3 read *"Emitting a file from the CLI for the new
+shapes is still outstanding"*, and the detail was worse than the summary:
+
+* `topology build` handled **only** ring and grid, ignoring the FatTree and BCube
+  builders that already existed in the registry.
+* It could only **print**. The native `qel-json` schema had an **importer and no
+  exporter**, so a topology built in Python could not be written out at all -- and the
+  importer's own tests hand-write their fixtures, which is the symptom that the gap was
+  real rather than cosmetic.
+
+**What was added.** `topology/qel_json_export.py` writes the exact document
+`QelJsonImporter` reads, and `topology build` gained `--shape fattree|bcube`, `--out`,
+`--k`, `--bcube-n` and `--link-km`. All four shapes now go through the builder registry,
+so a shape added to `shapes.py` is reachable from the CLI without editing it.
+
+The CLI round trip now works as the plan's acceptance test requires::
+
+    quantumnet topology build --shape fattree --k 2 --out t.qel.json
+    quantumnet import --topology t.qel.json --from edge0_0 --to core0
+
+**A real bug found while wiring it.** The extension map was iterated in **insertion
+order**. Adding a plain `.json` entry -- needed so a file written by `--out x.json` is
+readable without the caller spelling the suffix a particular way -- would then **shadow**
+`.sequence.json` and route a SeQUeNCe document to the QEL JSON importer. Resolution is
+now **longest suffix first**, with a test asserting that `.sequence.json` still resolves
+to `SequencerImporter`.
+
+**Tests assert the round trip, not the field names.** A schema drift should surface as a
+failed round trip rather than as a file that looks plausible -- the same principle the
+validation instruments use. 15 tests, including that the output is byte-identical for a
+fixed timestamp (so it is usable as a fixture) and that it is written UTF-8 with LF
+newlines, because appending to a document from PowerShell's legacy code page corrupted a
+file here twice and a data format should not be able to do that.
+
+**P2.4 was already implemented and untested.** `export_sequencer_document` and
+`write_sequencer_config` existed and handle the trap their own docstring names --
+SeQUeNCe asserts if a `qconnection` has no matching `cconnection` -- but had **zero
+coverage** while the import side was tested. Seven tests added, asserting the classical
+companion for every quantum link and that a topology written through both schemas reads
+back to the same node set. An untested exporter is the same hazard this section is about:
+a format with one working direction.
+
+**996 tests passing**, 58 modules. With P2.3 and P2.4 closed, every item in the Phase 1-3
+tables that the plan named as outstanding is done; what remains marked Partial is P2.5
+(calibrated presets, which exist, plus one published dataset comparison).
