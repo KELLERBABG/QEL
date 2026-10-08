@@ -3115,3 +3115,44 @@ remains above the physical rate, so no threshold is recoverable from this decode
 **825 passing.**
 
 ---
+
+### 3.24 Item 3 closed: the balanced fusion order is optimal
+
+`topology/fusion_order.py` implements the divide-and-conquer fusion order, and it
+**matches the exhaustive optimum exactly** for every chain from 2 to 8 links:
+
+```
+ links   balanced   sequential   OPTIMAL   bal/opt
+     2         30           30        30     1.000
+     4         80          100        80     1.000
+     6        140          210       140     1.000
+     7        170          280       170     1.000
+     8        210          360       210     1.000
+```
+
+**Why the earlier attempt failed, and why this one does not.** The previous version
+returned a fusion order as a **list of original segment indices** and replayed it.
+Indices shift as segments merge, so the replay silently skipped fusions -- and it
+reported *less delay than the brute-force optimum*, which is impossible. Reporting a
+list of indices is the wrong representation for this problem: what is needed is a
+**tree**. This version returns `Fusion` objects carrying real extents, built by
+splitting the segment list in half recursively, so there is no index to shift.
+
+**At eight links the balanced extents are 10, 10, 30, 10, 10, 20, 40, 80 km** -- the
+first level repeats, which is the structural signature of balance, against the
+sequential order's 10, 20, 30, 40, 50, 60, 70, 80.
+
+**`segment_aware_delay` now defaults to the balanced order.** The sequential order
+remains available via `adjacent_strategy` and costs up to **1.65x** more delay at
+seven links.
+
+**One off-by-one was caught by the tests and is recorded.** A chain of `links + 1`
+positions needs `links` fusions, not `links - 1`; I asserted the latter first. The
+test names the mistake so it is not repeated.
+
+**Item 3 status: done.** Optimal order constructed, verified against exhaustive
+search, wired in as the default, and covered by 37 tests.
+
+**862 passing, 57 modules.**
+
+---
