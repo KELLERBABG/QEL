@@ -1279,6 +1279,17 @@ outcomes. A uniform layering gets the final round's structure approximately righ
 and its *boundary* conditions wrong, and the error from that grows with the code —
 which is exactly the signature observed (d=3 sub-threshold, d=5 anti-scaling).
 
+> **Superseded, and the scope matters.** This applies to
+> `ClusteredDecoder` / `decode_space_time_greedy`, which are reachable only at
+> `matcher="greedy"`. The **default** path (`matcher="auto"`) uses
+> `core/tjoin_decoder.py` against stim's own detector error model, so the final
+> round's detectors come from `stim` rather than from a replicated graph and the
+> uniform-layering problem does not arise. Measured on the default path at
+> p = 0.003 over 6000 shots: **d=3 0.00100, d=5 0.00033, d=7 0.00000** — monotone
+> decreasing, so the anti-scaling symptom is gone. The claim above remains a live
+> defect in the `greedy` fallback, which is kept only so the package runs on numpy
+> alone without `stim`.
+
 That is a specific, checkable claim: the final layer's boundary conditions differ
 from the interior layers'. Confirming it means comparing the detector definitions
 in the last round of `stim`'s circuit against the first, rather than assuming they

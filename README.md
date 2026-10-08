@@ -7,13 +7,18 @@ top. Everything runs in Python on a laptop — no hardware, no optics, no
 network sockets.
 
 ```text
-1036 tests passing · 20 CLI commands · 10 protocols and codes · 9 core primitives
+1036 tests passing · 21 CLI commands · 10 protocols and codes · 61 modules
 ```
 
-> These counts are measurements, not claims: `668` is the output of
-> `py -m pytest -q` and `17` is the output of `py -m quantumnet --help`, both
-> re-run whenever this line changes. If you change the code, re-run them and
-> update the line — do not estimate it.
+> These counts are measurements, not claims: `1036` is the output of
+> `py -m pytest -q` and `21` is the top-level command count from
+> `py -m quantumnet --help`, both re-run whenever this line changes. If you change
+> the code, re-run them and update this line in the same commit.
+>
+> The "core primitives" figure that used to sit here (9, then omitted) was never
+> reproducible from a command, so it has been replaced by the module count, which
+> is. A number nobody can regenerate is how this line drifted to a test count of
+> 668 while the suite actually ran 1036. Do not estimate this line — regenerate it.
 
 ## What it is
 
@@ -340,9 +345,11 @@ sources, and a note on what those passes verified and what they got wrong. Read
 [research/README.md](research/README.md) before trusting any single number in
 the plan.
 
-## Is 555 tests a lot?
+## Is 1036 tests a lot?
 
-Measured against comparable libraries rather than against intuition:
+Measured against comparable libraries rather than against intuition. The QEL row is
+re-measured; the three comparator rows are from the original survey and were not
+re-measured here:
 
 | Project | Source lines | Test lines | Test:source |
 |---|---|---|---|
@@ -350,13 +357,17 @@ Measured against comparable libraries rather than against intuition:
 | scipy | 340,112 | 234,272 | 0.69 |
 | networkx | 116,857 | 74,878 | 0.64 |
 | sympy | 492,618 | 260,744 | 0.53 |
-| **QEL** | **7,588** | **4,853** | **0.64** |
+| **QEL** | **15,351** | **11,529** | **0.75** |
 
-QEL sits in the middle of that range and matches networkx exactly. The
-*absolute* count is large relative to the line count because those 555 tests come
-from **492 test functions**, 19 of them parametrised and expanding into many
-cases — one geometric invariant checked at five distances is five tests from one
-function. The ratio, not the count, is the meaningful figure.
+QEL sits inside that range. The *absolute* count is large relative to the line count
+because those 1036 tests come from **823 test functions**, 55 of them parametrised and
+expanding into many cases — one geometric invariant checked at five distances is five
+tests from one function. The ratio, not the count, is the meaningful figure.
+
+> Both the count and the line figures here were stale at 555 and 7,588 / 4,853. The
+> source line count in particular had grown by more than a factor of two while the
+> README still described the earlier tree — which is the same failure the headline count
+> block warns about, in a second place.
 
 The shape differs from those libraries in one deliberate way: a large share of
 QEL's tests check *physical identities and published values* rather than API
