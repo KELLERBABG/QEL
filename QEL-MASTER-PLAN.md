@@ -3156,3 +3156,74 @@ search, wired in as the default, and covered by 37 tests.
 **862 passing, 57 modules.**
 
 ---
+
+### 3.25 Session close: state, handoff, and what remains
+
+This record ends with the decoder task **incomplete but fully diagnosed and handed
+off**, and two of the three assigned items done.
+
+**Items as assigned:**
+
+| # | item | state |
+|---|---|---|
+| 1 | Remove the PyMatching dependency | **Not achieved.** Diagnosis complete, handed off in `DECODER-DELEGATION-BRIEF.md` |
+| 2 | `logical_z` / stim reconciliation | **Done** -- there was never a mismatch; the apparent one was two defects in my own test |
+| 3 | Optimal fusion order | **Done** -- balanced tree, verified optimal against exhaustive search for 2-8 links, wired in as the default |
+
+**Verified final numbers.**
+
+```
+  862 passed, 57 modules, 0 import failures
+  decoder, d=3 p=0.003, multi-seed 2000 shots:  28.8 vs reference 4.0   (7.2x)
+  decoder, d=5 p=0.003:                          79/2000 = 3.95%
+  physical error rate at that point:             0.3%
+  syndrome-invariance of the ACTIVE decoder:     0/132 = 0.0%
+  fusion order, 8 links:                         210 vs sequential 360 vs optimal 210
+  threshold:                                     still from PyMatching (p ~ 0.006-0.008)
+```
+
+**What the twelve rounds actually produced.** Seven distinct implementation defects,
+each found by measurement; a decoder that is now **valid by construction** (0% syndrome
+violations, from 100% initially); a demonstrated 5x quality gain (152 -> 30 errors per
+2000 at d=3, p=0.003); and, most usefully, a precise statement of what remains: the
+reference's correction **is a matched edge set**, and per-edge observable labels cannot
+be reconciled with path-based accumulation. Three attempts to adopt the reference's
+conventions without its algorithm all measured worse (193 / 130 / 128 against 30).
+
+**What it did not produce: a usable decoder.** At 7.2x off, and with the d=5 rate above
+the physical rate, no threshold is recoverable. It is deliberately **not** wired into
+`logical_error_rate`.
+
+**The honest assessment of why.** The failure was process, not concept -- the algorithm
+is solved in the literature. Three patterns did the damage, and each is recorded in the
+handoff brief as an enforceable rule:
+
+1. **Optimising accuracy on an invalid decoder.** Four rounds went into quality while the
+   correction failed to reproduce the syndrome on 100% of shots.
+2. **A broken measuring instrument, five times.** A checker compared against the
+   boundary (which is legitimately odd), reporting 57.4% failures that did not exist. A
+   script silently unpacked a stale tuple length, printed nothing, and the blank was read
+   as a result.
+3. **Copying the reference's vocabulary instead of its procedure.** Merged graphs, edge
+   labels and weight conventions are surface; adopting them without the matching
+   algorithm moved the error rate between 30 and 193 and never converged.
+
+**Handoff.** `DECODER-DELEGATION-BRIEF.md` is self-contained: verified domain facts, the
+fourteen attempts and their outcomes, eight process rules, a two-route plan, six gates
+with correctness before quality, working commands, and a definition of done that
+includes "if you cannot reach C3, stop and report". The intended workflow is prototype
+in a separate subfolder, promote to `src/` only after passing C1-C3 multi-seed -- the
+inverse of the order used here, where every experiment was a change to production code.
+
+**Still open, deliberately:**
+
+* A correct minimum-weight matcher whose output is a matched edge set (brief, Step 2).
+* `matcher="auto"` still prefers PyMatching; the in-package path is `matcher="greedy"`.
+* `union_find.py` and `dem_decoder.py` remain in the tree as superseded. They are
+  referenced by `research/uf_invariant.py`, which measures the **abandoned** decoder and
+  reports 37.8% -- flagged prominently in the brief so it is not mistaken for the active
+  decoder's number.
+* `research/` and `.freebuff/` remain untracked (third-party paper copyright; local tool
+  state).
+
+---

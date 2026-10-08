@@ -62,7 +62,7 @@ precisely how a decoder can look like it works and be meaningless.
 | `src/quantumnet/core/dem_decoder.py` | earlier greedy DEM decoder, superseded |
 | `src/quantumnet/core/logical.py` | `logical_error_rate(..., matcher=...)`, `minimum_weight_decoder` |
 | `src/quantumnet/core/surface_code.py` | `_dem_components`, `VERIFIED_SITES`, `dem_matching_graph` |
-| `research/uf_invariant.py` | **the correctness diagnostic.** Run it after every change. |
+| `research/uf_invariant.py` | **the correctness diagnostic — but see the trap below: it currently targets the abandoned decoder** |
 | `research/uf_weight_gap.py` | compares correction weights against the reference |
 | `research/uf_edge_diff.py` | compares chosen edges against the reference |
 | `QEL-MASTER-PLAN.md` §3.12–3.24 | the full narrative record of the failure |
@@ -306,6 +306,42 @@ decoder that was **100% invalid**. Validity first, always.
 ---
 
 ## 7. Commands
+
+### Working directory — use your own subfolder
+
+You have been asked to work in a **separate subfolder** for testing, building and
+benchmarking. Keep it that way. Reasons, in order of importance:
+
+1. **`src/quantumnet/` stays shippable while you work.** The suite is green at 862
+   passing. A half-built decoder in `src/` risks that, and a red suite makes it
+   impossible to tell your new work from pre-existing breakage.
+2. **Benchmark artifacts are large and should not be committed.** Shot samples, per-seed
+   logs, timing runs. A `.gitignore`d subfolder keeps them out of the history.
+3. **Your experiments are evidence.** Keeping them lets a reviewer reproduce a claim
+   rather than trust it, and lets you delete the lot cleanly if the route fails.
+
+Suggested layout (adapt freely):
+
+```
+<your-subfolder>/
+  README.md          # what you tried, what each number means, current status
+  build.py           # imports/drivers for the decoder under construction
+  bench.py           # multi-seed runs -- the only place rates are produced
+  validators.py      # C1/C2 checks, validated against known-correct input FIRST
+  results/           # per-run output, timestamped; gitignored if large
+  notes/             # negative results, hypotheses, what refuted them
+```
+
+**Promotion rule:** nothing enters `src/quantumnet/` until it passes C1–C3 multi-seed.
+Until then it is a prototype in your subfolder. This is the opposite of the order I used,
+where the prototype *was* the shipped code and every experiment was a change to the
+production path.
+
+**Cross-reference:** §4's attempts are recorded because they were made *directly in
+`src/`*, which is why each one had to be reverted by hand and why several left
+contradictory comments behind. In a subfolder you can keep them all and compare.
+
+### Diagnostics
 
 ```powershell
 # CORRECTNESS diagnostic.
