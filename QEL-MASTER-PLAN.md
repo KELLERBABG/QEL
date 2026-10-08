@@ -2598,3 +2598,66 @@ is understood and has an oracle.
 PyMatching.**
 
 ---
+
+### 3.15 Round 4: the peel is the defect, proven by isolation -- blocker reported
+
+Round 4 changed method. Instead of tracing another failing shot, I **isolated the
+peel** by handing it the **full edge set**, where a correct correction provably
+exists, and measuring whether it reproduces the syndrome.
+
+```
+  PEEL ALONE, full edge set, d=3 p=0.003:  14 of 27 violations (51.9%)
+  with the boundary treated as even:        39 of 52 violations (75.0%)
+```
+
+**A correct peel must score 0% here.** It scores 51.9%, so **`_peel` is the defect**,
+not the growth phase -- which means the whole line of enquiry in §3.12-3.14, including
+"radius growth is the gap", was aimed at the wrong component. That is the round's
+substantive result and it supersedes those notes.
+
+**What was tried this round:**
+
+1. **Peel a spanning forest rather than the grown cyclic graph.** Correct in itself --
+   stripping leaves from a graph with cycles leaves a 2-core whose edges need not lie
+   on any valid path between syndrome nodes, and the algorithm is specified on a
+   forest. Measured: **no change**, 51.9% isolated and 37.8% in the pipeline.
+2. **Treat the boundary as an even node rather than odd.** Measured **worse**: 75.0%
+   isolated. Reverted. The boundary must be odd, and both alternatives are now
+   measured rather than argued.
+
+**Both reverted; the committed state is unchanged at 37.8%.**
+
+**Why I am reporting a blocker rather than continuing.** Four rounds have produced ten
+structural changes: six kept, four reverted. The correctness metric moved 100% -> 37.8%
+in round 2 and **has not moved in three rounds since**. Every fix is found by
+inspection, is individually well-reasoned, and then either does nothing or measures
+worse. That pattern says the problem is not the next bug -- it is that I am
+reconstructing a known algorithm from memory and reasoning, and my reasoning about this
+component has been wrong in **both directions, five times running**.
+
+The diagnosis is complete and specific: `_peel` does not correctly reduce a grown edge
+set to a Steiner tree over the syndrome nodes with boundary termination, even when
+given the full edge set. The fix is a correct Steiner-tree reduction, not another
+local patch. I cannot reliably produce one by inspection from here.
+
+**Two concrete ways forward, and both need a decision I should not make alone:**
+
+1. **Port from a reference implementation.** PyMatching is Rust, so there is no Python
+   source on disk to read; this would mean reading the published algorithm's
+   pseudocode and transcribing it without reinterpretation, or using a different
+   established library as the reference.
+2. **Pin PyMatching as the reference decoder** for the surface-code threshold -
+   documented as an explicit, named dependency - and spend the remaining effort on
+   **item 3, the optimal fusion order**, which is understood, scoped, and already has a
+   brute-force oracle.
+
+**Recommendation: (2).** The threshold's dependence on PyMatching is a documented
+limitation, not a wrong number; the in-package decoder's failure is a *known* open
+defect with a complete diagnosis attached. Trading a stalled correctness effort for a
+finishable task is the better use of remaining effort, and it leaves the UF work
+honestly parked with everything needed to resume it.
+
+**825 passing. `union_find.py` is not wired into `logical_error_rate`. The threshold
+still comes from PyMatching.**
+
+---
