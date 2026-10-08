@@ -3,646 +3,997 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Quantum Entanglement Link &mdash; follow the pair</title>
-<meta name="description" content="QEL simulates a quantum link from the moment a Bell pair is created to the moment a key comes out. Scroll the page and watch the fidelity fall and recover: swaps, memory decay, distillation, routing.">
-<meta name="theme-color" content="#05060f">
+<title>QEL — A Quantum-Network Simulator with an In-Package Surface-Code Decoder</title>
+<meta name="description" content="QEL simulates quantum communication networks end to end. The decoder is exact, needs no third-party matcher, and recovers a surface-code threshold near p = 0.007. Two of four published statements reproduce; both differences are documented.">
+<meta name="theme-color" content="#fbfaf7">
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --void:#05060f; --void-2:#080b18; --panel:#0b1020;
-  --line:rgba(140,175,255,.16); --line-soft:rgba(140,175,255,.07);
-  --frost:#e8eefc; --haze:#93a2c2; --dim:#5a688c;
-  --flux:#4de2ff; --pair:#6a5cff; --warn:#ff5f7a; --ok:#5cffa8;
-  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  /* A paper surface, not a screen surface: warm off-white, near-black ink, one
+     restrained accent. No dark mode -- this is a document, and documents are read
+     on paper-white. */
+  --paper:#fbfaf7;
+  --paper-2:#f4f2ec;
+  --rule:#d9d5ca;
+  --rule-strong:#b9b3a4;
+  --ink:#1a1a18;
+  --ink-2:#43423d;
+  --ink-3:#6b6960;
+  --accent:#7a2e2e;
+  --accent-2:#0f5257;
+  --serif:"Source Serif 4",Charter,Georgia,"Times New Roman",serif;
   --sans:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --measure:34rem;
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--void);color:var(--haze);font-family:var(--sans);font-size:16.5px;line-height:1.62;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-a{color:var(--flux);text-decoration:none}
-h1,h2,h3{margin:0;color:var(--frost);line-height:1.1;font-weight:600;letter-spacing:-.02em}
-p{margin:0 0 .9rem}
-code{font-family:var(--mono);font-size:.85em;color:var(--frost)}
-
-/* ── opener ───────────────────────────────────────────── */
-.open{min-height:100svh;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;
-  padding:clamp(60px,9vw,120px) clamp(20px,6vw,96px)}
-.open::before{content:"";position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(70% 55% at 62% 42%, rgba(77,226,255,.14), transparent 66%),
-             radial-gradient(50% 50% at 22% 78%, rgba(106,92,255,.14), transparent 70%)}
-.open .wrap{position:relative;z-index:1;max-width:1120px;margin:0 auto;width:100%}
-.tag{display:inline-flex;align-items:center;gap:.6rem;font-family:var(--mono);font-size:.66rem;letter-spacing:.2em;
-  text-transform:uppercase;color:var(--flux);margin-bottom:1.6rem}
-.tag::before{content:"";width:26px;height:1px;background:var(--flux)}
-.open h1{font-size:clamp(2.4rem,6.4vw,4.9rem);letter-spacing:-.035em;font-weight:600;max-width:22ch}
-.open h1 em{font-style:normal;color:var(--flux)}
-.open .sub{margin-top:1.4rem;max-width:52ch;font-size:clamp(1rem,1.5vw,1.18rem);color:var(--haze)}
-.open .sub b{color:var(--frost);font-weight:500}
-.hero-fid{position:absolute;right:clamp(20px,6vw,96px);top:50%;transform:translateY(-50%);text-align:right;z-index:1}
-.hero-fid .n{font-family:var(--mono);font-size:clamp(2.2rem,6vw,4.4rem);color:var(--flux);line-height:1;letter-spacing:-.02em}
-.hero-fid .l{font-family:var(--mono);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-top:.5rem}
-.cue{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:.58rem;
-  letter-spacing:.24em;text-transform:uppercase;color:var(--dim)}
-@media (prefers-reduced-motion:no-preference){.cue{animation:b 2.6s ease-in-out infinite}}
-@keyframes b{50%{transform:translate(-50%,7px)}}
-@media (max-width:980px){.hero-fid{position:static;transform:none;text-align:left;margin-top:2rem}}
-
-/* ── the narrative: sticky pair | scrolling costs ──────── */
-.narr{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:clamp(24px,5vw,80px);
-  max-width:1240px;margin:0 auto;padding:0 clamp(20px,6vw,96px);border-top:1px solid var(--line)}
-.stick{position:sticky;top:0;height:100svh;display:flex;flex-direction:column;justify-content:center;gap:1.4rem;padding:2rem 0}
-.readout{display:flex;align-items:baseline;gap:1rem;flex-wrap:wrap}
-.readout .fid{font-family:var(--mono);font-size:clamp(2.6rem,7vw,4.6rem);line-height:1;color:var(--flux);
-  letter-spacing:-.03em;transition:color .5s ease}
-.readout .fid.low{color:var(--warn)}
-.readout .fid.ok{color:var(--ok)}
-.readout .meta{font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
-.readout .meta b{display:block;color:var(--haze);font-weight:400;font-size:.72rem;letter-spacing:.06em;margin-top:.3rem}
-.stage-name{font-family:var(--mono);font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--frost)}
-.chain{width:100%}
-.chain svg{display:block;width:100%;height:auto}
-.node{fill:var(--void-2);stroke:var(--dim);stroke-width:1.6}
-.node.on{fill:var(--flux);stroke:var(--flux)}
-.node.rep{stroke:var(--pair)}
-.link{stroke:var(--dim);stroke-width:1.6}
-.link.on{stroke:var(--flux)}
-.link.live{stroke:var(--flux);stroke-width:2.6}
-.link.lost{stroke:var(--warn);stroke-dasharray:5 5}
-.chain .lbl{font-family:var(--mono);font-size:9px;letter-spacing:.08em;fill:var(--dim);text-transform:uppercase}
-.chain .lbl-on{fill:var(--haze)}
-.graph{width:100%;border-top:1px solid var(--line-soft);padding-top:.6rem}
-.graph svg{display:block;width:100%;height:auto}
-.graph .axis{stroke:var(--line);stroke-width:.8}
-.graph .curve{fill:none;stroke:var(--pair);stroke-width:1.6}
-.graph .mark{fill:var(--flux)}
-.graph .lab{font-family:var(--mono);font-size:8.6px;fill:var(--dim);letter-spacing:.06em}
-.note{font-family:var(--mono);font-size:.6rem;color:var(--dim);letter-spacing:.03em;line-height:1.7}
-
-.steps{padding:8svh 0 14svh}
-.step{min-height:78svh;display:flex;flex-direction:column;justify-content:center;padding:2rem 0;
-  border-top:1px solid var(--line-soft)}
-.step:first-child{border-top:0}
-.step .no{font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:var(--pair);text-transform:uppercase;margin-bottom:.9rem}
-.step h2{font-size:clamp(1.5rem,3.4vw,2.3rem);margin-bottom:.9rem}
-.step p{max-width:52ch}
-.step .cost{font-family:var(--mono);font-size:.72rem;letter-spacing:.04em;color:var(--frost);
-  border-left:2px solid var(--pair);padding-left:.9rem;margin-top:1.2rem}
-.step .cost b{color:var(--warn);font-weight:400}
-.step .cost i{color:var(--ok);font-style:normal}
-.step pre{margin:1rem 0 0;background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--flux);
-  padding:.85rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.71rem;line-height:1.8;color:var(--frost)}
-.step pre .c{color:var(--dim)}
-
-/* ── the close ────────────────────────────────────────── */
-.close{border-top:1px solid var(--line);padding:clamp(60px,8vw,120px) clamp(20px,6vw,96px)}
-.close .wrap{max-width:1120px;margin:0 auto}
-.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:clamp(20px,4vw,48px);margin-top:1.6rem}
-.cols h3{font-family:var(--mono);font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;color:var(--flux);margin-bottom:.7rem;font-weight:400}
-.cols ul{list-style:none;margin:0;padding:0}
-.cols li{padding:.35rem 0;font-size:.9rem;border-bottom:1px solid var(--line-soft);display:flex;justify-content:space-between;gap:1rem}
-.cols li span:first-child{font-family:var(--mono);font-size:.76rem;color:var(--frost)}
-.cols li span:last-child{color:var(--dim);font-family:var(--mono);font-size:.7rem}
-.links{display:flex;gap:1.4rem;flex-wrap:wrap;margin-top:2rem;font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase}
-.links a{border-bottom:1px solid currentColor;padding-bottom:2px}
-.foot{border-top:1px solid var(--line);padding:1.6rem clamp(20px,6vw,96px);font-family:var(--mono);font-size:.62rem;
-  letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
-.foot .row{max-width:1120px;margin:0 auto;display:flex;justify-content:space-between;gap:1.4rem;flex-wrap:wrap}
-.foot a{color:var(--haze)}
-@media (max-width:980px){
-  .narr{grid-template-columns:minmax(0,1fr)}
-  .stick{position:sticky;top:0;height:auto;padding:1.2rem 0;background:var(--void);z-index:5;border-bottom:1px solid var(--line)}
-  .step{min-height:auto;padding:2.4rem 0}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--serif);font-size:17.5px;line-height:1.62;
+  font-optical-sizing:auto;
+  -webkit-font-smoothing:antialiased;
 }
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(122,46,46,.3)}
+a:hover{border-bottom-color:var(--accent)}
+code,kbd{font-family:var(--mono);font-size:.84em;background:var(--paper-2);
+  padding:.1em .3em;border:1px solid var(--rule);border-radius:2px}
+h1,h2,h3{font-family:var(--serif);font-weight:600;line-height:1.25;color:var(--ink)}
+h2{font-size:1.32rem;margin:0 0 .5rem;letter-spacing:-.005em}
+h3{font-size:1.06rem;margin:1.8rem 0 .4rem}
 
-/* ---- scrollbars, in the site's own colours --------------------------- */
-html{scrollbar-color:#243356 #080b18;scrollbar-width:thin}
-::-webkit-scrollbar{width:12px;height:12px}
-::-webkit-scrollbar-track{background:#080b18}
-::-webkit-scrollbar-thumb{background:#243356;border:3px solid #080b18}
-::-webkit-scrollbar-thumb:hover{background:#4de2ff}
-::-webkit-scrollbar-corner{background:#080b18}
-/* ---- code wraps rather than scrolling sideways ---------------------- */
-pre{white-space:pre-wrap;overflow-wrap:anywhere;overflow-x:hidden}
-/* mobile-figure */@media (max-width:900px){.panel,.chart,.die,.pfd,.cfg,.console,.figs,.seqblock,.map{overflow-x:auto;-webkit-overflow-scrolling:touch}.panel svg,.chart svg,.die svg,.pfd svg,.cfg svg,.figs svg,.map svg{min-width:660px;max-width:none}}</style>
+/* ── shell: a marginal navigation column and the text column ─────────── */
+.shell{max-width:1180px;margin:0 auto;padding:0 clamp(18px,4vw,44px);
+  display:grid;grid-template-columns:14rem minmax(0,1fr);gap:clamp(24px,4vw,64px)}
+.rail{position:sticky;top:0;align-self:start;max-height:100vh;overflow-y:auto;
+  padding:2.4rem 0 2rem;font-family:var(--sans);font-size:.78rem;line-height:1.5}
+.rail .brand{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:.2rem}
+.rail .brand b{color:var(--ink);font-weight:500}
+.rail nav{margin-top:1.4rem;border-top:1px solid var(--rule);padding-top:.9rem}
+.rail nav ol{list-style:none;margin:0;padding:0;counter-reset:s}
+.rail nav li{counter-increment:s;margin:.16rem 0}
+.rail nav a{display:block;border:0;color:var(--ink-3);padding:.16rem 0;
+  border-left:2px solid transparent;padding-left:.6rem}
+.rail nav a::before{content:counter(s) ". ";font-family:var(--mono);font-size:.72em;
+  color:var(--rule-strong)}
+.rail nav a:hover{color:var(--ink)}
+.rail nav a[aria-current="true"]{color:var(--ink);border-left-color:var(--accent);
+  background:linear-gradient(90deg,rgba(122,46,46,.05),transparent)}
+.rail .meta{margin-top:1.6rem;border-top:1px solid var(--rule);padding-top:.8rem;
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.04em;color:var(--ink-3)}
+.rail .meta div{margin:.25rem 0}
+
+main{padding:2.4rem 0 6rem;max-width:var(--measure)}
+
+/* ── masthead ────────────────────────────────────────────────────────── */
+.masthead{border-bottom:2px solid var(--ink);padding-bottom:1.6rem;margin-bottom:2rem}
+.masthead .kicker{font-family:var(--mono);font-size:.68rem;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--accent);margin-bottom:.9rem}
+.masthead h1{font-size:clamp(1.5rem,3.1vw,2.05rem);margin:0 0 .9rem;letter-spacing:-.015em}
+.byline{font-family:var(--sans);font-size:.82rem;color:var(--ink-2);
+  display:flex;flex-wrap:wrap;gap:.4rem 1.1rem}
+.byline span{white-space:nowrap}
+.byline a{border-bottom-color:rgba(122,46,46,.25)}
+
+/* ── abstract and key numbers ───────────────────────────────────────── */
+.abstract{background:var(--paper-2);border:1px solid var(--rule);
+  border-left:3px solid var(--ink-3);padding:1.1rem 1.3rem;margin:0 0 1.6rem}
+.abstract h2{font-size:.78rem;font-family:var(--sans);font-weight:500;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin:0 0 .5rem}
+.abstract p{margin:0 0 .7rem;font-size:.95rem}
+.abstract p:last-child{margin-bottom:0}
+
+.findings{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);
+  padding:.9rem 0;margin:0 0 2.4rem;font-family:var(--sans);font-size:.82rem}
+.findings dt{font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);margin-top:.7rem}
+.findings dt:first-child{margin-top:0}
+.findings dd{margin:.15rem 0 0;color:var(--ink-2)}
+.findings b{color:var(--ink);font-weight:500}
+
+/* ── sections ───────────────────────────────────────────────────────── */
+section{margin:0 0 2.6rem;scroll-margin-top:1rem}
+section>p{margin:0 0 .85rem}
+.sec-no{font-family:var(--mono);font-size:.72rem;color:var(--accent);
+  letter-spacing:.1em;display:block;margin-bottom:.15rem}
+.lede{font-size:1.02rem;color:var(--ink-2)}
+
+/* ── numbered floats: figures and tables ────────────────────────────── */
+figure{margin:1.8rem 0;padding:0}
+figure .frame{border:1px solid var(--rule);background:#fff;padding:1rem}
+figure svg{display:block;width:100%;height:auto}
+figcaption{font-family:var(--sans);font-size:.78rem;line-height:1.5;color:var(--ink-2);
+  margin-top:.6rem;padding-top:.5rem;border-top:1px solid var(--rule)}
+figcaption b{color:var(--ink);font-weight:500}
+.tbl{margin:1.8rem 0}
+table{width:100%;border-collapse:collapse;font-family:var(--sans);font-size:.8rem}
+th,td{text-align:left;padding:.4rem .55rem;border-bottom:1px solid var(--rule)}
+thead th{border-bottom:1px solid var(--rule-strong);font-weight:500;
+  font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+td.num,th.num{text-align:right;font-family:var(--mono);font-size:.76rem;
+  font-variant-numeric:tabular-nums}
+tbody tr:last-child td{border-bottom:1px solid var(--rule-strong)}
+tr.hi td{background:rgba(122,46,46,.045)}
+.ok{color:var(--accent-2)}
+.diff{color:var(--accent)}
+
+/* ── code, equations, references ────────────────────────────────────── */
+pre{margin:1.1rem 0;background:var(--paper-2);border:1px solid var(--rule);
+  border-left:3px solid var(--rule-strong);padding:.8rem 1rem;overflow-x:auto;
+  font-family:var(--mono);font-size:.76rem;line-height:1.72;color:var(--ink)}
+pre .c{color:var(--ink-3)}
+pre .hl{color:var(--accent)}
+.eq{margin:1.2rem 0;padding:.7rem 1rem;background:var(--paper-2);
+  border:1px solid var(--rule);font-family:var(--mono);font-size:.79rem;
+  line-height:1.9;overflow-x:auto}
+.eq .lbl{float:right;color:var(--ink-3)}
+.mono{font-family:var(--mono);font-size:.84em}
+ol.refs{font-family:var(--sans);font-size:.8rem;line-height:1.55;
+  padding-left:1.4rem;color:var(--ink-2)}
+ol.refs li{margin:.5rem 0}
+sup.cite{font-family:var(--mono);font-size:.64em;color:var(--accent);
+  vertical-align:super;line-height:0}
+
+/* ── result / limitation blocks ─────────────────────────────────────── */
+.note{border:1px solid var(--rule);border-left:3px solid var(--accent-2);
+  background:#fff;padding:.85rem 1rem;margin:1.4rem 0;font-size:.9rem}
+.note.warn{border-left-color:var(--accent)}
+.note h3{margin:0 0 .35rem;font-size:.92rem;font-family:var(--sans);font-weight:500}
+.note p{margin:0 0 .5rem}
+.note p:last-child{margin-bottom:0}
+ul.tight{margin:.6rem 0;padding-left:1.2rem}
+ul.tight li{margin:.3rem 0}
+
+/* ── footer ─────────────────────────────────────────────────────────── */
+footer{border-top:2px solid var(--ink);margin-top:3rem;padding:1.4rem 0 0;
+  font-family:var(--sans);font-size:.76rem;color:var(--ink-3)}
+footer .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(11rem,1fr));
+  gap:1.2rem;margin-bottom:1rem}
+footer h4{font-family:var(--mono);font-size:.66rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-3);margin:0 0 .4rem;font-weight:400}
+footer ul{list-style:none;margin:0;padding:0}
+footer li{margin:.2rem 0}
+footer a{border:0;color:var(--ink-2)}
+footer a:hover{color:var(--accent)}
+
+@media (max-width:860px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0}
+  .rail{position:static;max-height:none;border-bottom:1px solid var(--rule);
+    padding:1.4rem 0 1rem}
+  .rail nav ol{columns:2;column-gap:1.4rem}
+  main{max-width:none;padding-top:1.6rem}
+  pre{font-size:.72rem}
+}
+@media print{
+  .rail{display:none}
+  .shell{grid-template-columns:1fr;max-width:none}
+  body{font-size:10.5pt;background:#fff}
+  a{color:var(--ink);border:0}
+  section{break-inside:avoid}
+  figure,table{break-inside:avoid}
+}
+</style>
 </head>
-<body><!-- noscript-fallback --><noscript><style>html *{opacity:1!important;transform:none!important;filter:none!important;animation:none!important}[data-a],[data-b],.d,.o,.fade,.draw,.chapter,.step,.panel,.hlab{opacity:1!important}</style></noscript>
+<body>
 
-<!-- ── opener ─────────────────────────────────────────────── -->
-<section class="open">
-  <div class="wrap">
-    <span class="tag">quantumnet &middot; quantum link simulation</span>
-    <h1>Every hop costs fidelity, and the bill arrives <em>at the key</em>.</h1>
-    <p class="sub">
-      An entangled pair is created imperfect, spent to extend a link, degraded while it waits, and purified before
-      anything can be extracted from it. Scroll, and watch one pair go through that:
-      <b>the fidelity figure is the whole subject.</b>
+<div class="shell">
+
+<!-- ── marginal navigation ────────────────────────────────────────────── -->
+<aside class="rail">
+  <div class="brand"><b>QEL</b> · v0.1.0</div>
+  <div class="brand">Quantum Entanglement Link</div>
+  <nav aria-label="Sections">
+    <ol>
+      <li><a href="#abstract">Abstract</a></li>
+      <li><a href="#intro">Introduction</a></li>
+      <li><a href="#method">Method</a></li>
+      <li><a href="#reproduced">Reproduced results</a></li>
+      <li><a href="#novel">Results specific to this work</a></li>
+      <li><a href="#negative">Negative results</a></li>
+      <li><a href="#limits">Limitations</a></li>
+      <li><a href="#availability">Availability</a></li>
+      <li><a href="#references">References</a></li>
+    </ol>
+  </nav>
+  <div class="meta">
+    <div>Licence <a href="https://github.com/KELLERBABG/QEL/blob/main/LICENSE">Apache-2.0</a></div>
+    <div>Source <a href="https://github.com/KELLERBABG/QEL">GitHub</a></div>
+    <div>Cite <a href="https://github.com/KELLERBABG/QEL/blob/main/CITATION.cff">CITATION.cff</a></div>
+    <div>Tests <span class="mono">1036 passing</span></div>
+    <div>Modules <span class="mono">61</span></div>
+  </div>
+</aside>
+
+<main>
+
+<!-- ── masthead ───────────────────────────────────────────────────────── -->
+<header class="masthead">
+  <div class="kicker">Simulation study · quantum communication networks</div>
+  <h1>QEL: a quantum-network simulator with an in-package surface-code decoder</h1>
+  <div class="byline">
+    <span><b>KELLERBABG</b></span>
+    <span>Keller Systems</span>
+    <span>v0.1.0</span>
+    <span>Apache-2.0</span>
+    <span><a href="https://github.com/KELLERBABG/QEL">github.com/KELLERBABG/QEL</a></span>
+  </div>
+</header>
+
+<!-- ── abstract ───────────────────────────────────────────────────────── -->
+<section id="abstract">
+  <div class="abstract">
+    <h2>Abstract</h2>
+    <p>
+      QEL simulates quantum communication networks end to end: density-matrix states under
+      depolarising, dephasing and amplitude-damping noise; distance-dependent fibre
+      attenuation; memory relaxation on T1 and T2; entanglement swapping in the Werner
+      algebra; distillation; resource contention; topology routing; repeater placement; and
+      a rotated surface code with its own exact decoder.
+    </p>
+    <p>
+      Two results are specific to this work. First, a surface-code decoder that computes an
+      exact minimum-weight T-join and produces <b>identical corrections to PyMatching</b> on
+      this package's circuits — the same edge set at the same total weight, on 4,359 of
+      4,359 shots at d = 3 and d = 5 — so the third-party matcher is removable from the
+      threshold path with no change in answer. It recovers a threshold near
+      <b>p ≈ 0.007</b>. Second, the correct additive routing weight for Werner-state
+      entanglement swapping is <b>−log W</b>, not the commonly substituted −log F; the
+      substitute under-penalises low-fidelity links and selects a strictly worse path about
+      1.3% of the time on random graphs.
+    </p>
+    <p>
+      Of four statements transcribed from the decoy-state literature, <b>two reproduce</b> and
+      both differences are reported rather than tuned away. Nothing in this work has been
+      validated against physical hardware, and the measured values do not predict what
+      hardware would achieve.
     </p>
   </div>
-  <div class="hero-fid">
-    <div class="n" id="heroFid">0.990</div>
-    <div class="l">source pair<br>no hops yet</div>
-  </div>
-  <div class="cue">Scroll to spend it &darr;</div>
+
+  <dl class="findings">
+    <dt>Threshold</dt>
+    <dd><b>p ≈ 0.007</b>, ordering reverses above it · 20,000 shots per point</dd>
+    <dt>Decoder equivalence</dt>
+    <dd><b>4,359 / 4,359</b> shots give the same edge set and total weight as the reference</dd>
+    <dt>Published reproduction</dt>
+    <dd><b>140.61 km</b> against a published <b>140.55 km</b> — a 60-metre difference</dd>
+    <dt>Routing weight</dt>
+    <dd><b>−log W</b> is exactly additive; <b>−log F</b> is not</dd>
+    <dt>Verification</dt>
+    <dd><span class="mono">1036 tests</span> · <span class="mono">py -m quantumnet validate</span> · <span class="mono">py scripts/claim_audit.py</span></dd>
+  </dl>
 </section>
 
-<!-- ── follow the pair ────────────────────────────────────── -->
-<div class="narr">
-
-  <div class="stick">
-    <div class="readout">
-      <div class="fid" id="fid">0.990</div>
-      <div class="meta">fidelity<b id="fidNote">source pair</b></div>
-    </div>
-
-    <div class="chain">
-      <svg viewBox="0 0 560 120" role="img" aria-label="A repeater chain. Nodes light up as the link is extended, and the active link changes colour as fidelity is lost or recovered.">
-        <line class="link" id="l1" x1="60" y1="60" x2="170" y2="60"/>
-        <line class="link" id="l2" x1="170" y1="60" x2="280" y2="60"/>
-        <line class="link" id="l3" x1="280" y1="60" x2="390" y2="60"/>
-        <line class="link" id="l4" x1="390" y1="60" x2="500" y2="60"/>
-        <circle class="node" id="n1" cx="60" cy="60" r="12"/>
-        <circle class="node rep" id="n2" cx="170" cy="60" r="12"/>
-        <circle class="node rep" id="n3" cx="280" cy="60" r="12"/>
-        <circle class="node rep" id="n4" cx="390" cy="60" r="12"/>
-        <circle class="node" id="n5" cx="500" cy="60" r="12"/>
-        <text class="lbl" x="60" y="96" text-anchor="middle">edge</text>
-        <text class="lbl" x="170" y="96" text-anchor="middle">repeater</text>
-        <text class="lbl" x="280" y="96" text-anchor="middle">repeater</text>
-        <text class="lbl" x="390" y="96" text-anchor="middle">repeater</text>
-        <text class="lbl" x="500" y="96" text-anchor="middle">edge</text>
-        <text class="lbl" x="115" y="46" text-anchor="middle" id="h1"></text>
-        <text class="lbl" x="225" y="46" text-anchor="middle" id="h2"></text>
-        <text class="lbl" x="335" y="46" text-anchor="middle" id="h3"></text>
-        <text class="lbl" x="445" y="46" text-anchor="middle" id="h4"></text>
-      </svg>
-    </div>
-
-    <div class="graph">
-      <svg viewBox="0 0 560 120" role="img" aria-label="Fidelity against the stages of the link, with a marker showing the current value.">
-        <line class="axis" x1="40" y1="100" x2="540" y2="100"/>
-        <line class="axis" x1="40" y1="100" x2="40" y2="20"/>
-        <polyline class="curve" id="curve" points=""/>
-        <circle class="mark" id="mark" cx="40" cy="100" r="4.5"/>
-        <line class="axis" id="thresh" x1="40" y1="60" x2="540" y2="60" stroke-dasharray="4 4"/>
-        <text class="lab" x="546" y="55" text-anchor="end">key threshold</text>
-        <text class="lab" x="40" y="114">created</text>
-        <text class="lab" x="300" y="114" text-anchor="middle">spent &middot; held &middot; distilled</text>
-        <text class="lab" x="540" y="114" text-anchor="end">key</text>
-      </svg>
-    </div>
-
-    <p class="note" id="figNote">
-      Illustrative values from one example hop budget. <code>quantumnet</code> computes these from the parameters
-      you give it, which is the point of the simulator.
+<!-- ── 1 introduction ─────────────────────────────────────────────────── -->
+<section id="intro">
+  <span class="sec-no">1</span>
+  <h2>Introduction</h2>
+  <p class="lede">
+    Simulation of quantum networks has a failure mode worth naming first, because this work
+    is organised around avoiding it: <b>a plausible number is indistinguishable from a
+    correct one.</b>
+  </p>
+  <p>
+    A route selected with a slightly wrong weight, a decoder returning a correction that
+    does not match the observed syndrome, an estimator dividing by the wrong count — each
+    produces output of exactly the right shape. Nothing crashes. The model has quietly
+    become a different model.
+  </p>
+  <p>
+    This repository began in precisely that state. The test suite did not run at all: a
+    single stale import made 12 of 37 modules unimportable, and the README advertised a
+    test count the suite had never produced. The planning documents that guided it
+    contained a load-bearing mathematical error in the routing weight.
+  </p>
+  <p>
+    What follows is therefore organised by <b>evidence class</b> rather than by feature.
+    Section 4 gives results that reproduce a published number under the same estimators,
+    each cited. Section 5 gives computations specific to this work, each with its
+    verification method. Section 6 gives negative results and retractions, retained
+    because they are what tells a reader how much to trust the rest. Section 7 states the
+    limits as limits.
+  </p>
+  <div class="note">
+    <h3>Method note: every number is traceable to a command</h3>
+    <p>
+      This repository maintains that as a rule rather than an aspiration, and the rule has
+      teeth: when a documented number and the code disagree, one of them is a bug.
+    </p>
+    <p>
+      The rule was adopted after it failed repeatedly. Six documented claims went stale
+      during development — a README asserting 668 tests when the suite ran 1036, a
+      website asserting 122 — each correct when written and each silently rotted. The
+      response was not to re-read the prose more carefully but to write
+      <span class="mono">scripts/claim_audit.py</span>, which extracts every numeric claim
+      from a document and prints it beside what the repository currently measures. It
+      reports and refuses to decide: a tool that guessed which number was right would
+      produce exactly the confident-but-wrong output the rest of the project avoids.
     </p>
   </div>
+</section>
 
-  <div class="steps">
+<!-- ── 2 method ───────────────────────────────────────────────────────── -->
+<section id="method">
+  <span class="sec-no">2</span>
+  <h2>Method</h2>
 
-    <section class="step" data-stage="created" data-act="one" data-fid="0.990" data-note="source pair"
-             data-cost="a source pair is never perfect" data-live="1">
-      <span class="no">Stage one &middot; created</span>
-      <h2>A pair is made, and it is already imperfect</h2>
-      <p>
-        Two adjacent nodes generate a Bell pair. No source is ideal: the photons are not perfectly
-        indistinguishable, the detectors have dark counts, and the pair arrives with fidelity just under one.
-      </p>
-      <p>
-        Everything that follows multiplies against this number, so the first thing the simulator reports is what
-        the source actually delivers rather than what the datasheet claims.
-      </p>
-      <p class="cost">Fidelity <b>0.990</b> &middot; one hop, and nothing spent yet</p>
-    </section>
+  <h3>2.1 Density matrices throughout</h3>
+  <p>
+    Quantum states are density matrices, not state vectors, so mixedness and decoherence
+    are represented directly rather than as an error probability attached to a pure state.
+    This is more expensive than a state-vector simulator and is the right choice here
+    because the quantities of interest — entanglement fidelity after a chain of swaps and
+    memory holds — are properties of mixed states. A stabiliser tableau runs alongside for
+    Clifford circuits, with measurement by GF(2) solving.
+  </p>
 
-    <section class="step" data-stage="swapped" data-act="one" data-fid="0.972" data-note="after one swap"
-             data-cost="a Bell measurement consumes both halves" data-live="2">
-      <span class="no">Stage two &middot; extended</span>
-      <h2>Extending the link spends the pair</h2>
-      <p>
-        To reach further, an intermediate node performs a Bell-state measurement on one half of each of two pairs.
-        The two outer halves become entangled, and both input pairs are destroyed in the process.
-      </p>
-      <p>
-        A swap cannot improve fidelity. Each one multiplies the two contributing pairs, so the cost compounds with
-        every repeater between the endpoints.
-      </p>
-      <p class="cost">Fidelity <b>0.972</b> &middot; two pairs consumed to make one longer link</p>
-    </section>
+  <h3>2.2 Werner states for entanglement</h3>
+  <p>
+    A two-qubit entangled pair is represented by its Werner parameter
+    <span class="mono">W = (4F−1)/3</span>, because the Werner family is closed under the
+    operations that matter here. A Bell-state measurement followed by a swap multiplies the
+    parameters of the two contributing pairs; a memory hold contracts toward the maximally
+    mixed state. Both operations are exact in this representation, which is what makes the
+    result in §4.1 possible.
+  </p>
 
-    <section class="step" data-stage="held" data-act="one" data-fid="0.918" data-note="after memory hold"
-             data-cost="T1 relaxes the state, T2 destroys the phase" data-live="3">
-      <span class="no">Stage three &middot; held</span>
-      <h2>Waiting is not free</h2>
-      <p>
-        Entanglement has to be held while the rest of the route is scheduled. In a memory buffer the state relaxes
-        on T1 and loses phase on T2, and the second is usually the one that ends the route.
-      </p>
-      <p>
-        This is where a schedule matters more than a shorter path. The time spent standing still can cost more
-        fidelity than an extra hop.
-      </p>
-      <p class="cost">Fidelity <b>0.918</b> &middot; below the key threshold</p>
-    </section>
+  <h3>2.3 The surface code</h3>
+  <p>
+    A rotated surface code at distance <i>d</i> with <span class="mono">d²</span> data
+    qubits and <span class="mono">d²−1</span> ancillas (weights 2 or 4). Data sit at
+    (odd, odd) coordinates and ancillas at (even, even); X-type ancillas are CNOT controls.
+    The CNOT layer order was verified against <span class="mono">stim</span> at
+    d = 3, 5, 7, 9, 11 and is a property of the <b>offset kind</b>, not of qubit
+    availability — which matters, because a transposed layer order still produces a valid
+    circuit with the wrong connectivity, and therefore plausible wrong numbers.
+  </p>
+  <p>
+    Layouts are pinned per distance: a fixed table covers d ∈ {3, 5, 7, 9} and any other
+    distance is refused rather than guessed. A guessed layout passes a qubit-count check
+    and fails silently.
+  </p>
 
-    <section class="step" data-stage="distilled" data-act="one" data-fid="0.963" data-note="after distillation"
-             data-cost="256 pairs in, one clean pair out" data-live="3">
-      <span class="no">Stage four &middot; purified</span>
-      <h2>Quality is bought with quantity</h2>
-      <p>
-        BBPSSW rounds take many weakly entangled pairs and, by measuring some of them, keep the ones that agree.
-        The surviving pair is cleaner; the rest are gone.
-      </p>
-      <p>
-        Purification is the only step that raises fidelity, and it does so by spending pairs. Whether it is worth
-        the expenditure is a routing decision the simulator makes for you.
-      </p>
-      <p class="cost">Fidelity <i>0.963</i> &middot; recovered, at the cost of 256 pairs</p>
-    </section>
+  <h3>2.4 Detector error model and decoding</h3>
+  <p>
+    <span class="mono">stim</span><sup class="cite">[1]</sup> generates the noisy circuit and
+    the decomposed detector error model. With
+    <span class="mono">decompose_errors=True</span> each mechanism is written as
+    <span class="mono">^</span>-separated graphlike components; verified: 0 of
+    556 / 3706 / 11830 components exceeded two detectors at d = 3 / 5 / 7.
+  </p>
+  <p>
+    The decoder computes an exact minimum-weight T-join on the merged graph — one edge per
+    distinct detector pair, parallel mechanisms combined by parity, log-likelihood weight
+    <span class="mono">log((1−p)/p)</span>, and observables parsed <b>per component</b>. A
+    correction is a set of edges whose odd-degree vertices are exactly the detection
+    events. The reference implementation compared against in §4.2 is Sparse
+    Blossom<sup class="cite">[2]</sup>.
+  </p>
 
-    <section class="step" data-stage="routed" data-act="one" data-fid="0.963" data-note="route accepted"
-             data-cost="the threshold is the constraint, not the distance" data-live="4">
-      <span class="no">Stage five &middot; routed</span>
-      <h2>The shortest path is not the question</h2>
-      <p>
-        The topology layer asks which path clears the fidelity threshold once every swap and every hold on it is
-        accounted for. A route that arrives too degraded to extract a key from is not a route.
-      </p>
-<pre><span class="c"># route entanglement across a live mesh export</span>
-py -m quantumnet ghost-net --topology mesh.json
-{"route": [0, 4, 9, 11], "fidelity": 0.963, "distilled": true, "hops": 3}</pre>
-      <p class="cost">Fidelity <i>0.963</i> &middot; three hops, distillation applied</p>
-    </section>
+  <h3>2.5 Measurement protocol</h3>
+  <p>
+    Reported error rates are multi-seed: at least five seeds and at least 2000 shots per
+    point for rates above 10⁻³. This is not stylistic. A 400-shot single-seed sample once
+    read as “2 errors against the reference's 0 — essentially solved” while the multi-seed
+    2000-shot measurement was <b>7.2× worse</b>. At these rates a single seed swings the
+    count by more than most fixes change it.
+  </p>
+  <p>
+    Verification runs with <span class="mono">pymatching</span> blocked at the import
+    system, so any hidden use of the reference becomes a hard error rather than a silent
+    fallback.
+  </p>
+</section>
 
-    <section class="step" data-stage="key" data-act="one" data-fid="0.963" data-note="key extracted"
-             data-cost="BB84 runs at the route's own noise level" data-live="4">
-      <span class="no">Stage six &middot; spent</span>
-      <h2>Then the key comes out, or nothing does</h2>
-      <p>
-        A real BB84 exchange runs at the route's noise level. Above the quantum bit error threshold the exchange is
-        aborted and the fidelity was spent for nothing; below it, key material comes out.
-      </p>
-<pre><span class="c"># derive key material at the route's fidelity</span>
-py -m quantumnet qkd-derive --fidelity 0.963 --out key.bin
+<!-- ── 3 reproduced ───────────────────────────────────────────────────── -->
+<section id="reproduced">
+  <span class="sec-no">3</span>
+  <h2>Reproduced results</h2>
+  <p class="lede">
+    Where a figure reproduces someone else's published result under the same estimators, it
+    is scored as such and cited. Where a comparison would measure a protocol difference
+    rather than an implementation, it is recorded and explicitly left unscored.
+  </p>
 
-<span class="c"># every protocol, in sequence</span>
-py -m quantumnet all</pre>
-      <p class="cost">Fidelity <i>0.963</i> &middot; QBER under 4%, 32 bytes of key</p>
-    </section>
+  <h3>3.1 Decoy-state reach at the GYS parameters</h3>
+  <p>
+    Ma, Qi, Zhao and Lo<sup class="cite">[3]</sup> tabulate the maximum secure distance of
+    the vacuum+weak decoy method at the Gobby–Yuan–Shields parameters<sup class="cite">[4]</sup>.
+    QEL implements the same estimators and the same <span class="mono">q = 1/2</span>
+    asymptotic rate, so this is a like-for-like comparison.
+  </p>
 
-    <section class="step" data-stage="pivot" data-act="turn" data-fid="—" data-note="the argument turns"
-             data-cost="and this is where the interesting question starts" data-live="0">
-      <span class="no">Turn</span>
-      <h2>That key is only as good as the link it came from</h2>
-      <p>
-        Everything above assumes the link worked. The honest version of the question is what happens when it
-        doesn't: how much longer can the fibre get before the key stops existing at all, and what does it cost to
-        buy that distance back?
-      </p>
-      <p>
-        The answer is not a better link. It is <b>error correction</b> &mdash; many physical qubits spent to make one
-        logical qubit that survives. Which moves the bill one level up: it no longer arrives at the physical key,
-        it arrives at the <em>logical</em> one.
-      </p>
-      <p class="cost">The rest of this page is about that second bill</p>
-    </section>
-
-  </div>
-</div>
-
-<!-- ── act two: the surface code ───────────────────────────── -->
-<section class="narr" style="border-top:1px solid var(--line)">
-  <div class="stick">
-    <span class="tag">Act two &middot; the code</span>
-    <div class="readout">
-      <div class="fid" id="thr-num">&mdash;</div>
-      <div class="meta">logical error rate<b>per shot</b></div>
-    </div>
-    <svg class="chain" viewBox="0 0 420 250" role="img"
-         aria-label="Logical error rate against physical error rate for three code distances; the curves cross near 0.007.">
-      <line class="graph axis" x1="52" y1="200" x2="392" y2="200"/>
-      <line class="graph axis" x1="52" y1="200" x2="52" y2="30"/>
-      <text class="graph lab" x="52" y="216">0.002</text>
-      <text class="graph lab" x="230" y="216">0.005</text>
-      <text class="graph lab" x="372" y="216">0.008</text>
-      <text class="graph lab" x="14" y="40">p&#8323;</text>
-      <path class="graph curve thr-d3" data-thr="d3" fill="none" stroke="var(--warn)" stroke-width="1.8" d="M52,188 L140,170 L216,140 L300,104 L392,72"/>
-      <path class="graph curve thr-d5" data-thr="d5" fill="none" stroke="var(--pair)" stroke-width="1.8" d="M52,194 L140,180 L216,146 L300,100 L392,58"/>
-      <path class="graph curve thr-d7" data-thr="d7" fill="none" stroke="var(--ok)" stroke-width="1.8" d="M52,197 L140,188 L216,150 L300,92 L392,44"/>
-      <line class="graph axis" x1="268" y1="30" x2="268" y2="200" stroke-dasharray="3 3"/>
-      <text class="graph lab" x="274" y="42">threshold &#8776; 0.007</text>
-      <text class="graph lab" x="330" y="196" fill="var(--warn)">d=3</text>
-      <text class="graph lab" x="330" y="188" fill="var(--pair)">d=5</text>
-      <text class="graph lab" x="330" y="180" fill="var(--ok)">d=7</text>
-    </svg>
-    <p class="note">Below the crossing, more distance means fewer errors.<br>Above it, more distance makes things worse.</p>
+  <div class="tbl">
+    <table>
+      <thead>
+        <tr><th>Comparison</th><th class="num">Published</th><th class="num">QEL</th><th class="num">Δ</th><th>Scored as</th></tr>
+      </thead>
+      <tbody>
+        <tr class="hi">
+          <td>vacuum+weak decoy, GYS parameters</td>
+          <td class="num">140.55 km</td><td class="num">140.61 km</td>
+          <td class="num ok">+0.06 km</td><td class="ok">equality</td>
+        </tr>        <tr>
+          <td>infinite-decoy ceiling</td>
+          <td class="num">142.05 km</td><td class="num">140.61 km</td>
+          <td class="num">−1.44 km</td><td>inequality</td>
+        </tr>
+        <tr>
+          <td>Boaron 421 km record<sup class="cite">[5]</sup></td>
+          <td class="num">421 km</td><td class="num">—</td>
+          <td class="num">—</td><td>not scored</td>
+        </tr>
+      </tbody>
+    </table>
+    <figcaption>
+      <b>Table 1.</b> Published comparisons. The first row is a 60-metre difference on a
+      140 km figure. The second is the infinite-decoy ceiling, which a finite-decoy
+      estimator <i>must</i> fall below — scoring it as an equality would fail a correct
+      model. The third is not scored because its protocol is 3-state time-bin with a
+      one-decoy finite-key bound, so comparing rates would measure the protocol difference
+      rather than the implementation.
+    </figcaption>
   </div>
 
-  <div class="steps">
-    <section class="step" data-stage="code" data-act="two" data-fid="0.00100" data-note="d=3, p=0.003" data-live="1">
-      <span class="no">Act two &middot; one</span>
-      <h2>One logical qubit is many physical ones</h2>
-      <p>
-        A rotated surface code at distance <b>d</b> spends <b>d&#178;</b> data qubits and <b>d&#178;&minus;1</b> ancillas on a single
-        logical qubit. A logical Bell pair is two of those, so the overhead is paid twice.
-      </p>
-      <p>
-        The payoff is suppression. Measured on this simulator's own circuits, the logical error rate falls with
-        every step of distance &mdash; which is the only thing that makes a network worth building on top of a code.
-      </p>
-<pre><span class="c"># logical error rate, in-package decoder, 6000 shots each</span>
+  <h3>3.2 Barrett–Kok generation</h3>
+  <p>
+    The model follows Barrett and Kok<sup class="cite">[6]</sup> and is held to two published
+    properties: the ideal success probability is exactly <b>1/2</b> at zero loss (the
+    protocol's stated upper limit), and the probability is <b>quadratic in detector
+    efficiency</b> because both photons must survive and both must be detected.
+  </p>
+  <p>
+    The consequence matters when reading any rate it prints: <b>loss costs rate, not
+    fidelity.</b> A photon that fails to arrive is a failed attempt, not a corrupted pair.
+    What degrades fidelity is a dark-count coincidence — indistinguishable from a real
+    herald and contributing a maximally mixed pair — along with mode mismatch and memory
+    decoherence.
+  </p>
+
+  <h3>3.3 Calibration against a decoy-state figure</h3>
+  <p>
+    Lo, Ma and Chen<sup class="cite">[7]</sup> compute the decoy-state rate for the GYS
+    hardware and report four checkable statements. All four are measured.
+  </p>
+
+  <div class="tbl">
+    <table>
+      <thead>
+        <tr><th>Statement</th><th>Published</th><th class="num">Measured</th><th>Verdict</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>optimal signal intensity</td><td>roughly 0.5, of order O(1)</td><td class="num">0.5</td><td class="ok">reproduces</td></tr>
+        <tr><td>reach without decoys</td><td>only about 30 km</td><td class="num">27 km</td><td class="ok">reproduces</td></tr>
+        <tr><td>reach with decoys</td><td>over 140 km</td><td class="num">123.5 km</td><td class="diff">differs</td></tr>
+        <tr><td>intercept-resend crossing</td><td>208 km (where e₁ = 1/4)</td><td class="num">179 km</td><td class="diff">differs</td></tr>
+      </tbody>
+    </table>
+    <figcaption>
+      <b>Table 2.</b> Four transcribed statements, all four measured. The two differences
+      are explained in §5.6 and neither is tuned away; the test suite fails if the decoy
+      reach drifts toward <i>better</i> agreement, because that would mean a bound had been
+      loosened.
+    </figcaption>
+  </div>
+
+  <p>
+    <b>The mechanism reproduces exactly.</b> The paper's central claim is that decoy states
+    move the optimal signal intensity from <span class="mono">O(η)</span> to
+    <span class="mono">O(1)</span>, roughly 0.5, which is what raises the net rate from
+    <span class="mono">O(η²)</span> to <span class="mono">O(η)</span>. Sweeping μ recovers
+    <b>0.5</b> as a genuine maximum, not a plateau: at μ = 0.1 the reach is 105.2 km against
+    123.5 km at μ = 0.5.
+  </p>
+  <p>
+    <b>The strongest check is the no-decoy curve</b>, because it is a different calculation
+    from the rate the package normally reports — GLLP equation 12 with the pessimistic
+    untagged fraction <span class="mono">1 − Ω = p_multi / Q_μ</span>, implemented from the
+    source rather than reused. It lands on <b>27 km against the published ~30 km</b>. An
+    independent formula reaching the published number is better evidence than tuning the
+    primary one.
+  </p>
+  <p>
+    <b>A real property found while building it.</b> At the GYS demo's own 4.5% detector
+    efficiency the no-decoy bound is <b>exactly zero at every distance</b>: the total gain
+    is smaller than the multi-photon probability at μ = 0.1, so Ω goes negative and no
+    untagged fraction exists. This is <i>why</i> that experiment required decoy states, and
+    it is reported rather than hidden by choosing a kinder detector.
+  </p>
+
+  <div class="tbl">
+    <table>
+      <thead>
+        <tr><th>Detector efficiency</th><th class="num">No-decoy reach</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr class="hi"><td>0.045</td><td class="num">0 km</td><td>the GYS demo's own detector</td></tr>
+        <tr><td>0.100</td><td class="num">12 km</td><td></td></tr>
+        <tr><td>0.200</td><td class="num">27 km</td><td>the figure's ~30 km</td></tr>
+        <tr><td>0.400</td><td class="num">42 km</td><td></td></tr>
+        <tr><td>0.800</td><td class="num">57 km</td><td></td></tr>
+      </tbody>
+    </table>
+    <figcaption>
+      <b>Table 3.</b> No-decoy reach against detector efficiency. The published ~30 km
+      corresponds to a ~20%-efficient detector, not to the GYS demo's own.
+    </figcaption>
+  </div>
+</section>
+
+<!-- ── 4 novel ────────────────────────────────────────────────────────── -->
+<section id="novel">
+  <span class="sec-no">4</span>
+  <h2>Results specific to this work</h2>
+
+  <h3>4.1 The routing weight is −log W, not −log F</h3>
+  <p>
+    Entanglement swapping multiplies the Werner parameter, so a path's parameter is
+    <span class="mono">W_path = Π W_i</span> and <span class="mono">−log W</span> is
+    <b>exactly additive</b>. Optimum-fidelity routing is therefore an ordinary
+    shortest-path problem, and Dijkstra on that weight is <i>optimal</i> rather than
+    heuristic.
+  </p>
+  <p>
+    The common substitute <span class="mono">−log F</span> is not additive. It
+    under-penalises low-fidelity links, by a factor of 1.34× at F = 0.99 and 2.25× at
+    F = 0.30. On random graphs it selects a strictly worse path about <b>1.3%</b> of the
+    time, with observed fidelity losses up to <b>0.02</b>. A worked counterexample is in
+    the test suite, and the fidelity-optimal policy is additionally confirmed against
+    exhaustive brute force on random graphs — so “optimal” is checked rather than asserted.
+  </p>
+<pre><span class="c"># where a short mediocre span competes with three short good ones</span>
+shortest-distance   F = 0.700000   1 hop
+fidelity-optimal    F = 0.970398   3 hops</pre>
+
+  <h3>4.2 An exact decoder with no third-party matcher</h3>
+  <p>
+    The decoder computes an exact minimum-weight T-join on the merged detector graph. Two
+    properties matter, and they are separate claims.
+  </p>
+  <p>
+    <b>(a) It is accurate.</b> Logical error rate against distance, 6000 shots per point, on
+    the default in-package path:
+  </p>
+<pre><span class="c"># logical error rate, 6000 shots each, in-package decoder</span>
 d=3, p=0.003   0.00100
 d=5, p=0.003   0.00033
-d=7, p=0.003   0.00000</pre>
-      <p class="cost">34 / 98 / 194 physical qubits per logical pair at d = 3 / 5 / 7</p>
-    </section>
+d=7, p=0.003   0.00000     <span class="c">monotone in d</span></pre>
 
-    <section class="step" data-stage="threshold" data-act="two" data-fid="0.007" data-note="the crossing" data-live="2">
-      <span class="no">Act two &middot; two</span>
-      <h2>There is a point past which more code makes it worse</h2>
-      <p>
-        More distance is not free and not always better. Below a physical error rate the extra qubits win; above it
-        they lose, because each one is another place for an error to happen and the decoder cannot keep up.
-      </p>
-      <p>
-        The crossing is the <b>threshold</b>. Measured here at <b>p &#8776; 0.007</b> across 20,000 shots per point, and
-        what makes it a result rather than a curve is that the ordering <em>reverses</em> above it.
-      </p>
-<pre><span class="c"># ordering falls up to 0.007, then reverses</span>
-p=0.006   d3 0.00735   d5 0.00645   d7 0.00375
-p=0.007   d3 0.00930   d5 0.00900   d7 0.00740
-p=0.008   d3 0.01290   d5 0.01350   d7 0.01000  <span class="c">&lt;-- d5 now worse than d3</span></pre>
-      <p class="cost">Threshold <i>p &#8776; 0.007</i> &middot; measured, not fitted</p>
-    </section>
+  <figure>
+    <div class="frame">
+      <svg viewBox="0 0 620 300" role="img"
+           aria-label="Logical error rate against physical error rate for code distances 3, 5 and 7. The three curves cross near p = 0.007; below the crossing the larger code performs better, above it the larger code performs worse.">
+        <g font-family="IBM Plex Mono, monospace" font-size="10" fill="#6b6960">
+          <line x1="70" y1="240" x2="580" y2="240" stroke="#b9b3a4" stroke-width="1"/>
+          <line x1="70" y1="240" x2="70" y2="30" stroke="#b9b3a4" stroke-width="1"/>
+          <text x="70" y="258" text-anchor="middle">0.002</text>
+          <text x="240" y="258" text-anchor="middle">0.005</text>
+          <text x="410" y="258" text-anchor="middle">0.007</text>
+          <text x="575" y="258" text-anchor="middle">0.008</text>
+          <text x="18" y="42">p_L</text>
+          <line x1="410" y1="30" x2="410" y2="240" stroke="#7a2e2e" stroke-width="1" stroke-dasharray="3 3"/>
+          <text x="416" y="44" fill="#7a2e2e">threshold ≈ 0.007</text>
+          <text x="300" y="284" text-anchor="middle" fill="#43423d">physical error rate p</text>
+        </g>
+        <polyline fill="none" stroke="#7a2e2e" stroke-width="1.9"
+          points="70,232 155,206 240,168 325,120 410,84 495,58 580,40"/>
+        <polyline fill="none" stroke="#0f5257" stroke-width="1.9"
+          points="70,236 155,218 240,176 325,130 410,90 495,52 580,28"/>
+        <polyline fill="none" stroke="#6b6960" stroke-width="1.9" stroke-dasharray="1 0"
+          points="70,238 155,226 240,186 325,138 410,96 495,48 580,20"/>
+        <g font-family="IBM Plex Mono, monospace" font-size="10">
+          <text x="300" y="112" fill="#7a2e2e">d = 3</text>
+          <text x="300" y="128" fill="#0f5257">d = 5</text>
+          <text x="300" y="144" fill="#6b6960">d = 7</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption>
+      <b>Figure 1.</b> Logical error rate against physical error rate, 20,000 shots per point,
+      decoder alone. The ordering falls with distance up to p = 0.007 and <b>reverses</b>
+      above it. The reversal is the substance of the claim: a threshold is only a real
+      result if additional distance eventually hurts, and the test suite asserts the
+      ordering flips rather than checking only the sub-threshold half. The value is
+      consistent with published surface-code thresholds<sup class="cite">[8]</sup>.    </figcaption>
+  </figure>
 
-    <section class="step" data-stage="selfcontained" data-act="two" data-fid="4359" data-note="identical corrections" data-live="3">
-      <span class="no">Act two &middot; three</span>
-      <h2>The decoder is in the package, and it agrees with the reference</h2>
-      <p>
-        A threshold is a property of the decoder as much as of the code, so the decoder had to be built and then
-        checked against something independent. The check available is <b>PyMatching</b>.
-      </p>
-      <p>
-        On this simulator's circuits the in-package decoder does not merely come close: it produces the
-        <b>same edge set at the same total weight</b>, on 4,359 of 4,359 shots. That is the claim that makes the
-        dependency removable without a quality trade.
-      </p>
-<pre><span class="c"># pymatching blocked at the import system, so hidden use is a hard error</span>
-HAVE_PYMATCHING = False
-d=3 p=0.003   4/2000      d=5   1/2000      d=7   0/2000</pre>
-      <p class="cost">Identical corrections on <i>4,359 / 4,359</i> shots &middot; no third-party matcher on the path</p>
-    </section>
+  <p>
+    <b>(b) It computes what the reference computes.</b> On 4,359 of 4,359 shots at d = 3 and
+    d = 5, the chosen edge set and the total correction weight are <b>identical</b> to
+    PyMatching's. Measured by deduplicating and canonicalising both edge sets and comparing
+    total weight per shot.
+  </p>
+  <p>
+    This is the claim that makes the dependency removable: not “comparable accuracy”, but
+    <i>the same answer on this circuit family</i>. The equivalence is established for
+    rotated surface-code memory-Z with uniform depolarising noise at d ∈ {3, 5, 7}; it is
+    not claimed for other error models, and the module says so.
+  </p>
+<pre><span class="c"># pymatching blocked at the import system: hidden use becomes a hard error</span>
+HAVE_PYMATCHING = False,  pymatching in sys.modules: False
+d=3 p=0.003   4/2000      d=5   1/2000      d=7   0/2000    decoder='in-package'</pre>
+
+  <h3>4.3 Repeater placement as an exact optimisation</h3>
+  <p>
+    Given candidate sites along a span, which subset delivers the highest key rate? The
+    solver is a dynamic program over sites in position order carrying a <b>Pareto frontier</b>
+    of (rate, fidelity) per state. The frontier is necessary rather than decorative: two
+    chains reaching the same site with the same repeater count are not interchangeable,
+    because the faster one may carry lower fidelity and the slower one may be the only one
+    from which the remaining spans are feasible.
+  </p>
+<pre><span class="c"># 200 km span, eight candidates spaced 20 km apart</span>
+best: 4 sites at [40, 80, 120, 160] km
+      key rate 1.1600e5 Hz,  F = 0.96079,  longest link 40 km</pre>
+  <p>
+    Verified <b>exact</b> against constraint-matched brute force on 25 random instances: 0
+    suboptimal. (A first comparison appeared to show 43.89% suboptimality; the brute force
+    had been enumerating layouts the optimiser was forbidden to choose. See §5.4.)
+  </p>
+
+  <h3>4.4 A chance constraint over continuous uncertainty</h3>
+  <p>
+    The existing literature on repeater placement — as far as a targeted search found —
+    handles robustness through <i>discrete</i> formulations: selecting components from a
+    catalogue, or siting repeaters in a greenfield network, plus post-hoc sensitivity
+    analysis. A reliability statement over a <b>continuous</b> hardware parameter is not a
+    standard construction.
+  </p>
+  <div class="eq">
+    <span class="lbl">(1)</span>
+    Pr[ F(chain; T₁, T₂) ≥ F_req ] ≥ 1 − ε
   </div>
-</section>
-
-<!-- ── the honest accounting ──────────────────────────────── -->
-<section class="close" style="border-top:1px solid var(--line)">
-  <div class="wrap">
-    <span class="tag">What reproduces, and what does not</span>
-    <h2 style="font-size:clamp(1.5rem,3.4vw,2.3rem)">Two of four published statements reproduce. Here are all four.</h2>
-    <p style="max-width:62ch;margin-top:1rem">
-      The project's rule is that a figure is either a reproduction of someone else's published result &mdash; cited
-      &mdash; or it is a property of this simulator, and says so. Where the model disagrees with its source, the
-      disagreement is kept and explained. A calibration that only showed what it passed would be marketing.
+  <p>
+    Two facts reduce this without sampling. <b>Monotonicity:</b> fidelity is non-decreasing
+    in both coherence times, so better memory never makes a chain worse. <b>The isoquantile
+    principle:</b> for a non-decreasing function of one random variable,
+    <span class="mono">Q_α(φ(X)) = φ(Q_α(X))</span>, so the constraint becomes a condition
+    at a quantile with no distributional assumption beyond the quantiles themselves.
+  </p>
+  <div class="note warn">
+    <h3>The two-parameter case is conservative, not exact — and says so</h3>
+    <p>
+      The identity does not extend to two independent parameters. Both a product-margin
+      bound <span class="mono">(1 − ε/2)²</span> and a common-factor bound at
+      <span class="mono">1 − ε</span> are computed and enforced. The correlated case — one
+      physical cause setting both coherence times, the usual hardware situation — is
+      <i>declared</i> rather than guessed, because it changes the answer: with a correlated
+      prior the quantiles come from paired draws, and a mismatched-length prior is refused.
     </p>
-    <div class="cols">
-      <div>
-        <h3>Lo, Ma &amp; Chen 2005 &mdash; GYS hardware</h3>
-        <ul>
-          <li><span>optimal signal intensity</span><span>0.5 &middot; matches</span></li>
-          <li><span>reach, no decoys</span><span>27 km &middot; published ~30</span></li>
-          <li><span>reach, with decoys</span><span>123.5 km &middot; published &gt;140</span></li>
-          <li><span>intercept-resend crossing</span><span>179 km &middot; published 208</span></li>
-        </ul>
-      </div>
-      <div>
-        <h3>Why the two differ</h3>
-        <ul>
-          <li><span>reach</span><span>finite-key vs asymptotic</span></li>
-          <li><span>crossing</span><span>model-dependent</span></li>
-          <li><span>neither</span><span>tuned to agree</span></li>
-        </ul>
-      </div>
-      <div>
-        <h3>What has not been done</h3>
-        <ul>
-          <li><span>hardware</span><span>never compared</span></li>
-          <li><span>decoder equivalence</span><span>memory-Z, d=3/5/7 only</span></li>
-          <li><span>greedy fallback</span><span>known defect, documented</span></li>
-        </ul>
-      </div>
-    </div>
-    <p class="note" style="margin-top:1.6rem;max-width:62ch">
-      These are simulator results. Nothing here has been validated against physical hardware, and the outputs do not
-      predict what hardware would achieve. A modelled 123 km reach for a preset calibrated to a 122 km experiment is
-      a consistency check on the model &mdash; not a measurement.
+    <p>
+      The result says the layout meets the requirement at the chosen quantiles. It is not a
+      Monte-Carlo estimate of failure probability, and it says nothing about scenarios
+      outside the declared prior.
     </p>
   </div>
-</section>
 
-<!-- ── the rest ───────────────────────────────────────────── -->
-<section class="close">
-  <div class="wrap">
-    <span class="tag">What is inside</span>
-    <h2 style="font-size:clamp(1.5rem,3.4vw,2.3rem)">18 core modules, 10 protocols, 61 modules, 1036 tests</h2>
-    <div class="cols">
-      <div>
-        <h3>Core</h3>
-        <ul>
-          <li><span>qubit</span><span>density matrices</span></li>
-          <li><span>gate</span><span>unitaries, Pauli</span></li>
-          <li><span>measurement</span><span>POVM, collapse</span></li>
-          <li><span>noise</span><span>depolarise, damp</span></li>
-          <li><span>channel</span><span>attenuation</span></li>
-          <li><span>stabilizer</span><span>Clifford tableau</span></li>
-          <li><span>scheduler</span><span>discrete event</span></li>
-          <li><span>ipc_node</span><span>process per node</span></li>
-        </ul>
-      </div>
-      <div>
-        <h3>Protocols</h3>
-        <ul>
-          <li><span>bb84</span><span>with eavesdropper</span></li>
-          <li><span>e91</span><span>CHSH violation</span></li>
-          <li><span>teleportation</span><span>state transfer</span></li>
-          <li><span>superdense</span><span>two bits, one qubit</span></li>
-          <li><span>swapping</span><span>extend the link</span></li>
-          <li><span>distillation</span><span>BBPSSW, Deutsch</span></li>
-          <li><span>memory</span><span>T1 / T2</span></li>
-          <li><span>shor &middot; steane</span><span>9- and 7-qubit codes</span></li>
-        </ul>
-      </div>
-      <div>
-        <h3>Topology</h3>
-        <ul>
-          <li><span>graph</span><span>links, fidelity</span></li>
-          <li><span>routing</span><span>threshold-constrained</span></li>
-          <li><span>schedule</span><span>time-aware plan</span></li>
-          <li><span>visualize</span><span>ASCII</span></li>
-          <li><span>ghostnet</span><span>live mesh export</span></li>
-        </ul>
-      </div>
-      <div>
-        <h3>Scope</h3>
-        <ul>
-          <li><span>real</span><span>the quantum mechanics</span></li>
-          <li><span>modelled</span><span>hardware and network</span></li>
-          <li><span>no photons</span><span>no fibre, no sockets</span></li>
-          <li><span>not claimed</span><span>hardware predictions</span></li>
-        </ul>
-      </div>
-    </div>
-<pre style="margin-top:1.8rem;background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--flux);padding:1rem 1.1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.9;color:var(--frost)">git clone https://github.com/KELLERBABG/QEL
-cd QEL
-py -m pip install -e ".[dev]"
-py -m pytest -q        <span style="color:var(--dim)"># 1036 tests, about 3 minutes</span></pre>
-    <div class="links">
-      <a href="https://github.com/KELLERBABG/QEL">Repository</a>
-      <a href="https://kellersystems.dev">Keller Systems</a>
-    </div>
+  <h3>4.5 Logical key rate</h3>
+  <p>
+    “Key rate after error correction” is a number almost nobody reports, which is why it is
+    worth stating with its cost. The composition is a <b>Werner product</b>, and the
+    physical qubit cost is reported alongside:
+  </p>
+
+  <div class="tbl">
+    <table>
+      <thead>
+        <tr><th>d</th><th class="num">F_log</th><th class="num">key fraction</th><th class="num">physical qubits / logical pair</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>3</td><td class="num">0.98186</td><td class="num">0.8509</td><td class="num">34</td></tr>
+        <tr><td>5</td><td class="num">0.98556</td><td class="num">0.8765</td><td class="num">98</td></tr>
+        <tr><td>7</td><td class="num">0.98926</td><td class="num">0.9035</td><td class="num">194</td></tr>
+      </tbody>
+    </table>
+    <figcaption>
+      <b>Table 4.</b> Physical fidelity 0.99, p = 0.003, five syndrome rounds. The overhead
+      counts data <i>and</i> ancilla at both ends, because a key rate that hides the qubits
+      it cost is not an engineering figure.
+    </figcaption>
   </div>
 </section>
 
-<footer class="foot">
-  <div class="row">
-    <span>quantumnet 0.1.0 &middot; Quantum Entanglement Link</span>
-    <span><a href="https://github.com/KELLERBABG/QEL">github.com/KELLERBABG/QEL</a></span>
+<!-- ── 5 negative ─────────────────────────────────────────────────────── -->
+<section id="negative">
+  <span class="sec-no">5</span>
+  <h2>Negative results and retractions</h2>
+  <p class="lede">
+    This section is the reason the rest is worth reading. Each item is a claim that was
+    made, tested, and found wrong — retained rather than deleted.
+  </p>
+
+  <h3>5.1 A retracted conclusion</h3>
+  <p>
+    An earlier phase of this work concluded that path-based observable accumulation is
+    “fundamentally incompatible” with per-edge labels, and that the label and the reduction
+    must be adopted together. <b>This is retracted.</b> The decoder that now works is
+    path-based, keeps the merged graph, and matches the reference exactly. The actual causes
+    were two specific bugs:
+  </p>
+  <ol class="tight">
+    <li>
+      <b>Observables were parsed across the whole instruction.</b>
+      <span class="mono">stim</span> binds <span class="mono">L</span> targets per
+      <span class="mono">^</span>-separated component:
+      <span class="mono">error(0.0004) D4 D6 ^ D5 L0</span> attaches
+      <span class="mono">L0</span> to the <span class="mono">D5</span> component only.
+      Attaching it to every component made pair (4, 6) falsely carry the observable.
+    </li>
+    <li>
+      <b>A missing de-duplication guard.</b> A symmetric pairing
+      <span class="mono">{a: b, b: a}</span> toggled each route twice, cancelling every
+      detector-pair observable to zero.
+    </li>
+  </ol>
+  <div class="note warn">
+    <h3>And a third defect, which is the instructive one</h3>
+    <p>
+      The <i>checker</i> had the guard the decoder lacked. It de-duplicated pairs that the
+      decoder did not, so it validated a correction the decoder never produced and reported
+      <b>0.0% violations while the decoder was wrong</b>. A checker that differs from the
+      code it checks is worse than a broken one, because it reports clean.
+    </p>
+    <p>
+      The lesson recorded is not “path-based is wrong” but: a confident structural
+      explanation is the most expensive kind of wrong answer, because it redirects the
+      search instead of merely failing. That conclusion cost five development rounds.
+    </p>
+  </div>
+
+  <h3>5.2 A weight formula that was wrong for the entire project</h3>
+  <p>
+    The edge weight was <span class="mono">−log(p)</span>. The correct quantity is the
+    log-likelihood ratio <span class="mono">log((1−p)/p)</span>, which PyMatching uses and
+    matches to 1.8e−15. The two differ by <b>0.5–0.7%</b> at the probabilities this code
+    reaches, which is enough to change which path is selected in a close call.
+  </p>
+  <p>
+    It was noticed and dismissed. An intermediate measurement recorded that the weights
+    agreed “to within 0.2%” and treated the residual as rounding. It was a systematic error,
+    and it survived because the project's own instrument-validation rule was not applied to
+    a number that looked good.
+  </p>
+
+  <h3>5.3 A fidelity composition wrong by 9%</h3>
+  <p>
+    The logical key rate combined physical fidelity and logical bit-flip probability as a
+    weighted average of fidelities,
+    <span class="mono">F = F_phys(1−q) + (1−F_phys)q</span>, which treats a bit-flip
+    <b>probability</b> as a fidelity. The correct composition is a Werner-state product.
+  </p>
+
+  <div class="tbl">
+    <table>
+      <thead>
+        <tr><th class="num">F_phys</th><th class="num">F_log</th><th class="num">q</th><th class="num">corrected</th><th class="num">old form</th><th class="num">overstatement</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="num">0.990</td><td class="num">0.996</td><td class="num">0.004</td><td class="num">0.982114</td><td class="num">0.986080</td><td class="num diff">+0.003966</td></tr>
+        <tr><td class="num">0.950</td><td class="num">0.996</td><td class="num">0.004</td><td class="num">0.942487</td><td class="num">0.946400</td><td class="num diff">+0.003913</td></tr>
+        <tr class="hi"><td class="num">0.950</td><td class="num">0.900</td><td class="num">0.050</td><td class="num">0.815500</td><td class="num">0.905000</td><td class="num diff">+0.089500</td></tr>
+      </tbody>
+    </table>
+    <figcaption>
+      <b>Table 5.</b> Error of the weighted-average composition against the Werner product.
+      Up to <b>9% absolute</b>, with the sign not even consistent across inputs. It survived
+      because at F_phys = 1 the two forms agree, and that was the input the other modules
+      used.
+    </figcaption>
+  </div>
+
+  <h3>5.4 A comparison that was wrong, not the code</h3>
+  <p>
+    A verification of the placement optimiser found <b>43.89% suboptimality</b> and nearly
+    prompted a rewrite. The dynamic program was exact; the brute force it was compared
+    against had been enumerating layouts the DP was forbidden to choose. Constraint-matched,
+    the result is 0 of 25 instances suboptimal.
+  </p>
+
+  <h3>5.5 Hypotheses removed by measurement</h3>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Hypothesis</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Growth order was the missing piece in the decoder</td><td>Rewrote growth as radius growth. Headline numbers changed by <b>nothing</b>.</td></tr>
+        <tr><td>The peel was correct; the growth phase was at fault</td><td>The peel scored <b>51.9% invalid on the full edge set</b>, where a correct answer provably exists.</td></tr>
+        <tr><td>Merging parallel mechanisms discards observables, so unmerge</td><td>Merging is what the reference does; its edge count matches exactly.</td></tr>
+        <tr><td>The greedy fallback caused the d=5 gap</td><td>The fallback triggers on <b>0.4%</b> of shots.</td></tr>
+        <tr><td>Boundary handling was the residual defect</td><td>Three principled changes to it each measured <b>worse</b> than the state they replaced.</td></tr>
+      </tbody>
+    </table>
+    <figcaption><b>Table 6.</b> Plausible explanations pursued and found not to hold.</figcaption>
+  </div>
+
+  <h3>5.6 Why the two calibration statements differ</h3>
+  <ul class="tight">
+    <li>
+      <b>Decoy reach, 123.5 km against &gt;140 km.</b> The package reports the reach at
+      which the <i>finite-key</i> secret length is positive — using the tight finite-key
+      analysis of Tomamichel et al.<sup class="cite">[9]</sup> — and bounds the
+      single-photon yield conservatively; the source draws its figure asymptotically. A
+      finite-key answer below an asymptotic one is the expected direction.
+    </li>
+    <li>
+      <b>Intercept-resend crossing, 179 km against 208 km.</b> The crossing is where the
+      single-photon QBER reaches 1/4, beyond which intercept-resend succeeds. It is
+      model-dependent, so it is reported as measured rather than adjusted until it agrees.
+    </li>
+  </ul>
+</section>
+
+<!-- ── 6 limits ───────────────────────────────────────────────────────── -->
+<section id="limits">
+  <span class="sec-no">6</span>
+  <h2>Limitations</h2>
+  <p class="lede">Stated as limits, not as future work.</p>
+  <ul class="tight">
+    <li>
+      <b>No hardware validation.</b> Nothing here has been compared against a physical
+      implementation. The outputs are model outputs.
+    </li>
+    <li>
+      <b>Decoder equivalence is scoped.</b> Identical to the reference on rotated
+      surface-code memory-Z with uniform depolarising noise at d ∈ {3, 5, 7}. For error
+      models where the reference's heuristics diverge from an exact matching this has not
+      been tested, and the module does not claim it.
+    </li>
+    <li>
+      <b>Calibration reproduces two of four published statements.</b> Both differences are
+      explained and neither is tuned; the suite fails if either drifts toward better
+      agreement.
+    </li>
+    <li>
+      <b>Placement robustness is conservative.</b> The two-parameter reduction enforces the
+      more demanding of two bounds. It is correct and it is not tight.
+    </li>
+    <li>
+      <b>Detector recovery is a minimum slot spacing</b>, not a per-detector state machine.
+      A full recovery trace would need the detector's internal curve.
+    </li>
+    <li>
+      <b>One degraded code path is known-suspect.</b> The legacy greedy fallback has a
+      defect in its final-round boundary conditions and is documented as suspect rather than
+      silently trusted. It does not affect the default path, which uses
+      <span class="mono">stim</span>'s own detector error model.
+    </li>
+    <li>
+      <b>Estimator scope.</b> The asymptotic decoy-state path is the standard
+      asymptotic-plus-estimator analysis, not a composable-security proof.
+    </li>
+  </ul>
+</section>
+
+<!-- ── 7 availability ─────────────────────────────────────────────────── -->
+<section id="availability">
+  <span class="sec-no">7</span>
+  <h2>Availability</h2>
+  <div class="tbl">
+    <table>
+      <tbody>
+        <tr><td>Source</td><td><a href="https://github.com/KELLERBABG/QEL">github.com/KELLERBABG/QEL</a></td></tr>
+        <tr><td>Licence</td><td>Apache-2.0</td></tr>
+        <tr><td>Citation</td><td><span class="mono">CITATION.cff</span></td></tr>
+        <tr><td>Documentation</td><td><span class="mono">README.md</span> — usage, results, scope</td></tr>
+        <tr><td>Verification</td><td><span class="mono">py -m pytest -q</span> (1036 tests) · <span class="mono">py -m quantumnet validate</span> · <span class="mono">py scripts/claim_audit.py</span></td></tr>
+        <tr><td>Environment</td><td><span class="mono">numpy</span> for the core; <span class="mono">stim</span> optional for the surface code; no third-party matcher on the decoding path</td></tr>
+      </tbody>
+    </table>
+    <figcaption>
+      <b>Table 7.</b> Availability. Third-party publication source material used during
+      development is deliberately not redistributed; the citations in §8 point at the
+      originals.
+    </figcaption>
+  </div>
+</section>
+
+<!-- ── 8 references ───────────────────────────────────────────────────── -->
+<section id="references">
+  <span class="sec-no">8</span>
+  <h2>References</h2>
+  <ol class="refs">
+    <li>C. Gidney. <i>Stim: a fast stabilizer circuit simulator.</i> Quantum <b>5</b>, 497
+      (2021). <a href="https://arxiv.org/abs/2103.02202">arXiv:2103.02202</a></li>
+    <li>O. Higgott, C. Gidney. <i>Sparse Blossom: correcting a million errors per core
+      second with minimum-weight matching.</i> Quantum <b>7</b>, 1172 (2023).
+      <a href="https://arxiv.org/abs/2303.15933">arXiv:2303.15933</a></li>
+    <li>X. Ma, B. Qi, Y. Zhao, H.-K. Lo. <i>Practical decoy state for quantum key
+      distribution.</i> Phys. Rev. A <b>72</b>, 012326 (2005).
+      <a href="https://arxiv.org/abs/quant-ph/0503005">arXiv:quant-ph/0503005</a></li>
+    <li>C. Gobby, Z. L. Yuan, A. J. Shields. <i>Quantum key distribution over 122 km of
+      standard telecom fiber.</i> Appl. Phys. Lett. <b>84</b>, 3762 (2004).
+      <a href="https://doi.org/10.1063/1.1738173">doi:10.1063/1.1738173</a></li>
+    <li>A. Boaron et al. <i>Secure quantum key distribution over 421 km of optical fiber.</i>
+      Phys. Rev. Lett. <b>121</b>, 190502 (2018).
+      <a href="https://arxiv.org/abs/1807.03222">arXiv:1807.03222</a></li>
+    <li>S. D. Barrett, P. Kok. <i>Efficient high-fidelity quantum computation using
+      matter qubits and linear optics.</i> Phys. Rev. A <b>71</b>, 060310(R) (2005).
+      <a href="https://arxiv.org/abs/quant-ph/0408040">arXiv:quant-ph/0408040</a></li>
+    <li>H.-K. Lo, X. Ma, K. Chen. <i>Decoy state quantum key distribution.</i>
+      Phys. Rev. Lett. <b>94</b>, 230504 (2005).
+      <a href="https://arxiv.org/abs/quant-ph/0411004">arXiv:quant-ph/0411004</a></li>
+    <li>E. T. Campbell, B. M. Terhal, C. Vuillot. <i>Roads towards fault-tolerant universal
+      quantum computation.</i> Nature <b>549</b>, 172 (2017).
+      <a href="https://arxiv.org/abs/1612.07330">arXiv:1612.07330</a></li>
+    <li>M. Tomamichel, C. C. W. Lim, N. Gisin, R. Renner. <i>Tight finite-key analysis for
+      quantum cryptography.</i> Nature Communications <b>3</b>, 634 (2012).
+      <a href="https://arxiv.org/abs/1103.4130">arXiv:1103.4130</a></li>
+  </ol>
+</section>
+
+<footer>
+  <div class="cols">
+    <div>
+      <h4>Repository</h4>
+      <ul>
+        <li><a href="https://github.com/KELLERBABG/QEL">Source</a></li>
+        <li><a href="https://github.com/KELLERBABG/QEL/blob/main/README.md">README</a></li>
+        <li><a href="https://github.com/KELLERBABG/QEL/blob/main/WHITEPAPER.md">Whitepaper</a></li>
+        <li><a href="https://github.com/KELLERBABG/QEL/blob/main/CITATION.cff">Cite</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Verify</h4>
+      <ul>
+        <li><span class="mono">py -m pytest -q</span></li>
+        <li><span class="mono">py -m quantumnet validate</span></li>
+        <li><span class="mono">py scripts/claim_audit.py</span></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Scope</h4>
+      <ul>
+        <li>Simulator results only</li>
+        <li>No hardware validation performed</li>
+        <li>Does not predict hardware performance</li>
+      </ul>
+    </div>
+  </div>
+  <div>
+    Part of <a href="https://kellersystems.dev">Keller Systems</a>. These are simulator
+    results; nothing here has been checked against physical hardware, and the measured
+    values do not predict what hardware would achieve.
   </div>
 </footer>
 
+</main>
+</div>
+
 <script>
-(function(){
-  var steps = Array.prototype.slice.call(document.querySelectorAll('.step'));
-  var fidEl = document.getElementById('fid');
-  var noteEl = document.getElementById('fidNote');
-  var heroFid = document.getElementById('heroFid');
-  var curve = document.getElementById('curve');
-  var mark = document.getElementById('mark');
-  var nameEl = document.querySelector('.stage-name');
-  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Progressive enhancement only: the page is complete and readable without this.
+// It highlights the current section in the marginal navigation and does nothing else.
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('.rail nav a'));
+  if (!links.length || !('IntersectionObserver' in window)) return;
 
-  // Each step carries its own stage, plus its element so act one's plot can find
-  // the next *fidelity-bearing* stage to travel toward.
-  var STAGES = steps.map(function(el){
-    var raw = el.getAttribute('data-fid');
-    var value = (raw === null || raw === '\u2014') ? NaN : parseFloat(raw);
-    return { fid: value, note: el.getAttribute('data-note') || '', el: el };
+  var byId = {};
+  var targets = [];
+  links.forEach(function (a) {
+    var el = document.getElementById(a.getAttribute('href').slice(1));
+    if (el) { byId[el.id] = a; targets.push(el); }
   });
-  // The plotted series is act one ONLY, selected by the explicit data-act attribute
-  // rather than by magnitude. Filtering on "fid > 0.5" was a real bug: act two's
-  // "selfcontained" step carries 4359 (a shot count), which passed that test and put a
-  // point 2.9 million units off a 0.88-1.0 fidelity axis -- and plotIndex then returned
-  // 6 for it, aiming the marker at that garbage point.
-  var PLOT = STAGES.filter(function(s){
-    return s.el.getAttribute('data-act') === 'one' && isFinite(s.fid);
-  });
+  if (!targets.length) return;
 
-  var X0 = 40, X1 = 540, Y0 = 100, Y1 = 20, FMIN = 0.88, FMAX = 1.0;
-  function xAt(i){ return X0 + (X1 - X0) * (i / Math.max(1, PLOT.length - 1)); }
-  function yAt(f){ return Y0 - (Y0 - Y1) * ((f - FMIN) / (FMAX - FMIN)); }
-
-  if (PLOT.length) {
-    curve.setAttribute('points', PLOT.map(function(w, i){
-      return xAt(i).toFixed(1) + ',' + yAt(w.fid).toFixed(1);
-    }).join(' '));
-  }
-  // Where a given step sits on the plotted series, or -1 if it is not on it.
-  // The argument is the step ELEMENT, so compare against PLOT[i].el directly.
-  // The earlier version compared PLOT[i].el === stage.el, where `stage` was already an
-  // element -- stage.el was always undefined, so this returned -1 for every step and
-  // the readout sat on its "no fidelity" branch permanently.
-  function plotIndex(element){
-    for (var i = 0; i < PLOT.length; i++) { if (PLOT[i].el === element) return i; }
-    return -1;
+  function setCurrent(id) {
+    links.forEach(function (a) { a.removeAttribute('aria-current'); });
+    if (byId[id]) byId[id].setAttribute('aria-current', 'true');
   }
 
-  var nodes = ['n1','n2','n3','n4','n5'].map(function(id){ return document.getElementById(id); });
-  var links = ['l1','l2','l3','l4'].map(function(id){ return document.getElementById(id); });
-  var hops  = ['h1','h2','h3','h4'].map(function(id){ return document.getElementById(id); });
-
-  function setChain(live){
-    nodes.forEach(function(n, i){ n.classList.toggle('on', i <= live); });
-    links.forEach(function(l, i){
-      var on = i < live;
-      l.classList.toggle('on', on);
-      l.classList.toggle('live', i === live - 1);
+  var observer = new IntersectionObserver(function (entries) {
+    // Choose the entry nearest the top of the viewport that is still intersecting,
+    // so the marker does not flicker between two sections at a boundary.
+    var best = null;
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      if (!best || e.boundingClientRect.top < best.boundingClientRect.top) best = e;
     });
-  }
-  function fmt(v){ return v.toFixed(3); }
+    if (best) setCurrent(best.target.id);
+  }, { rootMargin: '-10% 0px -70% 0px', threshold: 0 });
 
-  var THRESHOLD = 0.94;
-  var threshEl = document.getElementById('thresh');
-
-  function frame(){
-    var vh = window.innerHeight;
-    var mid = window.scrollY + vh * 0.5;
-    var idx = 0, local = 0;
-    for (var i = 0; i < steps.length; i++) {
-      var r = steps[i].getBoundingClientRect();
-      var top = r.top + window.scrollY, h = r.height;
-      if (mid >= top) {
-        idx = i;
-        local = Math.max(0, Math.min(1, (mid - top) / h));
-      }
-    }
-    /* Walk from this stage toward the next fidelity-bearing one, eased over the last
-       30% of the step. The marker travels on the same parameter as the number, so it
-       sits on the plotted segment instead of jumping between waypoints -- which is
-       what it did when the marker was positioned by stage index alone. */
-    var mine = plotIndex(steps[idx]);
-    var e = local < 0.7 ? 0 : (local - 0.7) / 0.3;
-    e = e * e * (3 - 2 * e);
-
-    var fid, note, cx;
-    if (mine >= 0) {
-      var here = PLOT[mine];
-      var next = PLOT[Math.min(mine + 1, PLOT.length - 1)];
-      fid = here.fid + (next.fid - here.fid) * e;
-      note = e > 0.5 ? next.note : here.note;
-      // Both the value AND the horizontal position interpolate between the same
-      // two waypoints, which is what keeps the marker on the drawn curve.
-      var px = xAt(mine), nx = xAt(Math.min(mine + 1, PLOT.length - 1));
-      cx = px + (nx - px) * e;
-    } else {
-      // Act two: no fidelity, so the readout says so and the marker parks at the
-      // end of the act-one curve rather than inventing a position.
-      fid = NaN;
-      note = STAGES[idx].note;
-      cx = xAt(PLOT.length - 1);
-    }
-
-    if (isFinite(fid)) {
-      fidEl.textContent = fmt(fid);
-      fidEl.classList.toggle('low', fid < 0.94);
-      fidEl.classList.toggle('ok', fid >= 0.955);
-      if (heroFid) heroFid.textContent = fmt(fid);
-    } else {
-      fidEl.textContent = '\u2014';
-      fidEl.classList.remove('low', 'ok');
-    }
-    noteEl.textContent = note;
-
-    if (PLOT.length) {
-      mark.setAttribute('cx', cx.toFixed(1));
-      if (isFinite(fid)) mark.setAttribute('cy', yAt(fid).toFixed(1));
-    }
-
-    var live = parseInt(steps[idx].getAttribute('data-live') || '1', 10);
-    if (steps[idx].getAttribute('data-stage') !== 'pivot') setChain(Math.max(1, live));
-    hops.forEach(function(t, i){ t.textContent = i < live ? 'entangled' : ''; });
-  }
-
-  if (threshEl) {
-    var ty = yAt(THRESHOLD).toFixed(1);
-    threshEl.setAttribute('y1', ty);
-    threshEl.setAttribute('y2', ty);
-  }
-  window.addEventListener('scroll', frame, { passive: true });
-  window.addEventListener('resize', frame);
-  frame();
-  if (!reduce) { requestAnimationFrame(frame); }
+  targets.forEach(function (t) { observer.observe(t); });
+  setCurrent(targets[0].id);
 })();
 </script>
 </body>
