@@ -140,9 +140,10 @@ py scripts/audit_imports.py         # every module must import cleanly
 py scripts/verify_surface_code.py   # surface-code invariants vs stim (dev-only)
 ```
 
-The 20 commands: `bb84`, `e91`, `teleport`, `superdense`, `swap`, `shor`,
+The 21 commands: `bb84`, `e91`, `teleport`, `superdense`, `swap`, `shor`,
 `steane`, `distill`, `memory`, `all`, `stabilizer`, `physical`, `topology`,
-`import`, `qkd-derive`, `qkd`, `bench`, `contend`, `link`, `validate`.
+`import`, `ghost-net`, `qkd-derive`, `qkd`, `bench`, `contend`, `link`,
+`validate`.
 
 ## Physical layer
 
