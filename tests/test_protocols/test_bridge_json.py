@@ -14,6 +14,7 @@ import json
 import math
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -35,6 +36,16 @@ _TMP_NAMES = {
     "dot": "test_bridge_tmp.dot",
 }
 
+#: Scratch directory for the temp topologies.
+#:
+#: These files used to be written into ``SRC`` -- inside the package -- and left
+#: there, so every test run dirtied the working tree with four untracked files.
+#: A test must not write into the source tree.  A single module-scoped directory
+#: keeps the files out of the repo while still putting them on disk, which the
+#: CLI genuinely needs: it resolves the importer from the file extension, so it
+#: cannot be handed an in-memory document.
+_TMP_DIR = tempfile.TemporaryDirectory(prefix="qel-bridge-")
+
 
 def _write_and_parse(topo, schema_id: str) -> str:
     """Write ``topo`` (dict or dot source) to a temp file and parse it through
@@ -44,7 +55,7 @@ def _write_and_parse(topo, schema_id: str) -> str:
         name = _TMP_NAMES[schema_id]
     except KeyError:
         raise ValueError(f"no temp filename for schema {schema_id!r}") from None
-    path = SRC / name
+    path = Path(_TMP_DIR.name) / name
     if isinstance(topo, dict):
         path.write_text(json.dumps(topo), encoding="utf-8")
     else:
@@ -223,7 +234,7 @@ def test_json_output_no_route_meeting_constraint(tmp_path):
 
 
 def test_qkd_derive_emits_one_json_document_with_a_key():
-    path = SRC / "test_bridge_tmp.json"
+    path = Path(_TMP_DIR.name) / "test_bridge_tmp.json"
     topo = {
         "schema_version": "1.0",
         "generated_at": "2026-10-07T00:00:00Z",
