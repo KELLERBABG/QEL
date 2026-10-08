@@ -3047,3 +3047,71 @@ at d=3, p=0.003, with the decoder valid by construction throughout.
 rate, so no threshold is recoverable from this decoder yet. **825 passing.**
 
 ---
+
+### 3.23 Round 12: the 12-pair fix measured 4x worse -- path-based attribution is the wrong frame
+
+Round 12 implemented the fix §3.22 identified as "the fix the evidence points to": keep
+the unmerged graph, and force the **merged pair's** observable onto every parallel
+mechanism of that pair, so the per-mechanism attribution matches the reference's merged
+label.
+
+**It measured 127.8 against 30 -- roughly four times worse.**
+
+```
+  d=3 p=0.003, multi-seed (3/7/9/11/13), 2000 shots
+    reference mean  4.0
+    t-join mean   127.8     (previous state: 28.8)
+  d=3 p=0.001: ref 0/2000  t-join 50/2000
+  d=5 p=0.003: ref 1/2000  t-join 245/2000
+```
+
+Reverted. **Three separate attempts to adopt the reference's observable convention have
+now all measured worse:**
+
+| attempt | d=3 p=0.003 |
+|---|---|
+| unmerged, per-mechanism labels (current best) | **30** |
+| merged graph, ANY labels, endpoint-label matching (§3.20) | 193 |
+| merged XOR labels (§3.17) | 130 |
+| unmerged graph, pair-level ANY labels (§3.23) | 128 |
+
+**The conclusion the evidence forces.** Path-based observable accumulation is
+fundamentally incompatible with the reference's per-edge labels, and the reason is
+structural rather than a matter of getting a convention right:
+
+* The reference's label is meaningful because its correction **is the matched edge set**.
+  The observable of that set is the XOR of its edge labels -- one label per edge, summed
+  once.
+* My decoder **routes paths** and XORs labels *along* them. A path crossing a
+  labelled pair contributes that label once per traversal, and forcing the label onto
+  every parallel mechanism makes it contribute on every route that uses the pair. The
+  two quantities are not the same, which is why moving the label between conventions
+  moved the error rate between 30 and 193 without ever converging.
+
+So the earlier framing -- "the label cannot be adopted without the topology, and the
+topology without the label fails too" -- was **incomplete**. The accurate statement is
+that the label and the *reduction* must be adopted **together**: per-edge labels only
+have meaning in a formulation whose output is an edge set.
+
+**That is now the single, well-posed requirement.** The decoder needs a minimum-weight
+matching **whose output is the matched edge set on the merged graph**, with observables
+taken from those edges. Enumerating perfect matchings on a metric closure -- which is
+what the current matcher does -- cannot produce that, because it commits to pairwise
+routes rather than to a set of edges.
+
+**Objective status after twelve rounds.**
+
+| established | how |
+|---|---|
+| It is my approach, not the algorithm | seven defects, each found by measurement |
+| The graph, weights and reduction are right | weights match to 0.2%; 0% invalid corrections |
+| The cost model is right | my solutions are strictly *lighter* than the reference's |
+| Path-based observable accumulation is the wrong frame | three conventions tried, all worse |
+
+Quality stands at **30/2000 against the reference's 5** at d=3 p=0.003, from **152** at
+the start of the decoder work. **Not wired into `logical_error_rate`**; at d=5 the rate
+remains above the physical rate, so no threshold is recoverable from this decoder.
+
+**825 passing.**
+
+---
