@@ -620,8 +620,8 @@ The old roadmap's M1→M2→M3 was right about sequence. It was wrong that any o
 
 | # | Deliverable | Acceptance test | Size | State |
 |---|---|---|---|---|
-| P1.1 | **Event kernel as the simulation core.** `core/scheduler.py` now enforces the causality contract (monotone time, deterministic ties, refusal to schedule into the past), and `topology/events.py` drives distribution through it. Contention and resource management still to come. | Event and closed-form paths agree on fidelity, swap times and swap nodes across 2–6 node chains, four loss regimes and short-memory setups | M | **Partial** |
-| P1.2 | **Photonic hardware layer.** `core/photonics.py`: detectors with efficiency, dark counts, dead time, jitter, afterpulsing; Barrett-Kok as 50:50 + coincidence + herald; multiplexing over `M` modes. **Partial on TDM:** multiplexing is modelled *statistically* (``1-(1-p)^M``), which is correct for rate; explicit time-slot allocation so two sources cannot occupy one link in the same slot belongs with the scheduling layer and is not built. | Barrett–Kok success probability matches the closed form vs loss | M | **Done** |
+| P1.1 | **Event kernel as the simulation core.** `core/scheduler.py` now enforces the causality contract (monotone time, deterministic ties, refusal to schedule into the past), and `topology/events.py` drives distribution through it. Contention **is** present and event-driven: `simulate_demands` wires `NodeEntanglementManager` into the kernel with priority-then-FIFO arbitration, and `tests/test_topology/test_contention_integration.py` asserts an overcommitted batch yields exactly one winner. The plan read "still to come" from an earlier state. | Event and closed-form paths agree on fidelity, swap times and swap nodes across 2–6 node chains, four loss regimes and short-memory setups | M | **Done** |
+| P1.2 | **Photonic hardware layer.** `core/photonics.py`: detectors with efficiency, dark counts, dead time, jitter, afterpulsing; Barrett-Kok as 50:50 + coincidence + herald; multiplexing over `M` modes. **TDM now explicit:** `core/multiplexing.py` allocates real time slots per link so two demands cannot hold the same slot — something the statistical model structurally cannot express, and its own docstring said that treatment "belongs with the scheduling layer" (§3.31). | Barrett–Kok success probability matches the closed form vs loss | M | **Done** |
 | P1.3 | **Barrett–Kok generation.** `core/photonics.py`, `BarrettKok`: excite, interfere, herald on coincidence. `p ≤ 1/2` exact at zero loss, `p ∝ η²`, loss costs rate and not fidelity, and a dark coincidence herald corrupts the pair. | Success probability vs loss matches `p_link = ½·η_det²·η_mem,0·η_mem,1·10^(-αL/10)` | S–M | **Done** |
 | P1.4 | **Memory model + state machine.** `raw / entangled / occupied` with enforced transitions, pair-correct decay, all-or-nothing allocation, and expiry that frees a decayed slot rather than stranding it. Platform presets (erbium/NV) still to add. | A memory cannot be allocated twice; expiry is observable | S | **Done** |
 | P1.5 | **Resource management + reservations.** `Reservation` with target fidelity, memory count, start/end windows and a full lifecycle; priority-then-FIFO arbitration; both-ends negotiation with rollback; early-expiry release. | Two competing requests contend and exactly one is refused | M | **Done** |
@@ -3560,3 +3560,57 @@ Poisson tail `1 - e^-mu (1 + mu)`.
 
 **1012 tests passing**, 60 modules. P2.5 was the last item marked Partial on the Phase 1-3
 tables other than P1.1 and P1.2, which are the next two.
+
+
+### 3.31 P1.1 verified already complete; P1.2 closed with explicit TDM
+
+**P1.1 needed no work, and the status line was wrong.** It read "contention and resource
+management still to come", but `topology/events.py::simulate_demands` already wires
+`NodeEntanglementManager` into the event kernel with priority-then-FIFO arbitration, and
+`tests/test_topology/test_contention_integration.py` covers it. Verified directly: an
+overcommitted batch of two demands against `size=1` memory yields exactly one winner.
+
+```
+  two demands, size-1 memory:  outcomes [(True, None), (False, 0.0)]
+  -> exactly one granted, and the loser is attributed a rejection time
+```
+
+This is the fourth stale status row found this session (after P3.1, P3.3, M7 and P2.4).
+The pattern is worth naming: **the prose sections were updated after each piece of work
+and the status tables were not**, so the tables consistently understated progress.
+
+**P1.2: explicit time-division multiplexing** -- `core/multiplexing.py`. The photonic
+layer models multiplexing statistically as ``1 - (1-p)^M``, which is right for the *rate*
+and silent about *when*, and its own docstring named the omission: "a tighter treatment
+would track each detector's recovery, which belongs with the scheduling layer." This is
+that treatment.
+
+A link holds ``modes`` slots per pulse period; a demand reserves consecutive slots; and
+**two demands cannot hold the same slot.** That is the constraint a statistical model
+structurally cannot express, and the tests assert the distinction rather than letting the
+two models be mistaken for each other:
+
+```
+  demand-1 slots [0, 1];  demand-2 slots [2, 3];  overlap? False
+  statistical_gain(0.5, 4) = 0.9375   <- says nothing about slot availability
+```
+
+**Placement, not refusal, is the throughput difference.** A yes/no model must answer for a
+whole request; slot allocation serves two demands back to back on one link. An *explicit*
+slot request is refused rather than relocated, because silently moving it would hide the
+contention the caller asked to be told about -- and a refusal names the conflicting
+holder, so "no" is always attributable.
+
+**A test of mine was wrong and the code was right.** I asserted that more modes makes a
+demand's `start_index` smaller. It does not: a slot index is a pulse position and does not
+depend on how many modes a period holds. What ``modes`` changes is **when** that slot
+occurs -- four modes reach index 4 four times sooner. The test now compares wall-clock
+times, and records why the index comparison was the wrong quantity.
+
+**Honest scope.** Detector recovery is modelled as a minimum slot spacing, not as a
+per-detector state machine; a full recovery trace needs the detector's internal curve,
+which this package does not have. That limit is stated in the module rather than implied
+away.
+
+**1036 tests passing**, 61 modules. With P1.1 and P1.2 closed, the Phase 1-3 tables have no
+`Partial` rows left except P2.5's now-closed entry.

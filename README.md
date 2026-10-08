@@ -7,7 +7,7 @@ top. Everything runs in Python on a laptop — no hardware, no optics, no
 network sockets.
 
 ```text
-996 tests passing · 20 CLI commands · 10 protocols and codes · 9 core primitives
+1036 tests passing · 20 CLI commands · 10 protocols and codes · 9 core primitives
 ```
 
 > These counts are measurements, not claims: `668` is the output of
@@ -120,7 +120,7 @@ That is the whole contract. The import layer only *produces* `nodes` and
 ```bash
 py -m pip install -e ".[dev]"
 
-py -m pytest -q                     # 996 tests, ~5m
+py -m pytest -q                     # 1036 tests, ~3m
 py -m quantumnet all                # every protocol demo
 py -m quantumnet topology --help    # build / route / visualise a topology
 py -m quantumnet import --help      # route over a parsed topology export
@@ -278,7 +278,7 @@ src/quantumnet/protocols/   QKD (incl. decoy state), teleportation, superdense, 
 src/quantumnet/topology/    graphs, fidelity routing, schedules, visualisation, import surface
 src/quantumnet/cli.py       the 20-command interface, JSON on stdout, everything else on stderr
 src/quantumnet/topology/importers/   QEL native JSON, legacy Ghost-Net bridge, Graphviz, SeQUeNCe
-tests/                      996 tests across core, protocols, topology and the CLI
+tests/                      1036 tests across core, protocols, topology and the CLI
 scripts/                    audit_imports.py, verify_surface_code.py (dev-only tools)
 notebooks/demo.ipynb        worked demonstration
 QEL-MASTER-PLAN.md          the consolidated build plan
