@@ -343,6 +343,32 @@ contradictory comments behind. In a subfolder you can keep them all and compare.
 
 ### Diagnostics
 
+**A validated instrument kit already exists — use it instead of writing your own.**
+`validation/` is a small, decoder-agnostic toolkit (25 tests, all fast) built specifically
+because the brief's §5 rules were learned the hard way. Nothing in it imports the decoders
+in `src/`, so it measures your decoder without depending on it.
+
+| what | why you want it |
+|---|---|
+| `validation/validators.py` | the syndrome invariant, with a **self-validated** checker — `check_correction`, `rate_over_shots`, `syndrome_of_correction`, `graph_from_dem`. Returns `None` rather than `0.0` for an empty sample, so a silent no-op cannot be mistaken for a clean result |
+| `validation/bench.py` | `benchmark(my_decoder, ...)` over identical shots across several seeds, with per-seed values, spread, `ratio`, and `beats_physical_rate()` as a separate gate |
+| `tests/test_validation/` | proof the *instrument* works — including that it can **reject**, that abstaining is not credited, and that the boundary is never miscounted |
+| `validation/demo.py` | run it first: shows the instrument validating itself both ways, then benchmarks the active and abandoned decoders |
+
+```powershell
+py validation\demo.py            # fast; pass --full for the full sweep
+py -m pytest tests/test_validation -q
+```
+
+Read `validation/README.md`. Two cautions:
+
+* It is the **instrument, not the workbench** — keep your decoder in your own subfolder.
+* The demo's quick mode is fast, but the **full d=5 sweep does not finish in reasonable
+  time**, because the active decoder enumerates perfect matchings combinatorially: its
+  cost grows with the *syndrome size*, not the shot count. That is a real property of the
+  decoder you are replacing, and it is one more reason the matching formulation in §2 is
+  the right target — a real matcher is polynomial.
+
 ```powershell
 # CORRECTNESS diagnostic.
 # WARNING: as shipped this targets the ABANDONED union-find decoder and prints 37.8%.
