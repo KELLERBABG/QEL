@@ -579,22 +579,30 @@ py -m pytest -q        <span style="color:var(--dim)"># 1036 tests, about 3 minu
         local = Math.max(0, Math.min(1, (mid - top) / h));
       }
     }
-    /* Hold the stage's own value while it is being read, then travel to the next
-       one. The marker walks the same parameter as the value, so it sits on the
-       plotted segment instead of drifting off it. Only fidelity-bearing stages
-       interpolate; act two's stages hold their value. */
+    /* Walk from this stage toward the next fidelity-bearing one, eased over the last
+       30% of the step. The marker travels on the same parameter as the number, so it
+       sits on the plotted segment instead of jumping between waypoints -- which is
+       what it did when the marker was positioned by stage index alone. */
     var mine = plotIndex(stages[idx]);
     var e = local < 0.7 ? 0 : (local - 0.7) / 0.3;
     e = e * e * (3 - 2 * e);
 
-    var fid, note;    if (mine >= 0) {
-      var next = PLOT[Math.min(mine + 1, PLOT.length - 1)];
+    var fid, note, cx;
+    if (mine >= 0) {
       var here = PLOT[mine];
+      var next = PLOT[Math.min(mine + 1, PLOT.length - 1)];
       fid = here.fid + (next.fid - here.fid) * e;
       note = e > 0.5 ? next.note : here.note;
+      // Both the value AND the horizontal position interpolate between the same
+      // two waypoints, which is what keeps the marker on the drawn curve.
+      var px = xAt(mine), nx = xAt(Math.min(mine + 1, PLOT.length - 1));
+      cx = px + (nx - px) * e;
     } else {
+      // Act two: no fidelity, so the readout says so and the marker parks at the
+      // end of the act-one curve rather than inventing a position.
       fid = NaN;
       note = STAGES[idx].note;
+      cx = xAt(PLOT.length - 1);
     }
 
     if (isFinite(fid)) {
@@ -603,21 +611,18 @@ py -m pytest -q        <span style="color:var(--dim)"># 1036 tests, about 3 minu
       fidEl.classList.toggle('ok', fid >= 0.955);
       if (heroFid) heroFid.textContent = fmt(fid);
     } else {
-      // Act two's stages carry no fidelity. Saying so beats printing NaN.
       fidEl.textContent = '\u2014';
       fidEl.classList.remove('low', 'ok');
     }
     noteEl.textContent = note;
 
     if (PLOT.length) {
-      var cx = xAt(mine >= 0 ? mine : PLOT.length - 1);
       mark.setAttribute('cx', cx.toFixed(1));
       if (isFinite(fid)) mark.setAttribute('cy', yAt(fid).toFixed(1));
     }
 
     var live = parseInt(steps[idx].getAttribute('data-live') || '1', 10);
     if (steps[idx].getAttribute('data-stage') !== 'pivot') setChain(Math.max(1, live));
-    hops.forEach(function(t, i){ t.textContent = i < live ? 'entangled' : ''; });
     hops.forEach(function(t, i){ t.textContent = i < live ? 'entangled' : ''; });
   }
 
