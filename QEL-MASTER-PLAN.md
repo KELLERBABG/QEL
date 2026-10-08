@@ -646,11 +646,11 @@ Do not start before Phase 1. These are where QEL is actually different.
 
 | # | Deliverable | Acceptance test | Size | State |
 |---|---|---|---|---|
-| P3.1 | **Repeater placement as optimisation** (§4.3). Link-based ILP/CP-SAT over candidate sites; objective delivered key rate. | A layout, and a key rate for it | L | Todo |
-| P3.2 | **Robust placement** — the genuinely open gap (§4.3.3). Scenario-based or chance-constrained over coherence-time uncertainty. | A layout that survives a parameter sweep the nominal-optimal one does not | L | Todo |
-| P3.3 | **Surface code** (§5). Rotated code, distance `d` a parameter, syndrome extraction, a real decoder. | Logical error rate falls with `d` below threshold | L | **Partial — see below** |
-| P3.4 | **Logical key rate.** "Key rate after error correction" — a number almost nobody reports. | A defensible per-logical-qubit rate, with the code's cost in fidelity *and* rate stated | L | Todo |
-| P3.5 | **Multi-commodity routing under contention** (§4.3.4). Several source–destination pairs served simultaneously. | Contention changes the answer vs one-route-at-a-time | L | Todo |
+| P3.1 | **Repeater placement as optimisation** (§4.3). `best_placement` already solves this **exactly** — a dynamic program over sites in position order carrying a Pareto frontier of (rate, fidelity) per state. Verified against constraint-matched brute force: **0 of 25** random instances suboptimal (§3.28). No ILP needed. | A layout, and a key rate for it | L | **Done** |
+| P3.2 | **Robust placement** — the genuinely open gap (§4.3.3). Scenario-based robustness existed; `topology/chance_placement.py` adds a **chance constraint over a continuous coherence prior**, reduced without sampling via the isoquantile principle. The two-parameter case is **conservative, not exact, and says so** (§3.28). | A layout that survives a parameter sweep the nominal-optimal one does not | L | **Done** |
+| P3.3 | **Surface code** (§5). Rotated code, distance `d` a parameter, syndrome extraction, a real decoder. Replaced PyMatching: `core/tjoin_decoder.py` computes an exact minimum-weight T-join and its corrections are **identical** to the reference's on 4,359 of 4,359 shots (§3.26). Threshold recovered at p ≈ 0.007. | Logical error rate falls with `d` below threshold | L | **Done** |
+| P3.4 | **Logical key rate.** "Key rate after error correction" — a number almost nobody reports. `logical_key_rate` composes the physical pair fidelity with the logical flip through the **Werner product**; §3.27 fixed a weighted-average form that overstated fidelity by up to 9%. Reports the qubit overhead alongside. | A defensible per-logical-qubit rate, with the code's cost in fidelity *and* rate stated | L | **Done** |
+| P3.5 | **Multi-commodity routing under contention** (§4.3.4). `topology/commodities.py`: congestion-aware routing scores candidate paths by **residual memory capacity** so the answer changes with what the others are already using, against a congestion-blind control over identical inputs. | Contention changes the answer vs one-route-at-a-time | L | **Done** |
 
 ### 2.17 LCWX estimator: three defects fixed, one open
 
@@ -1183,7 +1183,7 @@ From the old roadmap, retained because it is right, plus what this work added:
 | M4 | Pluggable routing + topology objects + config generators | a user supplies a network without writing Python | M | **Done** |
 | M5 | SeQUeNCe config interop | same topology in both tools | S | **Done** |
 | M6 | Validation: reproduce one published fibre key-rate dataset | a figure comparing prediction to measurement | M | **Done** |
-| M7 | Surface code: lattice **and** schedule verified against stim; exact MWPM decoder | lattice sites and X/Z roles match stim at d=3,5,7,9; schedule gate-for-gate at d=3..11 | L | **Partial** |
+| M7 | Surface code: lattice **and** schedule verified against stim; exact MWPM decoder. All three parts are now in place — the decoder is `core/tjoin_decoder.py`, exact, and threshold-recovering at p ≈ 0.007 (§3.26). | lattice sites and X/Z roles match stim at d=3,5,7,9; schedule gate-for-gate at d=3..11 | L | **Done** |
 | M8 | Repeater placement optimiser | a layout, and a key rate for it | L | **Done** |
 | M9 | Robust + latency-aware placement | a layout that survives a sweep the nominal one does not; latency moves the optimum | L | **Done** |
 | M10 | Logical key rate | finite-key estimator fixed and differentially tested; p_L sub-threshold, decoder named | L | **Done** |
