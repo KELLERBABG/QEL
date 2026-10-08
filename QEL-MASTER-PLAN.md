@@ -2416,3 +2416,62 @@ syndrome at all" -- and the second is not fixable by better pairing.
 **825 passing, 55 modules.** Tree clean; the reverted state is what is committed.
 
 ---
+
+### 3.12 The invariant test: Union-Find was 100% wrong, and the cause is my growth phase
+
+I built the diagnostic the objective called for -- `research/uf_invariant.py` -- which
+checks the invariant **no decoder in this package has ever checked**:
+
+> A correction must reproduce the observed syndrome: the detectors incident to an odd
+> number of its edges must equal the detection events.
+
+**The first measurement was total.** On 74 shots at d=3 with detection events, the
+correction failed to reproduce the syndrome on **74 of them (100%)**; at d=5, **99.3%**.
+Every Union-Find result produced before this was therefore *provably unrelated to the
+syndrome*, not merely suboptimal. That is the answer to why three successive matchers
+(greedy, DEM-greedy, Union-Find) all landed 20-100x off: **the matcher was never the
+problem.**
+
+**Cause found: peeling was seeded wrong.** It queued nodes with `degree % 2 == 1` --
+the leaves -- instead of nodes that are odd *in the syndrome*. Every leaf is odd by
+definition, so every leaf was stripped, every path was removed, and the correction
+came out **empty**. For a 2-event shot the correction was literally `[]`, verified by
+inspection.
+
+**Fixed by seeding from syndrome parity instead.** Violation rate fell from **100% to
+29.7%** at d=3. That fix is correct and is kept.
+
+**But the error rate did not improve, and that is the real finding.** With the peel
+fix the decoder now returns corrections that are non-empty and often valid, and scores
+**worse** (61/2000 at d=3 p=0.001, against 33/1000 for the previous broken state --
+same rate, slightly worse). A correct-but-longer correction touches more edges and
+therefore has more chances to cross the logical operator.
+
+**Which points at my growth phase, and it is a genuine methodological error.**
+Delfosse-Nickerson grow clusters by **increasing radius**: all clusters advance one
+edge at a time, and a cluster stops when it is valid. My `_grow` instead walks the
+edge list once in weight order and unions greedily, which is not radius growth at all.
+Without a radius there is no notion of "this cluster is finished, that one is still
+growing", so:
+* clusters merge far more than they should, producing long corrections;
+* the peel has far more edges to reduce than the algorithm intends;
+* and the "both valid, skip" guard -- which is a radius-growth concept -- is applied
+  in a setting where it does not mean what it means in the paper.
+
+**So: it is my approach, not the algorithm.** Union-Find is not falsified; my
+implementation has never been Union-Find. The three parts of the real algorithm are
+(i) radius-based growth, (ii) validity by even cluster parity or boundary contact,
+(iii) leaf-stripping from syndrome parity. I now have (ii) and (iii) and have never
+had (i), which is the part that determines *which edges are even in the forest* and
+therefore whether the peel is meaningful.
+
+**Concrete next step, unambiguous:** rewrite `_grow` as radius growth -- maintain a
+frontier per cluster, advance every unfinished cluster by one edge simultaneously,
+stop a cluster the moment it is valid -- then re-run `research/uf_invariant.py`. The
+target is a violation rate of **0%**, and it is the right target because it is a
+correctness property rather than a quality one. Error rate comes after.
+
+**825 passing.** The peel fix is committed; the boundary-predicate change that
+measured worse is reverted again, and the reason is recorded in the module.
+
+---
