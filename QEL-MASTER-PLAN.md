@@ -2661,3 +2661,64 @@ honestly parked with everything needed to resume it.
 still comes from PyMatching.**
 
 ---
+
+### 3.16 Round 5: the reduction is solved -- 0% invalid. The pairing is the problem.
+
+Taking option (1) from §3.15, I stopped patching the peel and wrote the correction as
+its **definition** instead: a correction is a set of edges whose odd-degree vertices
+are exactly the detection events, i.e. a **T-join**.
+
+**The construction.** Pair the events; route each pair by Dijkstra over ``-log(p)``.
+Interior vertices of a route are entered and left, so their degree contribution is
+even; the endpoints are the pair's two events. Letting a pair end at the boundary is
+also allowed, since an odd-degree boundary vertex is permitted. **Validity therefore
+does not depend on the pairing at all** -- only the *weight* does.
+
+That separation is the whole point, and it paid immediately:
+
+```
+  T-JOIN VALIDITY, 103 shots with events, d=3 p=0.003:   0 violations  (0.0%)
+```
+
+**Zero.** After four rounds stuck at 37.8%, the reduction is now correct by
+construction -- not by patching a heuristic until it stopped failing.
+
+**A false alarm from my own checker, recorded because it nearly cost the round.**
+The first measurement reported 57.4% violations. The cause was the checker, not the
+decoder: a route ending at the code edge contributes one unit of odd degree **at the
+boundary**, so the boundary legitimately appears in the odd set. Comparing against it
+flagged every boundary-terminated route. A single event paired to the boundary came
+back as `odd = {-1, 21}` against events `{21}` -- which is *correct*. Discarding the
+boundary before the comparison gave 0%. **The fifth time in this effort that my
+measurement, not the code, was the defect.**
+
+**And the honest headline: valid is not good.**
+
+```
+    d        p   reference   t-join     ratio
+    3    0.001     1/2000    70/2000    70.0x
+    3    0.003     4/2000   152/2000    38.0x
+    5    0.003     1/2000   349/2000   349.0x
+```
+
+So the problem was **never the reduction**. It is the **pairing**: greedy
+nearest-neighbour chooses partners that are valid but heavy, and a T-join is only as
+short as the pairing makes it. That is now the single remaining component, and unlike
+the peel it is exactly the piece minimum-weight matching addresses -- which is why
+PyMatching's answer is good and mine is not.
+
+**This is genuine progress on the objective.** Five rounds established:
+* it is my approach, not Union-Find (§3.13);
+* the growth order was a red herring (§3.13);
+* the peel was wrong (§3.15);
+* the reduction is now correct by construction -- **0% invalid** (§3.16);
+* and the remaining gap is the pairing, isolated to one component.
+
+**Not wired into `logical_error_rate`** -- 38-349x worse than the reference is still far
+above the physical error rate, so it could not recover a threshold. The threshold still
+comes from PyMatching. But the structure is now right, the failure is localised, and
+the next step is a minimum-weight pairing rather than another guess.
+
+**825 passing.** `core/tjoin.py` is standalone and unwired.
+
+---
