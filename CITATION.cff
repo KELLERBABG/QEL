@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "If you use this software in academic work, please cite it using the metadata below."
+title: "QEL: Quantum Entanglement Link"
+abstract: >-
+  A quantum-network simulation stack covering density-matrix states, noise, error
+  correction, QKD and repeater placement over a mesh topology. Areas of substantive
+  result include: an exact minimum-weight T-join surface-code decoder that removes the
+  PyMatching dependency on the threshold path and reproduces a threshold near p = 0.007;
+  a proof that -log W rather than -log F is the correct additive routing weight for
+  Werner-state entanglement swapping; a chance-constrained repeater-placement
+  formulation over continuous coherence-time uncertainty; and a decoy-state key-rate
+  implementation calibrated against a published dataset.
+type: software
+authors:
+  - alias: KELLERBABG
+repository-code: "https://github.com/KELLERBABG/QEL"
+url: "https://kellersystems.dev"
+license: Apache-2.0
+keywords:
+  - quantum networks
+  - quantum key distribution
+  - decoy state
+  - surface code
+  - error correction
+  - repeater placement
+  - entanglement swapping
+  - simulation
+notes: >-
+  Scope, stated in the software's own documentation and repeated here because it
+  governs what the numbers mean: these are simulator results. Nothing in this
+  repository has been validated against physical hardware, and the measured values do
+  not predict what hardware would achieve. The published-dataset calibration
+  reproduces two of four transcribed statements from its source, with the two
+  differences reported rather than tuned away.
