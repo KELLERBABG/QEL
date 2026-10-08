@@ -2533,3 +2533,68 @@ shots and 70x worse than the reference on the metric that matters for a threshol
 PyMatching.
 
 ---
+
+### 3.14 Round 3: three more fixes tried, all reverted, 37.8% is the floor so far
+
+Round 3 targeted shot 8 -- a single detection event on detector 19 that peeled to an
+empty correction -- as planned. It found a real bug and then produced two more
+changes that both measured **worse**, so all three were reverted and the round-2
+state stands.
+
+**The bug found.** ``boundary_of`` was keyed on ``find(edge.a)``. Edges are
+canonicalised as ``(min, max)`` and the boundary is ``-1``, so ``edge.a`` **is** the
+boundary: the lookup returned the boundary's own root, whose parity is always 0.
+Every boundary edge was therefore recorded against an "even cluster" and terminated
+nothing. That is exactly why detector 19 -- which *does* have a direct boundary edge
+``(-1, 19)`` at weight 4.19 -- produced an empty correction. The correct key is the
+**non-boundary** endpoint.
+
+**Why it did not help.** The committed growth phase *unions along boundary edges*, so
+all 24 boundary edges collapse every edge-adjacent detector into one cluster and the
+per-cluster parity that decides termination is destroyed -- ``parity[-1]`` is the XOR
+of everything. Fixing the key without fixing the union moves the wrong behaviour
+rather than removing it.
+
+**Tried and measured worse, twice:**
+
+| change | violation rate | d=3 p=0.003 errors |
+|---|---|---|
+| round-2 committed state | **37.8%** | 155 / 2000 |
+| + boundary edges not unioned, per-cluster terminals | 51.4% | 207 / 2000 |
+| + endpoint-key fix on top of that | 51.4% | 207 / 2000 |
+| endpoint-key fix alone (reverted) | -- | worse |
+
+Both were reverted. **Three consecutive "principled" changes have now measured worse
+than the state they replaced**, which is worth stating plainly: my reasoning about
+this decoder has been unreliable in both directions, and the measurement is the only
+thing that has been consistently right.
+
+**Also worth recording: the invariant script broke silently.** ``_grow`` grew from a
+6-tuple to a 7-tuple return, ``research/uf_invariant.py`` unpacked the old shape, and
+the run produced **no output at all** rather than an error I noticed -- the filtered
+output simply showed nothing and I read the absence as a result for one measurement.
+A diagnostic that fails silently is worse than no diagnostic.
+
+**Where this leaves the objective.** Three rounds, nine structural changes attempted,
+six kept and three reverted. The correctness metric has moved from **100% violation to
+37.8%** and has not moved since round 2. The decoder is still provably wrong on a third
+of shots and ~80x worse than the reference.
+
+**Assessment, as the objective asked.** It remains my approach, not the algorithm --
+every defect found is a plain implementation error. But the rate of progress has
+collapsed: round 1 found four defects, round 2 found three, round 3 found one and
+could not convert it into an improvement. Continuing to rediscover Union-Find one
+failing shot at a time is the wrong method now.
+
+**Recommended course change, and I should have taken it sooner:** read a reference
+implementation line by line and port its structure, rather than continuing to debug my
+own reconstruction. PyMatching is already a dependency of this repository for exactly
+this comparison. The alternative -- and it is a legitimate engineering choice -- is to
+accept PyMatching as the pinned reference decoder for the threshold, document that
+dependency, and spend the remaining effort on item 3 (the optimal fusion order), which
+is understood and has an oracle.
+
+**825 passing. Not wired into `logical_error_rate`; the threshold still comes from
+PyMatching.**
+
+---
