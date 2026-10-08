@@ -12,7 +12,7 @@ abstract: >-
   implementation calibrated against a published dataset.
 type: software
 authors:
-  - alias: KELLERBABG
+  - name: "Lukas Negenborn"
 repository-code: "https://github.com/KELLERBABG/QEL"
 url: "https://kellersystems.dev"
 license: Apache-2.0

@@ -6,7 +6,7 @@ readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 requires-python = ">=3.11"
-authors = [{ name = "KELLERBABG" }]
+authors = [{ name = "Lukas Negenborn" }]
 keywords = [
     "quantum networks", "quantum key distribution", "decoy state",
     "surface code", "error correction", "repeater placement",

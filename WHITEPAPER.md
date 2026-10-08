@@ -1,6 +1,6 @@
 # QEL: a quantum-network simulator built to be falsified
 
-**Version 0.1.0 · KELLERBABG · Apache-2.0**
+**Version 0.1.0 · Lukas Negenborn · Apache-2.0**
 
 ---
 
