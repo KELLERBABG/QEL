@@ -2357,3 +2357,62 @@ threshold curve is slow to produce.
 **825 passing, 55 modules.**
 
 ---
+
+### 3.11 Union-Find: the trace found a bug, and fixing it made things worse
+
+I traced a single-event shot as planned. It found a precise defect, and then the
+A/B testing overturned my conclusion about it. Both halves are worth recording.
+
+**The trace found an ordering bug.** The boundary node is ``-1`` and edges are
+canonicalised as ``(min, max)``, so **the boundary is always ``e.a`` and never
+``e.b``**. Every ``e.b == BOUNDARY`` predicate therefore matched *nothing*: the
+boundary-edge list came out empty, all 24 boundary edges stayed in the growth set as
+peelable forest edges, and the code that was meant to exclude them was a silent
+no-op. Verified by printing the incidence of a single event: 8 incident edges, of
+which the boundary ones were invisible to the filter.
+
+**So I fixed the predicate. The decoder got three times worse.**
+
+```
+  d=3, p=0.003, 2000 shots:   57 errors without the fix   188 with it
+  d=5, p=0.003, 2000 shots:  207 errors without the fix   359 with it
+  d=3, p=0.003, 1000 shots:   33 errors (committed state)
+```
+
+I reverted it. **A change that measures worse does not stay because it is
+principled** -- the fix was correct about the predicate and wrong about the
+consequence, and shipping it would have been defending the reasoning against the
+measurement.
+
+**Why the "fix" backfired, as far as the evidence goes.** Excluding boundary edges
+from growth also removes the mechanism that was making clusters *valid*: a cluster
+becomes valid by holding an even number of events **or by touching the boundary**,
+and with boundary edges gone from growth, mid-chain clusters never reach the edge,
+so they keep absorbing edges and the correction grows. The buggy version was
+accidentally growing along boundary edges and stopping earlier. That is a hypothesis
+consistent with the numbers, not a verified mechanism -- confirming it needs the
+growth loop instrumented, which is the next step.
+
+**A second dead end, recorded so it is not retried.** A shortcut sending
+single-event shots along the cheapest *path* to the boundary (rather than the
+cheapest direct boundary edge) scored **57 correct of 145** where predicting "no
+flip" always would score ~123. It over-flips: a random measurement error on a
+detector is common and flips nothing, while a boundary chain is rare, so choosing by
+path weight alone picks the rare explanation far too often. Removed.
+
+**Where this leaves the dependency.** Unchanged, and now with a clearer reason:
+the committed Union-Find is **57 errors per 2000 against the reference's 5** at
+d=3, p=0.003 -- still above the physical rate, so it still cannot recover a
+threshold. The threshold continues to come from PyMatching.
+
+**The missing invariant, and it matters more than the error rate.** A correction
+must **reproduce the observed syndrome**: the detectors incident to an odd number of
+its edges must equal the detection events. No decoder in this package checks that,
+and a violation means the answer is *provably wrong* rather than merely suboptimal.
+Measuring the violation rate is the next diagnostic, because it separates "the
+matcher chose a poor partner" from "the correction does not correspond to the
+syndrome at all" -- and the second is not fixable by better pairing.
+
+**825 passing, 55 modules.** Tree clean; the reverted state is what is committed.
+
+---
