@@ -479,7 +479,7 @@ decoy-state analysis each worked and had never been combined.
 
 `logical_error_rate` **measures** `p_L` by sampling detection events from a
 genuinely noisy circuit and decoding every shot. It does not evaluate the scaling
-ansatz `p_L = A (p/p_th)^((d+1)/2)`, which is a *fit* with free constants —
+ansatz `p_L = A (p/p_th)^((d+1)/2)`, which is a *fit* with free constants â€”
 quoting a fit as a measurement is how a threshold gets quoted without anyone
 having computed one. `logical_key_rate` then charges both ends of a logical pair
 for `n` rounds and routes the result through the same Werner-pair key fraction
@@ -492,7 +492,7 @@ Three bugs, each of which produced a *number* rather than a crash:
    errors can flip the observable, and X errors are detected by the **Z-type**
    checks. Decoding the X-family as well meant correcting Z errors that were
    harmless by construction, then reporting a logical failure for them. Symptom:
-   the decoder was **worse than doing nothing** — 0.98% error against a 0.05% raw
+   the decoder was **worse than doing nothing** â€” 0.98% error against a 0.05% raw
    flip rate. Isolated by decoding each family separately and comparing.
 2. **Syndromes were XOR-ed over time.** Accumulating every detector for an ancilla
    across rounds collapses the time dimension the decoder needs. Symptom: distance
@@ -504,7 +504,7 @@ Three bugs, each of which produced a *number* rather than a crash:
 **What the measurement says, including the unwelcome part.** The per-round logical
 error rate rises monotonically with distance across the whole range tested
 (`p` from 5e-5 to 3e-4). That is the above-threshold signature, and it pins the
-**circuit-level threshold of this noise model below 5e-5** — far below the ~0.6%
+**circuit-level threshold of this noise model below 5e-5** â€” far below the ~0.6%
 depolarizing-only figure, because `p` is applied at five locations per round
 (Clifford gates, measurement, reset, and idle data). Above threshold a larger code
 is worse, which is correct behaviour and not a decoder defect: the decoder was
@@ -555,8 +555,8 @@ is what would have caught the first bug without needing to notice the sign.
 Two things were wrong with M10's first result, and they are now separated.
 
 **Found and fixed: the noise model was mislabelled.** `memory_circuit` passed a
-scalar `p` to all four `stim` knobs — Clifford gates, measurement, reset, and idle
-data — injecting roughly **five times** the error rate of a per-gate depolarising
+scalar `p` to all four `stim` knobs â€” Clifford gates, measurement, reset, and idle
+data â€” injecting roughly **five times** the error rate of a per-gate depolarising
 channel at the same nominal `p`. That is why the measured threshold came out two
 orders of magnitude below the standard value. `stim`'s four knobs are now an
 explicit `NoiseModel`, and the scalar defaults to the **depolarising-gate**
@@ -571,16 +571,16 @@ all four     3 logical errors in 3000 shots
 
 **Still open: the decoder has no time dimension.** A measurement error flips one
 ancilla's outcome and nothing else, so on a *spatial* graph decoded round by
-round it looks like an isolated event with no neighbour — and the decoder matches
+round it looks like an isolated event with no neighbour â€” and the decoder matches
 it to a boundary, applying a long data correction the data never needed. The
 symptom is that the per-round logical error rate **rises with distance** at every
 noise level tested, which reads as a code above threshold and is really a decoder
 below par. It is the same class of failure as the wrong check family: a plausible
 number from a broken harness.
 
-`SpaceTimeMatchingGraph` now builds the correct graph — check-graph layers per
+`SpaceTimeMatchingGraph` now builds the correct graph â€” check-graph layers per
 round, vertical edges for measurement errors, chained per-layer boundaries and end
-caps — and `decode_space_time` matches on it. **It does not yet work.** Measured
+caps â€” and `decode_space_time` matches on it. **It does not yet work.** Measured
 at the same points it is *worse* than per-round spatial decoding, and distance 5
 still loses to distance 3, so it is not ready to be relied on and no threshold is
 quoted from it.
@@ -654,16 +654,16 @@ Do not start before Phase 1. These are where QEL is actually different.
 
 ### 2.17 LCWX estimator: three defects fixed, one open
 
-The finite-key path returned a zero secret length **as a legitimate number** —
+The finite-key path returned a zero secret length **as a legitimate number** â€”
 no exception, `secure` still true, the asymptotic validation unaffected. Diagnosis
 found three defects, all now fixed and verified:
 
 1. **The fluctuation used the wrong count.** Production applied
-   `sqrt(0.5 * n_k * ln(21/eps))` — a variance belonging to the count *at that
+   `sqrt(0.5 * n_k * ln(21/eps))` â€” a variance belonging to the count *at that
    intensity*. LCWX use a single block variance
    `sqrt(n_B/2 * ln(21/eps))` per basis, where `n_B` is the **basis total**. The
    two differ substantially: at x-basis counts of 58/24/4.1 it added a width of
-   7.3 to a vacuum count of 4.1 — the error bar exceeding the quantity corrected.
+   7.3 to a vacuum count of 4.1 â€” the error bar exceeding the quantity corrected.
 2. **Intensity probabilities and `tau_0` were missing entirely.** LCWX Eq. (2)
    rescales every fluctuated count by `e^{mu_k}/p_k` and removes the vacuum via
    `s_X,0/tau_0`. Production supplied no `p_k` and used `tau_0 = e^{-mu_3}`
@@ -686,7 +686,7 @@ drives `s_Z,1` to zero, so the phase error still pins at 0.5. The difficulty is
 specific: Eq. (2) subtracts the *upward* fluctuation `mu_3 * n2p`, and at
 `p2 = 0.25` the rescaling `e^{mu_2}/p_2` inflates the vacuum cancellation term.
 The validated script produces a positive key at exactly these parameters, so the
-reference resolves this — the next step is to run `lcwx_fk.lcwx_rate` on fixed
+reference resolves this â€” the next step is to run `lcwx_fk.lcwx_rate` on fixed
 inputs and diff its `sX0`, `sZ0`, `sZ1` against production term by term rather
 than inferring the form.
 
@@ -699,22 +699,22 @@ count convention rather than the formula.
 ### 2.17b LCWX estimator: fixed, and it produces a key again
 
 **Resolved.** The finite-key path now returns a positive secret length on a
-healthy channel — **3.86 x 10^6 bits at 100 km** (3.86e-4 per pulse) with the
-optimised parameters at N = 10^10 — where before it returned `0` for *every*
+healthy channel â€” **3.86 x 10^6 bits at 100 km** (3.86e-4 per pulse) with the
+optimised parameters at N = 10^10 â€” where before it returned `0` for *every*
 parameter set while presenting that zero as a legitimate number.
 
 **Four defects, all found by differential testing against the independent
 reference in `research/decoy-bb84/` rather than by inspection:**
 
 1. **The fluctuation width used the wrong count.** Production applied
-   `sqrt(0.5 n_k ln(21/eps))` — the variance of the count at one intensity. LCWX
+   `sqrt(0.5 n_k ln(21/eps))` â€” the variance of the count at one intensity. LCWX
    use one **block** variance per basis, `sqrt(n_B/2 ln(21/eps))` with `n_B` the
    basis total. At x-basis counts of 58/24/4.1 this added a width of 7.3 to a
    vacuum count of 4.1: the error bar exceeded the quantity it corrected.
 2. **`p_k` and `tau_0` were missing.** LCWX rescale every fluctuated count by
    `e^{mu_k}/p_k` and remove the vacuum through `s_X,0/tau_0`. Production supplied
    no `p_k`, and used `tau_0 = e^{-mu_3}` where the correct value is
-   `sum_k p_k e^{-mu_k}` — a different number as soon as the probabilities are
+   `sum_k p_k e^{-mu_k}` â€” a different number as soon as the probabilities are
    unequal.
 3. **The phase error was divided by the wrong count.** The validated form is
    `phi = v_Z1/s_Z1 + gamma` with `s_Z1` the Z-basis single-photon count.
@@ -727,7 +727,7 @@ reference in `research/decoy-bb84/` rather than by inspection:**
    Z detection counts. `v_Z,1` is a single-photon **phase-error count**, built
    from the Z-basis **error** counts. Feeding the error-weighted counts into
    `s_Z,1` drove it to zero, which made `v_Z1/s_Z1` diverge, pinned `phi` at 0.5,
-   and zeroed the key for every channel — the same symptom as defect 3 by a
+   and zeroed the key for every channel â€” the same symptom as defect 3 by a
    different route. This was found by instrumenting the reference and printing
    its internals, not by reading: its `nZk` is unweighted while its `mZk` carries
    the error rate `E_k`, and only that separation gives `s_Z1 = 155,343`
@@ -739,7 +739,7 @@ block size above the finite-size floor (zero at N = 10^9, correct behaviour, the
 3.86e6 / 9.26e7 / ... bits); and the phase error tightens as the block grows.
 Eleven differential tests in `tests/test_protocols/test_lcwx_estimator.py` pin all
 four defects, including one that deliberately reintroduces defect 4 and asserts
-the key collapses to zero — so the test fails if the estimator stops
+the key collapses to zero â€” so the test fails if the estimator stops
 demonstrating the distinction.
 
 **One honest caveat.** Production's phase error is slightly *more conservative*
@@ -938,7 +938,7 @@ correct: a measurement error is a one-edge vertical move, not an isolated event
 matched across the code.
 
 **Quality is measured, not assumed.** Against the exact space-time matcher on
-2000 real distance-3 syndromes it disagreed on **5 (0.25%)** — a genuine
+2000 real distance-3 syndromes it disagreed on **5 (0.25%)** â€” a genuine
 approximation, and the exact decoder is retained as the oracle so the gap stays
 measurable.
 
@@ -972,7 +972,7 @@ and M10 stays Partial.
 
 ### 2.19 The missing distance scaling is a structural defect, not a threshold
 
-Round 3 ran the discriminator from §2.18 and it answered the question, then
+Round 3 ran the discriminator from Â§2.18 and it answered the question, then
 raised a worse one.
 
 **The decoder is not the limiter.** Decoding the *same* shots with the exact and
@@ -1000,7 +1000,7 @@ sub-threshold:
   p=3e-05:  d=3   16 errors / 100k  (5.33e-05)   d=5   44 errors  (1.47e-04)
 ```
 
-At `p = 1e-5` the distance-3 logical error rate is `1.7e-05` — already **below the
+At `p = 1e-5` the distance-3 logical error rate is `1.7e-05` â€” already **below the
 physical error rate**, which is the definition of sub-threshold operation. And
 distance 5 is still **3x worse**. A correct decoder cannot do that. So this is
 not "the threshold is low"; it is a **structural defect** that makes larger codes
@@ -1008,15 +1008,15 @@ strictly worse at every noise level tested.
 
 The evidence points at the decoding graph rather than the matcher, and the
 strongest specific suspect is the **space-time boundary structure**. The Z-type
-checks in this lattice sit on a diagonal — at d=3 they are at (0,4), (2,2),
-(4,4), (6,2) — so the Z decoding graph is rotated 45 degrees relative to the
+checks in this lattice sit on a diagonal â€” at d=3 they are at (0,4), (2,2),
+(4,4), (6,2) â€” so the Z decoding graph is rotated 45 degrees relative to the
 X graph. `SpaceTimeMatchingGraph` builds each layered boundary from the
 *single-round* edge list (line 476), which connects a boundary only to the
 ancillas adjacent to it in one round. In a real space-time graph the boundary is
 a **sheet through time**, and a detection event part-way along a chain must be
 able to reach it by travelling through the lattice. If those connections are
 incomplete, a chain that should terminate cheaply at the edge instead has to pair
-with a distant event, which costs a long correction and flips the logical — and
+with a distant event, which costs a long correction and flips the logical â€” and
 the damage grows with the code's size, exactly as observed.
 
 **Independent corroboration that something is misaligned:** `stim` defines the
@@ -1024,13 +1024,13 @@ memory-Z observable on the **bottom** row of data qubits (`OBSERVABLE_INCLUDE`
 targets `-7, -8, -9` at d=3, i.e. `(1,5), (3,5), (5,5)`), while
 `RotatedSurfaceCode.logical_z()` uses the top row `(1,1), (3,1), (5,1)`. Both are
 valid representatives of the same logical operator, so this alone does not
-explain a factor of three — but it is a second indication that the lattice's
+explain a factor of three â€” but it is a second indication that the lattice's
 orientation conventions were never reconciled with the reference.
 
 **Status.** Item 2's decoder is implemented, scalable, and measured against the
 exact matcher, but the space-time graph it consumes is **not verified**. No
 threshold is quoted, M10 stays Partial, and item 3 (network to QEC coupling)
-cannot be attempted honestly until this is resolved — it would propagate the
+cannot be attempted honestly until this is resolved â€” it would propagate the
 defect into a second layer.
 
 The next step is narrow and checkable: build the space-time graph for distance 3,
@@ -1231,7 +1231,7 @@ limit was measured. At `p = 1e-6`, 60,000 shots each:
   d=7    2 errors  (1.1e-05 per round)
 ```
 
-So there *is* a threshold effect, and it sits far lower than expected — around
+So there *is* a threshold effect, and it sits far lower than expected â€” around
 `p ~ 1e-5`, where `d=3` and `d=5` are statistically indistinguishable. What is
 genuinely anomalous is narrower and sharper than "no scaling": at `p = 1e-5` the
 distance-3 rate (`1.67e-05`) is already below the physical rate, which is
@@ -1241,14 +1241,14 @@ something degrades with syndrome size.
 
 That is now the precise statement of the defect, and it is testable: the fault is
 in decoding **large** syndromes, not in the boundary connectivity (which was
-checked and is correct — every ancilla reaches a boundary, a measurement error is
+checked and is correct â€” every ancilla reaches a boundary, a measurement error is
 a one-edge move, and the round-0 boundaries and start cap are all present).
 
 ---
 
 ### 2.20 Correction: the decoder is verified correct; the defect is elsewhere
 
-§2.19's conclusion was wrong, and the test that disproved it was the narrow one it
+Â§2.19's conclusion was wrong, and the test that disproved it was the narrow one it
 asked for. Injecting a single known X error on every data qubit in every round:
 
 ```
@@ -1260,13 +1260,13 @@ d=7: 49 x 7 = 343 cases                    logical flips 49  correction sizes {1
 **Every single error is repaired with exactly one correction**, at every distance
 and in every layer. The decoder and the space-time graph are working.
 
-**The logical flips are correct, not failures.** They number `d^2` — 9, 25, 49 —
+**The logical flips are correct, not failures.** They number `d^2` â€” 9, 25, 49 â€”
 and they occur on exactly the set `logical_z()`: a single X error placed *on the
 logical row* is repaired by a single X on that same qubit, which anticommutes with
 the logical Z operator and therefore flips it. That is what must happen. My test
 harness counted it as a failure, which is a bug in the test, not the code.
 
-So the two hypotheses in §2.19 are both dead: the greedy approximation is not the
+So the two hypotheses in Â§2.19 are both dead: the greedy approximation is not the
 limiter (the exact matcher shows the same trend), and the graph is not
 mis-connected (every ancilla reaches a boundary, a measurement error costs one
 edge, and every single data error costs exactly one correction).
@@ -1276,7 +1276,7 @@ rounds uniformly, replicating the single-round check graph into every layer. In 
 memory experiment the **final** round is not a syndrome-extraction round: the data
 qubits are measured directly, and the last detectors are formed against those
 outcomes. A uniform layering gets the final round's structure approximately right
-and its *boundary* conditions wrong, and the error from that grows with the code —
+and its *boundary* conditions wrong, and the error from that grows with the code â€”
 which is exactly the signature observed (d=3 sub-threshold, d=5 anti-scaling).
 
 That is a specific, checkable claim: the final layer's boundary conditions differ
@@ -1288,7 +1288,7 @@ match.
 
 ### 2.21 Confirmed: the final round has a different detector structure
 
-The candidate identified in §2.20 is now verified. Counting the measurements each
+The candidate identified in Â§2.20 is now verified. Counting the measurements each
 detector spans, per round, at d=3:
 
 ```
@@ -1299,8 +1299,8 @@ detector spans, per round, at d=3:
 ```
 
 The final round is structurally different. Rounds 1 and 2 compare one syndrome
-against the previous one — two measurements each. Round 0 compares against the
-known initial state — one measurement. **Round 3 compares the syndrome against the
+against the previous one â€” two measurements each. Round 0 compares against the
+known initial state â€” one measurement. **Round 3 compares the syndrome against the
 direct data readout**, so its detectors span three and five measurements, fusing
 the last stabilizer round with the final data measurement.
 
@@ -1308,7 +1308,7 @@ the last stabilizer round with the final data measurement.
 which models rounds 1..n-2 correctly and the **first and last layers
 approximately**. The first layer is salvaged by the `cap_start` boundary; the last
 is not modelled at all. The resulting error grows with the number of rounds, which
-is to say with distance — exactly the observed signature of d=3 being
+is to say with distance â€” exactly the observed signature of d=3 being
 sub-threshold while d=5 anti-scales.
 
 **This is now a precise, bounded fix.** The final layer's boundary conditions are
@@ -1318,9 +1318,9 @@ not the interior layers', and a correct space-time graph must:
    matching the last syndrome to the measured data rather than to a fictitious
    next round.
 
-**Consequence for the objective.** Item 2's decoder is correct — proven by
+**Consequence for the objective.** Item 2's decoder is correct â€” proven by
 single-error injection at three distances and eight new tests
-(`tests/test_core/test_space_time_decoder.py`) — but the graph it consumes
+(`tests/test_core/test_space_time_decoder.py`) â€” but the graph it consumes
 mis-models the final round. A threshold measurement needs that fixed first, and
 item 3 must wait, because building the network-to-QEC coupling on a p_L that
 anti-scales would produce a confident wrong answer at the layer above.
@@ -1337,14 +1337,14 @@ A detector spanning **two** measurements is `ancilla(t) XOR ancilla(t-1)`. A dat
 error occurring between rounds `t-1` and `t` flips the syndrome in the window
 `[t-1, t]`, which means it flips the detector at `t` **and** the detector at
 `t+1`. Its graph slice is therefore an edge joining `(t, ancilla_A)` to
-`(t+1, ancilla_B)` — a **diagonal** edge spanning two layers, one endpoint in
+`(t+1, ancilla_B)` â€” a **diagonal** edge spanning two layers, one endpoint in
 each.
 
 `SpaceTimeMatchingGraph` instead puts data edges **horizontally within a single
 round** (`horizontal`), and reserves the across-round edges for measurement
 errors (`vertical`). So:
 
-* **vertical (same ancilla, across rounds) is correct** — that is a measurement
+* **vertical (same ancilla, across rounds) is correct** â€” that is a measurement
   error, and it is why a measurement error costs one edge;
 * **horizontal (data errors within one round) is wrong.** Two ancillas measured
   in the *same* round are not both flipped by a data error: they are measured at
@@ -1368,7 +1368,7 @@ mis-oriented layer contributes a systematic error, and there are more layers as
    graph connects ancillas `A` and `B` through a shared data qubit.
 2. End the check layers at the last **syndrome** round, and model the final data
    readout separately, since the round-3 detectors span 3 and 5 measurements
-   (§2.21) rather than the uniform 2.
+   (Â§2.21) rather than the uniform 2.
 3. Re-run single-error injection with a **stronger assertion**: the correction
    must consist of exactly the data qubit that was flipped, not merely be of
    length one. Then re-measure whether `p_L` falls with distance.
@@ -1385,7 +1385,7 @@ anti-scaling `p_L` would produce a confident wrong answer one layer up.
 
 ### 2.23 Decisive: derive the matching graph from the detector error model
 
-§2.22's diagnosis was right in direction and wrong in detail, and the DEM settles
+Â§2.22's diagnosis was right in direction and wrong in detail, and the DEM settles
 both.
 
 Comparing the graphlike error mechanisms in `stim`'s detector error model against
@@ -1398,19 +1398,19 @@ DEM edges missing from mine:             65
 my edges not in the DEM:                  0
 ```
 
-So my graph is not mis-oriented — it is **badly incomplete**, and nothing in it is
+So my graph is not mis-oriented â€” it is **badly incomplete**, and nothing in it is
 spurious. The shape of the missing edges explains everything: they are **diagonal
 in space-time**, connecting e.g. `(4,4,2)` to `(4,6,1)` and `(2,2,3)` to
 `(4,4,2)`. A data error occurring between two measurement rounds flips two
 *neighbouring* ancillas, and because those measurements happen at different times
 its endpoints differ in **both** space and time.
 
-§2.22's claim that a data error joins `(t, A)` to `(t+1, B)` was correct. What I
+Â§2.22's claim that a data error joins `(t, A)` to `(t+1, B)` was correct. What I
 built instead connects data errors *within* a round, and since those same-round
 edges are themselves real DEM mechanisms, the graph looked plausible and passed
 every structural check: it is connected, every ancilla reaches a boundary, and
 every single error yields a length-one correction. It is simply missing most of
-the graph — and the deficit grows with distance, which is why `p_L` refused to
+the graph â€” and the deficit grows with distance, which is why `p_L` refused to
 scale.
 
 **Why the single-error test could not catch this.** Injecting an error and asking
@@ -1427,7 +1427,7 @@ mistake; each of my three attempts was self-consistent and wrong.
 So: **build the matching graph from `stim`'s detector error model**, mapping
 detectors to `(round, ancilla)` nodes and taking the decomposed error mechanisms
 as the edge set. `stim` is already an optional development dependency and the
-logical-error module already requires it, so this costs no new dependency — and
+logical-error module already requires it, so this costs no new dependency â€” and
 it moves the graph from "my reading of the geometry" to "the instrument's own
 model of its own circuit", which is a categorically better position.
 
@@ -1447,8 +1447,8 @@ threshold quoted. Items 3 and 4 untouched, item 3 blocked.
 
 Implemented `dem_matching_graph`, which takes the edge set from `stim`'s detector
 error model rather than from hand-read geometry. It is a genuine improvement in
-provenance — the graph now comes from the instrument's own model of its own
-circuit — and in completeness:
+provenance â€” the graph now comes from the instrument's own model of its own
+circuit â€” and in completeness:
 
 ```
 d=3: 16 nodes, 57 edges   (was 17)     DEM graphlike mechanisms: 115
@@ -1471,10 +1471,10 @@ Two reasons, and they are separable:
    those are skipped. At these distances the DEM contains both, and dropping the
    hyperedges removes weight that matters.
 2. **The matcher is still greedy.** Greedy pairing is not minimum-weight, and the
-   gap grows with the number of detection events — which grows with distance. A
+   gap grows with the number of detection events â€” which grows with distance. A
    graph is only as good as the matcher over it, and the reverse is also true.
 
-So §2.23's conclusion holds — the graph *was* badly incomplete — but "derive it
+So Â§2.23's conclusion holds â€” the graph *was* badly incomplete â€” but "derive it
 from the DEM" is necessary and **not sufficient**. The remaining gap is in the
 matcher, and the specific requirement is clear: minimum-weight matching over the
 DEM graph, with hyperedges either decomposed to graphlike form or handled by a
@@ -1484,16 +1484,16 @@ decoder designed for them (Union-Find with erasure, or a correlated matcher).
 
 | Item | State |
 |---|---|
-| 1 — LCWX estimator | **Done.** Four defects fixed, differentially tested, produces a key again |
-| 2 — space-time decoder | Decoder correct; graph now DEM-derived; **matching still greedy**, scaling unfixed |
-| 3 — network to QEC | **Blocked** — would propagate an anti-scaling `p_L` |
-| 4 — latency bound | Not started |
+| 1 â€” LCWX estimator | **Done.** Four defects fixed, differentially tested, produces a key again |
+| 2 â€” space-time decoder | Decoder correct; graph now DEM-derived; **matching still greedy**, scaling unfixed |
+| 3 â€” network to QEC | **Blocked** â€” would propagate an anti-scaling `p_L` |
+| 4 â€” latency bound | Not started |
 
 **738 tests passing.** No threshold quoted anywhere.
 
 **One methodological note worth carrying forward.** Five separate attempts at this
 graph were each self-consistent and wrong, and every one passed the structural
-checks I had written for it — connected, boundary-reachable, single errors costing
+checks I had written for it â€” connected, boundary-reachable, single errors costing
 one correction. The checks were not weak because they were careless; they were
 weak because they tested *the graph's own internal consistency* rather than its
 agreement with an external reference. The DEM comparison is the first check with
@@ -1523,14 +1523,14 @@ The standard construction is **one virtual boundary node** per check family. Eve
 detection event near the edge is joined to it, and the boundary node is connected
 to itself, so:
 
-* an odd number of events with no partner is fine — one of them pairs with the
+* an odd number of events with no partner is fine â€” one of them pairs with the
   boundary;
 * an even number can still pair with the boundary twice, which is the correct
   description of a chain that enters and leaves the edge;
 * the matching pool becomes `n_detectors + 1`, not `n_detectors + n_boundaries`.
 
-At d=3 that is a pool of 17 instead of 32 — the size the *previous* decoder was
-already handling — and it does not grow with the number of boundaries as distance
+At d=3 that is a pool of 17 instead of 32 â€” the size the *previous* decoder was
+already handling â€” and it does not grow with the number of boundaries as distance
 increases.
 
 **This is the specific fix for the matcher bottleneck.** The earlier
@@ -1543,16 +1543,16 @@ as a node.
 
 | Item | State |
 |---|---|
-| 1 — LCWX estimator | **Done.** Four defects fixed, differentially tested, produces a key again |
-| 2 — space-time decoder | DEM graph derived; decoder logic verified by single-error injection; **matcher bottleneck localised** to the boundary-node construction above |
-| 3 — network to QEC | **Blocked** — would propagate an anti-scaling `p_L` |
-| 4 — latency bound | Not started |
+| 1 â€” LCWX estimator | **Done.** Four defects fixed, differentially tested, produces a key again |
+| 2 â€” space-time decoder | DEM graph derived; decoder logic verified by single-error injection; **matcher bottleneck localised** to the boundary-node construction above |
+| 3 â€” network to QEC | **Blocked** â€” would propagate an anti-scaling `p_L` |
+| 4 â€” latency bound | Not started |
 
 **738 tests passing.** No threshold quoted anywhere.
 
 ---
 
-### 2.26 Item 2 resolved to a specific, verified cause — and the lattice cleared
+### 2.26 Item 2 resolved to a specific, verified cause â€” and the lattice cleared
 
 Round 7 ran the test that should have been run first, and it settles seven rounds of
 hypothesis-testing.
@@ -1588,7 +1588,7 @@ shots at d=3, p=0.001:
 A single detection event, matched to the boundary for cost 1, producing an **empty
 correction**. The DEM edge from that detector to the boundary carries `data=None`,
 so the matcher reports a legitimate minimum-cost path that names no physical qubit.
-The decision then falls to `len(logical & set()) % 2 == 0` — i.e. "no flip" — for a
+The decision then falls to `len(logical & set()) % 2 == 0` â€” i.e. "no flip" â€” for a
 syndrome where a real decoder applies a data correction.
 
 Only **12** of my graph's edges name a data qubit. The rest are time and boundary
@@ -1596,7 +1596,7 @@ edges, and my extraction simply has no data attribution for them.
 
 **The fix is specific.** `stim`'s DEM is a *detector* model: it says which detectors
 an error flips, not which data qubits it touches. Data attribution has to come from
-somewhere else, and `stim` provides it — the error channel's `suggested_decoding`
+somewhere else, and `stim` provides it â€” the error channel's `suggested_decoding`
 or the decomposed mechanism's own error terms. The correction should be built from
 those, not from the detector pair.
 
@@ -1604,10 +1604,10 @@ those, not from the detector pair.
 
 | Item | State |
 |---|---|
-| 1 — LCWX estimator | **Done.** Four defects fixed, differentially tested, produces a key again |
-| 2 — space-time decoder | Lattice/circuit/mapping **verified sound against PyMatching**; decoder defect localised to **data-qubit attribution from the DEM** |
-| 3 — network to QEC | **Blocked** — would propagate an anti-scaling `p_L` |
-| 4 — latency bound | Not started |
+| 1 â€” LCWX estimator | **Done.** Four defects fixed, differentially tested, produces a key again |
+| 2 â€” space-time decoder | Lattice/circuit/mapping **verified sound against PyMatching**; decoder defect localised to **data-qubit attribution from the DEM** |
+| 3 â€” network to QEC | **Blocked** â€” would propagate an anti-scaling `p_L` |
+| 4 â€” latency bound | Not started |
 
 **738 tests passing.** No threshold quoted anywhere.
 
@@ -1615,8 +1615,8 @@ those, not from the detector pair.
 
 1. **`pymatching` is now installed and is the right oracle.** Seven rounds went into
    a decoder with no external reference to test against, while a mature
-   implementation of exactly that algorithm — and an oracle for the *whole* stack
-   below it — was one `pip install` away. The lesson from §2.24 repeated at a larger
+   implementation of exactly that algorithm â€” and an oracle for the *whole* stack
+   below it â€” was one `pip install` away. The lesson from Â§2.24 repeated at a larger
    scale: self-consistency checks cannot detect a wrong model, and the fastest route
    to an oracle is often to use the finished tool rather than rebuild it.
 
@@ -1627,7 +1627,7 @@ those, not from the detector pair.
 
 ---
 
-### 2.27 Item 2 RESOLVED — and the threshold is measured
+### 2.27 Item 2 RESOLVED â€” and the threshold is measured
 
 **The defect, finally, precisely.** The correction was being built from *data
 qubits* reconstructed from detector pairs. `stim`'s DEM is a **detector** model: it
@@ -1729,7 +1729,7 @@ error rate.
 noise, not merely preserve a pair that was already delivered. In a real repeater the
 logical qubits sit at nodes whose gates are noisy, and the code's purpose is to
 drive the *effective* error rate below the physical one -- the `p_L < p` relation
-that the threshold measurement in §2.27 established. The current coupling never
+that the threshold measurement in Â§2.27 established. The current coupling never
 uses `p_L` in that direction: it applies `p_L` as an addition to the pair error
 instead of as a reduction of the underlying gate error.
 
@@ -1741,24 +1741,24 @@ as a known-defective model rather than a result.
 
 | Item | State |
 |---|---|
-| 1 — LCWX estimator | **Done.** Four defects fixed, differentially tested |
-| 2 — space-time decoder + threshold | **Done.** Threshold p ~ 0.006-0.008, decoder named |
-| 3 — network to QEC coupling | Plumbing built; **comparison defective** as described |
-| 4 — latency bound | Not started |
+| 1 â€” LCWX estimator | **Done.** Four defects fixed, differentially tested |
+| 2 â€” space-time decoder + threshold | **Done.** Threshold p ~ 0.006-0.008, decoder named |
+| 3 â€” network to QEC coupling | Plumbing built; **comparison defective** as described |
+| 4 â€” latency bound | Not started |
 
 **738 passing, 51 modules.** Three of four items advanced, two complete.
 
 ---
 
-### 2.29 Item 3 RESOLVED — and it needed a distinction I had been missing
+### 2.29 Item 3 RESOLVED â€” and it needed a distinction I had been missing
 
 Round 9's coupling was guaranteed to return a negative answer because it compared
 **fidelities**. Round 10 identifies why that was the wrong comparison and fixes it.
 
 **Encoding preserves; it does not recover.** The composition
-`F_log = F·survival + (1-F)·(1-survival)` is a convex combination of `F` and
+`F_log = FÂ·survival + (1-F)Â·(1-survival)` is a convex combination of `F` and
 `1-F`, so `F_log <= F` for any `F >= 1/2`. A comparison built on fidelity is
-therefore *mathematically incapable* of showing a benefit — it charges the code for
+therefore *mathematically incapable* of showing a benefit â€” it charges the code for
 its qubits and its memory time and never credits it with anything.
 
 **What a code actually buys is a lower error rate.** It maps a physical per-gate
@@ -1774,7 +1774,7 @@ possible. `suppression_advantage` reports `p_L / p`:
 ```
 
 `*` marks where the code beats the bare gate error. It does so at **every** point
-measured, and by more as distance grows — up to roughly **4x** at d=7, p=0.01.
+measured, and by more as distance grows â€” up to roughly **4x** at d=7, p=0.01.
 
 **Two different break-evens, and conflating them was the original error.**
 
@@ -1783,14 +1783,14 @@ measured, and by more as distance grows — up to roughly **4x** at d=7, p=0.01.
   d=5  (98 qubits): improves up to p = 8.11e-03, fails from p = 1.87e-02
 ```
 
-* **Distance stops helping at p ~ 0.006** (measured in §2.27, where the d=3/d=5/d=7
+* **Distance stops helping at p ~ 0.006** (measured in Â§2.27, where the d=3/d=5/d=7
   curves cross). Beyond it, a bigger code is worse than a smaller one.
 * **The code stops beating the bare physical rate much later**, at p ~ 0.01-0.04.
   Between those two values a larger code is *still suppressing its own error rate*
   while no longer repaying its extra qubits.
 
 A code can therefore "help" and "not be worth it" simultaneously, and the honest
-report gives both numbers with the qubit cost beside them — which is why
+report gives both numbers with the qubit cost beside them â€” which is why
 `suppression_advantage` returns `physical_qubits_per_logical` in the same
 dictionary as the ratio. A suppression bought with 194 physical qubits per logical
 is a different engineering proposition from one bought with 34.
@@ -1799,10 +1799,10 @@ is a different engineering proposition from one bought with 34.
 
 | Item | State |
 |---|---|
-| 1 — LCWX estimator | **Done.** Four defects fixed, differentially tested |
-| 2 — space-time decoder + threshold | **Done.** Threshold p ~ 0.006, decoder named |
-| 3 — network to QEC coupling | **Done.** Suppression measured with its qubit cost; two break-evens distinguished |
-| 4 — latency bound | Not started |
+| 1 â€” LCWX estimator | **Done.** Four defects fixed, differentially tested |
+| 2 â€” space-time decoder + threshold | **Done.** Threshold p ~ 0.006, decoder named |
+| 3 â€” network to QEC coupling | **Done.** Suppression measured with its qubit cost; two break-evens distinguished |
+| 4 â€” latency bound | Not started |
 
 **738 passing, 51 modules.**
 
@@ -1855,10 +1855,10 @@ column.
 
 | Item | State |
 |---|---|
-| 1 — LCWX estimator | **Done** |
-| 2 — space-time decoder + threshold | **Done** |
-| 3 — network to QEC coupling | **Done** |
-| 4 — latency bound | **Quantified**: bound loose by 1.33x-2.88x growing with N, and order matters by up to 1.65x more; efficient optimal order **not achieved** |
+| 1 â€” LCWX estimator | **Done** |
+| 2 â€” space-time decoder + threshold | **Done** |
+| 3 â€” network to QEC coupling | **Done** |
+| 4 â€” latency bound | **Quantified**: bound loose by 1.33x-2.88x growing with N, and order matters by up to 1.65x more; efficient optimal order **not achieved** |
 
 **738 passing, 52 modules.**
 
@@ -1888,7 +1888,7 @@ under a correction that no longer over-penalises span length -- not a regression
 
 **What remains open, and is now recorded as such.** The segment-aware charge uses a
 *sequential* fusion order. The true optimum is up to **1.65x less delay at seven
-links** (§2.30), so the segment-aware figure is itself an upper bound on the honest
+links** (Â§2.30), so the segment-aware figure is itself an upper bound on the honest
 delay, and the optimum could move again with a better order. No efficient
 construction for the optimal order was found: two greedy heuristics degenerate to
 sequential on a uniform chain, and a recursive order was implemented, tested, and
@@ -1922,7 +1922,7 @@ not fidelity -- a photon that fails to arrive is a failed attempt, not a corrupt
 pair. So the link hands the code an essentially noiseless pair, and the code has
 nothing to suppress. The gate error that matters is the **node's own**, which
 `suppression_advantage` takes as an explicit argument and which no link model
-supplies. That is why item 3's meaningful results (§2.29) are parameterised by gate
+supplies. That is why item 3's meaningful results (Â§2.29) are parameterised by gate
 error rather than by link fidelity: the two error sources are independent, and a
 model that fuses them would let a good link flatter a bad processor.
 
@@ -2001,7 +2001,7 @@ delivers **F = 0.8558**, hence `p = 2(1-F) = 0.289`. Feeding that through the co
 ```
 
 So the code **amplifies** the error rather than suppressing it -- correctly, since
-`p = 0.289` is roughly 48x above the measured threshold of ~0.006 (§2.27). The
+`p = 0.289` is roughly 48x above the measured threshold of ~0.006 (Â§2.27). The
 coupling can now produce a meaningful comparison, and the honest result for these
 impairments is that the link is far above threshold and coding cannot rescue it.
 
@@ -2064,8 +2064,8 @@ graphlike detector pair the DEM implies -- asserted as set equality, not a count
    one they have no partner and the decoder has to invent a correction.
 
 **What this does not change.** `PyMatching` already consumed the decomposed DEM, so
-the measured threshold (§2.27) was never affected by this defect -- it appeared only
-in the in-package graph. That is worth stating plainly: the numbers in §2.27 stand,
+the measured threshold (Â§2.27) was never affected by this defect -- it appeared only
+in the in-package graph. That is worth stating plainly: the numbers in Â§2.27 stand,
 and this upgrade improves the *fallback* path rather than the headline result.
 
 **Status:** upgrades 1, 2, 3 and 4 done and tested. Upgrade 5 (logical entanglement
@@ -2074,7 +2074,7 @@ between nodes) not started. **768 passing** (12 new tests,
 
 ---
 
-### 3.6 Upgrade 5: logical entanglement between patches — teleportation, not surgery
+### 3.6 Upgrade 5: logical entanglement between patches â€” teleportation, not surgery
 
 `src/quantumnet/core/logical_entanglement.py` gives nodes a **logical Bell pair**
 and a **logical teleportation** protocol, so entanglement is no longer
@@ -2082,19 +2082,19 @@ physical-qubit-only.
 
 **Scope, stated first because the objective named two options**: this implements
 **logical teleportation of a logical state**. It does **not** implement lattice
-surgery — there is no patch merging or splitting, no seam-defect decoder, and no
+surgery â€” there is no patch merging or splitting, no seam-defect decoder, and no
 logical Pauli product measurement. Those are a separate and substantially larger
 body of work and are not claimed.
 
 **What is implemented**
 
-* `TwoPatchLayout` — two distance-`d` patches in one index space, with the offset
+* `TwoPatchLayout` â€” two distance-`d` patches in one index space, with the offset
   explicit, because every logical operator must be mapped between patches and an
   off-by-one there is exactly what a "looks right" review misses.
-* `LogicalPauliFrame` — the logical Pauli bookkeeping an error-correction layer
+* `LogicalPauliFrame` â€” the logical Pauli bookkeeping an error-correction layer
   actually maintains, with a history so a wrong correction is visible as wrong.
-* `transversal_cnot_pairs` and `logical_cnot_action` — the Bell-pair preparation.
-* `teleportation_frame` — the protocol, with an outcome-dependent correction table.
+* `transversal_cnot_pairs` and `logical_cnot_action` â€” the Bell-pair preparation.
+* `teleportation_frame` â€” the protocol, with an outcome-dependent correction table.
 
 **How it is verified, and why that is possible without simulating amplitudes**
 
@@ -2126,7 +2126,7 @@ patches sharing an orientation. A scrambled pairing would still *look* transvers
 while implementing something that is not a CNOT; this is what would catch it.
 
 **A mistake I made and caught here.** The first version of
-`verify_transversal_cnot_action` asserted `Z_B -> (1,0,0,1)`, which is wrong — my
+`verify_transversal_cnot_action` asserted `Z_B -> (1,0,0,1)`, which is wrong â€” my
 own docstring stated the correct rule one line above it. The test failed, the code
 was right, and the expected value was the error. Worth recording because "the test
 disagrees with the implementation" is not evidence about which one is wrong.
@@ -2142,8 +2142,8 @@ disagrees with the implementation" is not evidence about which one is wrong.
 * **No seam decoder**, so nothing here supports a merged-patch computation.
 * **The logical Bell pair is one round of "prepared", not maintained.** No
   comparison is made against the physical pair the network layer delivers, so the
-  end-to-end question — is a logical Bell pair cheaper than a physical one for a
-  given link? — is still open.
+  end-to-end question â€” is a logical Bell pair cheaper than a physical one for a
+  given link? â€” is still open.
 
 **Status of the five-upgrade objective: all five addressed.**
 
@@ -2151,7 +2151,7 @@ disagrees with the implementation" is not evidence about which one is wrong.
 |---|---|
 | 1 multi-photon emission degrades fidelity | **Done** |
 | 2 detector dead time / afterpulsing / jitter | **Done** |
-| 3 DEM hyperedges | **Done** — component split; graph covers every graphlike pair |
+| 3 DEM hyperedges | **Done** â€” component split; graph covers every graphlike pair |
 | 4 coupling delivers F < 1 | **Done** |
 | 5 logical entanglement between nodes | **Done as teleportation**; lattice surgery explicitly not attempted |
 
@@ -2222,7 +2222,7 @@ via `compare_to_reference`, which turns the adjective into a number:
 
 **The in-package rates (1.5-3.9%) are above the physical error rate (0.1-0.3%)**,
 which is the part that matters: this decoder cannot recover a threshold at all, so
-substituting it for PyMatching in §2.27 would replace a validated number with an
+substituting it for PyMatching in Â§2.27 would replace a validated number with an
 invalid one. That is why the threshold still stands on the reference decoder -- not
 for convenience, but because the alternative does not work.
 
@@ -2265,7 +2265,7 @@ Union-Find is needed afterwards.
 
 ### 3.9 Weighted costs applied: better, still not competitive
 
-The diagnosed fix from §3.8 is implemented. Edges now cost ``-log(probability)``
+The diagnosed fix from Â§3.8 is implemented. Edges now cost ``-log(probability)``
 (Dijkstra) instead of one per hop, with the largest probability winning where
 several mechanisms connect the same pair. ``weighted=False`` retains the hop-count
 behaviour, because the difference between the two is a measurement rather than an
@@ -2305,7 +2305,7 @@ rate and therefore no threshold at all. What has changed is that the gap is now
 
 ### 3.10 Union-Find decoder: in progress, not yet competitive
 
-`core/union_find.py` implements Delfosse-Nickerson Union-Find with peeling — cluster
+`core/union_find.py` implements Delfosse-Nickerson Union-Find with peeling â€” cluster
 growth by increasing edge weight, then leaf-stripping to reduce the grown forest to
 edges whose boundary is the observed syndrome. Peeling is the piece earlier attempts
 lacked: without it a decoder returns a plausible edge set that does **not** reproduce
@@ -2321,7 +2321,7 @@ the module is explicit about being work in progress.
 are now **merged**: a detector carries up to 35 parallel single-detector components
 at d=3, each its own mechanism with its own probability and observable signature.
 Merging them into one edge with probability ``1 - prod(1 - p_i)`` and observable
-**XOR** (not OR — two mechanisms carrying the same observable cancel) reduces the
+**XOR** (not OR â€” two mechanisms carrying the same observable cancel) reduces the
 d=3 graph from 556 components to **78 edges**. Treating them as independent both
 inflates the graph ninefold and makes "which one fired" a coin toss.
 
@@ -2329,13 +2329,13 @@ inflates the graph ninefold and makes "which one fired" a coin toss.
 
 1. **Boundary edges were treated as peelable forest edges.** For a lone detection
    event the boundary edge became a leaf, peeling stripped it, and the correction
-   came out empty — observables silently dropped on exactly the shots where a
+   came out empty â€” observables silently dropped on exactly the shots where a
    boundary chain matters. Boundary edges now **union but do not peel**: the
    boundary joins the union so a cluster registers as touching it, but its edges
    stay out of the forest that peeling reduces.
 2. **Not yet fixed:** single-event shots still return **no observables**. The
    cheapest boundary edge incident to an odd, boundary-touching cluster is meant to
-   be added to the correction after peeling, and that path is not firing — verified
+   be added to the correction after peeling, and that path is not firing â€” verified
    directly: 21 single-event shots at d=3, every one returning an empty observable
    set. This is the next thing to fix, and it is the dominant error source, because
    the observable is dropped rather than applied wrongly.
@@ -2351,7 +2351,7 @@ inflates the graph ninefold and makes "which one fired" a coin toss.
 
 One `compare_to_reference` call at d=3 / 2000 shots takes **~25 s** with the greedy
 decoder, which cascades a Dijkstra per event. Union-Find is near-linear per shot, so
-it is load-bearing for **speed as well as accuracy** — at current speed a full
+it is load-bearing for **speed as well as accuracy** â€” at current speed a full
 threshold curve is slow to produce.
 
 **825 passing, 55 modules.**
@@ -2505,7 +2505,7 @@ one pass in weight order, merging only *unfinished* clusters, which is what
 Delfosse-Nickerson specify and what the previous version never did. It changed the
 headline numbers by **nothing**. That is a useful negative result: the objective's
 hypothesis that radius growth was the missing piece is **not supported**, and the
-earlier note in §3.12 naming it as "the gap" was wrong.
+earlier note in Â§3.12 naming it as "the gap" was wrong.
 
 **The error rate is worse than the empty-correction state, and that is expected.**
 Measured over five seeds at d=3, p=0.003, 2000 shots: Union-Find **253.8** errors
@@ -2611,7 +2611,7 @@ exists, and measuring whether it reproduces the syndrome.
 ```
 
 **A correct peel must score 0% here.** It scores 51.9%, so **`_peel` is the defect**,
-not the growth phase -- which means the whole line of enquiry in §3.12-3.14, including
+not the growth phase -- which means the whole line of enquiry in Â§3.12-3.14, including
 "radius growth is the gap", was aimed at the wrong component. That is the round's
 substantive result and it supersedes those notes.
 
@@ -2664,7 +2664,7 @@ still comes from PyMatching.**
 
 ### 3.16 Round 5: the reduction is solved -- 0% invalid. The pairing is the problem.
 
-Taking option (1) from §3.15, I stopped patching the peel and wrote the correction as
+Taking option (1) from Â§3.15, I stopped patching the peel and wrote the correction as
 its **definition** instead: a correction is a set of edges whose odd-degree vertices
 are exactly the detection events, i.e. a **T-join**.
 
@@ -2708,10 +2708,10 @@ the peel it is exactly the piece minimum-weight matching addresses -- which is w
 PyMatching's answer is good and mine is not.
 
 **This is genuine progress on the objective.** Five rounds established:
-* it is my approach, not Union-Find (§3.13);
-* the growth order was a red herring (§3.13);
-* the peel was wrong (§3.15);
-* the reduction is now correct by construction -- **0% invalid** (§3.16);
+* it is my approach, not Union-Find (Â§3.13);
+* the growth order was a red herring (Â§3.13);
+* the peel was wrong (Â§3.15);
+* the reduction is now correct by construction -- **0% invalid** (Â§3.16);
 * and the remaining gap is the pairing, isolated to one component.
 
 **Not wired into `logical_error_rate`** -- 38-349x worse than the reference is still far
@@ -2742,7 +2742,7 @@ The signature was the decoder over-flipping -- 0 errors on event-free shots but 
 the 224 shots with events, against ~33 expected. Keeping mechanisms separate raises
 observable-carrying edges to **144 of 556** and is what makes attribution correct.
 
-**Defect 2: greedy pairing.** Valid but heavy, as established in §3.16. Replaced by
+**Defect 2: greedy pairing.** Valid but heavy, as established in Â§3.16. Replaced by
 `pair_minimum_weight`, which enumerates every perfect matching of the events plus a
 boundary slot and takes the cheapest -- exact, and reporting ``exact=False`` when the
 instance exceeds ``max_events`` rather than silently approximating. A pairing may send
@@ -2770,7 +2770,7 @@ p=0.001 the reference makes *zero* errors in 2000 shots while this makes 11 -- a
 difference but a small absolute rate. At d=5 the gap is 79x, and the d=5 rate (3.95%)
 is still above the physical rate, so it could not yet recover a threshold. The
 remaining causes are not yet isolated, but they are now in a decoder that is **valid
-by construction** (§3.16) and whose quality responds as expected to each fix, which is
+by construction** (Â§3.16) and whose quality responds as expected to each fix, which is
 the opposite of the previous four rounds.
 
 **825 passing.**
@@ -2779,7 +2779,7 @@ the opposite of the previous four rounds.
 
 ### 3.18 Round 7: the fallback hypothesis was wrong; the direction of error differs by distance
 
-Round 7 tested the hypothesis left at the end of §3.17 -- that ``max_events=12`` was
+Round 7 tested the hypothesis left at the end of Â§3.17 -- that ``max_events=12`` was
 forcing the greedy fallback at d=5 and suppressing quality -- and **disproved it**.
 
 ```
@@ -2789,10 +2789,10 @@ forcing the greedy fallback at d=5 and suppressing quality -- and **disproved it
     event count: mean 4.0, max 14
 ```
 
-The fallback is negligible. So the d=5 gap (79x in §3.17) is **not** a fallback
+The fallback is negligible. So the d=5 gap (79x in Â§3.17) is **not** a fallback
 artefact, and raising ``max_events`` would not have helped. Worth recording as another
 plausible hypothesis that measurement removed -- the same discipline that removed
-"radius growth is the gap" in §3.13.
+"radius growth is the gap" in Â§3.13.
 
 **The more useful finding is the direction of the error, which is not constant.**
 
@@ -2804,7 +2804,7 @@ plausible hypothesis that measurement removed -- the same discipline that remove
 ```
 
 At d=5 the decoder **under-flips** on event-bearing shots, predicting a logical flip
-about 57% as often as it should. In §3.17's d=3 measurement the decoder was
+about 57% as often as it should. In Â§3.17's d=3 measurement the decoder was
 **over**-flipping (58 errors on 224 event shots against ~33 expected). The two
 directions are opposite, which rules out a single systematic bias such as a
 mis-mapped observable or an inverted convention: those would push one way at every
@@ -2824,10 +2824,10 @@ on individual shots, which is the next measurement rather than another guess.
 | It is my approach, not Union-Find | every defect is a plain implementation error |
 | Growth order was a red herring | radius rewrite changed nothing |
 | The peel was the defect | isolated test on the full edge set |
-| The reduction is correct by construction | **0% invalid** (§3.16) |
-| Merging parallel mechanisms discarded observables | 64 raw vs 12 merged (§3.17) |
-| Greedy pairing was valid but heavy | 152 -> 58 (§3.17) |
-| The greedy fallback is not the d=5 cause | 0.4% of shots (§3.18) |
+| The reduction is correct by construction | **0% invalid** (Â§3.16) |
+| Merging parallel mechanisms discarded observables | 64 raw vs 12 merged (Â§3.17) |
+| Greedy pairing was valid but heavy | 152 -> 58 (Â§3.17) |
+| The greedy fallback is not the d=5 cause | 0.4% of shots (Â§3.18) |
 
 Quality went from **152 errors per 1000 to 14** at d=3, p=0.003 over rounds 6-7, and
 the remaining gap is characterised as a distance-dependent direction rather than an
@@ -2840,12 +2840,12 @@ unexplained constant. Still not competitive at d=5 (3.95% against a physical rat
 
 ### 3.19 Round 8: read the reference's own graph, and it contradicted my last change
 
-Round 8 did what §3.18 proposed -- compare against the oracle directly -- and the
+Round 8 did what Â§3.18 proposed -- compare against the oracle directly -- and the
 oracle immediately overturned the previous round's central change.
 
 **PyMatching merges parallel mechanisms too.** Its graph for this circuit has **78
 edges**, which is exactly the number of distinct detector pairs, and its edge
-*weights* match mine: `6.4361` against my `6.4374` for the pair `(-1, 0)`. So §3.17's
+*weights* match mine: `6.4361` against my `6.4374` for the pair `(-1, 0)`. So Â§3.17's
 "merging is wrong" was **half wrong**: merging is what the reference does, and the
 weights agree. Keeping 556 separate mechanisms was not the fix; the *observable*
 attribution was.
@@ -2893,7 +2893,7 @@ code does the second, half-way.
 
 ### 3.20 Round 9: adopting the reference's own formulation measured 6x worse
 
-Round 9 implemented the course change §3.19 identified -- switch to the reference's own
+Round 9 implemented the course change Â§3.19 identified -- switch to the reference's own
 formulation: merged graph, ANY observable labels, and a matching whose observable comes
 from the **XOR of endpoint labels** rather than from reconstructed routes.
 
@@ -2939,7 +2939,7 @@ that is **valid by construction** and now within roughly **6x** at d=3 p=0.001, 
 
 ### 3.21 Round 10: the weight hypothesis is dead -- the lighter solution is the wrong one
 
-Round 10 tested §3.20's leading explanation -- that matching over the **metric closure**
+Round 10 tested Â§3.20's leading explanation -- that matching over the **metric closure**
 is heavier than the true minimum-weight T-join -- by asking the reference for the edges
 it chose and totalling their weights.
 
@@ -2965,7 +2965,7 @@ logical operator.
 **A methodology note, since it nearly misled the round.** A 400-shot sample at seed 9
 showed **2 errors against the reference's 0**, which would have read as "essentially
 solved". The multi-seed 2000-shot measurement shows 7.2x. Small samples at these rates
-are not informative, and the earlier single-seed figures in §3.17-3.20 should be read as
+are not informative, and the earlier single-seed figures in Â§3.17-3.20 should be read as
 one sample each rather than as stable measurements.
 
 **What the evidence now says.** Ten rounds established that the graph is right (weights
@@ -2987,7 +2987,7 @@ still not wired into `logical_error_rate`. **825 passing.**
 
 ### 3.22 Round 11: the complete diagnosis, located to 12 edge pairs
 
-Round 11 ran the edge-by-edge comparison §3.21 proposed, and it closed the gap in
+Round 11 ran the edge-by-edge comparison Â§3.21 proposed, and it closed the gap in
 understanding even though it did not close the gap in quality.
 
 **The two decoders choose almost the same edges.** Of the shots where the observables
@@ -3021,8 +3021,8 @@ reference's ``fault_ids``** -- the earlier XOR merge cancelled them.
    (the non-observable parallel mechanism is often cheaper), and **7.2x** more logical
    errors.
 
-**Why the two obvious fixes both failed.** §3.17 merged with XOR -- wrong convention,
-and it measured 130 against the unmerged 30. §3.20 merged with ANY and matched the
+**Why the two obvious fixes both failed.** Â§3.17 merged with XOR -- wrong convention,
+and it measured 130 against the unmerged 30. Â§3.20 merged with ANY and matched the
 weights -- and measured 193 against 30. Neither reproduces the reference, because
 merging changes *which routes are cheapest* as well as what the observable is: on the
 merged graph the decoder cannot express "this specific mechanism fired", so route costs
@@ -3050,7 +3050,7 @@ rate, so no threshold is recoverable from this decoder yet. **825 passing.**
 
 ### 3.23 Round 12: the 12-pair fix measured 4x worse -- path-based attribution is the wrong frame
 
-Round 12 implemented the fix §3.22 identified as "the fix the evidence points to": keep
+Round 12 implemented the fix Â§3.22 identified as "the fix the evidence points to": keep
 the unmerged graph, and force the **merged pair's** observable onto every parallel
 mechanism of that pair, so the per-mechanism attribution matches the reference's merged
 label.
@@ -3071,9 +3071,9 @@ now all measured worse:**
 | attempt | d=3 p=0.003 |
 |---|---|
 | unmerged, per-mechanism labels (current best) | **30** |
-| merged graph, ANY labels, endpoint-label matching (§3.20) | 193 |
-| merged XOR labels (§3.17) | 130 |
-| unmerged graph, pair-level ANY labels (§3.23) | 128 |
+| merged graph, ANY labels, endpoint-label matching (Â§3.20) | 193 |
+| merged XOR labels (Â§3.17) | 130 |
+| unmerged graph, pair-level ANY labels (Â§3.23) | 128 |
 
 **The conclusion the evidence forces.** Path-based observable accumulation is
 fundamentally incompatible with the reference's per-edge labels, and the reason is
