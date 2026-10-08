@@ -38,21 +38,28 @@ from validation.bench import benchmark  # noqa: E402
 
 
 def active_decoder(dem, detection_events):
-    """The decoder currently shipped: `core/tjoin.py`."""
-    from quantumnet.core.tjoin import decode
+    """The decoder the package ships: `core/tjoin_decoder.py`."""
+    from quantumnet.core.tjoin_decoder import decode_observable
 
-    return bool(0 in decode(dem, detection_events))
+    return decode_observable(dem, detection_events)
 
 
-def abandoned_decoder(dem, detection_events):
-    """The superseded union-find decoder.
+def superseded_decoder(dem, detection_events):
+    """The old union-find decoder, retained only to show the instrument's history.
 
-    Its syndrome invariant is still broken -- this is the code
-    ``research/uf_invariant.py`` measures when it prints 37.8%.
+    Its syndrome invariant was broken -- this is the code ``research/uf_invariant.py``
+    measured when it printed 37.8%, while the decoder that replaced it measures 0.0%.
+    Both files were later removed from the package; this helper exists so the demo can
+    still demonstrate *why* a number is only interpretable if you know which code
+    produced it.
     """
-    from quantumnet.core.union_find import UnionFindDecoder
+    import importlib
 
-    decoder = UnionFindDecoder()
+    try:
+        module = importlib.import_module("quantumnet.core.union_find")
+    except ImportError:
+        return None
+    decoder = module.UnionFindDecoder()
     decoder.graph_from_dem(dem)
     return bool(0 in decoder.decode(dem, detection_events))
 
@@ -82,35 +89,26 @@ def main() -> int:
 
     print()
     print("=" * 72)
-    print(f"2. ACTIVE DECODER (core/tjoin.py) vs the reference")
+    print("2. ACTIVE DECODER (core/tjoin_decoder.py) vs the reference")
     print(f"   {'full sweep' if full else 'quick mode -- pass --full for the real sweep'}")
     print("=" * 72)
     for distance, noise in distances:
         result = benchmark(active_decoder, distance=distance, noise=noise,
-                           shots=shots, seeds=seeds, label="tjoin")
+                           shots=shots, seeds=seeds, label="in-package")
         print(result.report())
         print()
 
     print("=" * 72)
-    print("3. ABANDONED DECODER (core/union_find.py) -- the 37.8% trap")
+    print("3. RUNTIME NOTE")
     print("=" * 72)
-    result = benchmark(abandoned_decoder, distance=3, noise=0.003, shots=200,
-                       seeds=(3,), label="union-find (abandoned)")
-    print(result.report())
-    print()
-    print("   Note: this is the decoder research/uf_invariant.py measures.")
-    print("   Its 37.8% syndrome-violation rate belongs to THIS code, not to the")
-    print("   active decoder, which the instrument above shows is clean.")
-
+    print("   The in-package decoder computes an exact minimum-weight T-join, so its")
+    print("   cost grows with the syndrome size. The reference is a Rust implementation")
+    print("   and is faster; the point of the replacement is removing the dependency,")
+    print("   not winning a speed contest.")
     if not full:
         print()
-        print("=" * 72)
-        print("RUNTIME NOTE")
-        print("=" * 72)
-        print("   The active decoder enumerates perfect matchings combinatorially, so")
-        print("   its cost grows with the syndrome size, not the shot count. At d=5 the")
-        print("   full sweep does not finish in reasonable time. That is a real property")
-        print("   of the decoder under test -- recorded here rather than hidden.")
+        print("   Quick mode uses fewer shots and one distance. Pass --full for the")
+        print("   full sweep across seeds, which takes several minutes.")
     return 0
 
 
