@@ -14,6 +14,12 @@ it was process. Almost everything below is a record of a specific way I wasted a
 
 ## 1. What exists right now, measured
 
+> **This section is a snapshot taken when the brief was written, and the repository has
+> moved since.** It is kept unchanged because it is the state the delegation started from
+> and rewriting it would erase the baseline the work was measured against. The decoder it
+> describes as failing was subsequently completed; see `WHITEPAPER.md` §5.2. Read the
+> numbers below as "what the delegate inherited", not as the current state.
+
 Every number here was produced by a command in §8, not remembered.
 
 | fact | value |
