@@ -22,15 +22,58 @@ network sockets.
 
 ## What it is
 
-QEL is a general purpose quantum layer for any network. It asks the harder
-question than a classical mesh: *if the links were quantum, where do you put
-the repeaters, and what fidelity survives the trip?*
+QEL is a simulator for quantum communication networks. It asks a question a classical
+mesh never has to: *if the links were quantum, where do the repeaters go, and what
+fidelity survives the trip?*
 
-It models the whole path. Quantum states are density matrices, so
-decoherence is modelled directly: depolarising, dephasing and amplitude-
-damping channels act on them, links attenuate with distance, memories relax
-on T1 and lose phase on T2, and entanglement must be distilled back to
-something usable before a key can be extracted.
+It models the whole path rather than a link budget. Quantum states are density
+matrices, so decoherence is simulated directly: depolarising, dephasing and
+amplitude-damping channels act on them, links attenuate with distance, memories relax
+on T1 and lose phase on T2, and entanglement must be distilled back to something
+usable before a key can be extracted. Above that sit resource contention, topology
+routing, repeater placement, and a surface code with its own decoder.
+
+### What this is for, and what it is not
+
+**It is a research instrument.** Every number in this README is reproducible from a
+command, and the places where the model *disagrees* with published work are kept and
+explained rather than tuned away. The negative results are part of the record: a
+calibration that reproduces two of four published statements says so, and a conclusion
+that turned out to be wrong is marked as retracted rather than deleted.
+
+**It is not a hardware model.** Nothing here has been validated against physical
+hardware, and the outputs do not predict what hardware would achieve. A modelled
+123 km reach for a preset calibrated to a 122 km experiment is a consistency check on
+the model — not a measurement, and not a claim about a real link.
+
+That distinction governs how to read everything below. Where a figure is a
+reproduction of someone else's published result, it says so and cites it. Where it is
+a property of this simulator, it says that instead.
+
+### The results that are specific to this work
+
+Four pieces go beyond assembling published methods:
+
+1. **The routing weight is `-log W`, not `-log F`.** Entanglement swapping multiplies
+   the Werner parameter, so `-log W` is *exactly* additive and shortest-path search is
+   optimal rather than approximate. The common substitute under-penalises low-fidelity
+   links and picks a strictly worse path about 1.3% of the time. See
+   [Routing strategies](#routing-strategies).
+2. **An in-package surface-code decoder, with no third-party matcher on the threshold
+   path.** It computes an exact minimum-weight T-join and produces *identical*
+   corrections to PyMatching on this package's circuits, recovering a threshold near
+   p ≈ 0.007. See [What is real and what is simulated](#what-is-real-and-what-is-simulated).
+3. **Repeater placement as a chance constraint over continuous uncertainty** — a
+   reliability target expressed on coherence-time distributions rather than a
+   hand-picked scenario list. A literature search found the existing formulations are
+   *discrete* (component choice, greenfield siting), so this is a construction rather
+   than a reproduction, and it is stated conservatively for that reason.
+4. **A logical key rate** — "key rate after error correction", which almost nobody
+   reports — with the code's cost in both fidelity and physical qubits stated alongside
+   the number.
+
+Each of those has a section below, including its limits.
+
 
 ## The layers
 
@@ -251,6 +294,124 @@ erbium/atom-cavity numbers. Note that GYS predates practical decoy-state
 implementations, so that agreement is a consistency check on the channel and
 detector model — not a reproduction of a decoy-state experiment.
 
+## Surface code and its decoder
+
+`core/surface_code.py`, `core/tjoin_decoder.py` and `core/logical.py` form the
+error-correction chain. The rotated code is built for d ∈ {3, 5, 7, 9} — layouts are
+**pinned per distance and verified against `stim`**, and any other distance is refused
+rather than guessed, because a wrong ancilla layout still produces plausible numbers.
+
+The decoder computes an **exact minimum-weight T-join** on the graph `stim`'s detector
+error model defines. Measured on this package's own circuits:
+
+```text
+d=3 p=0.003, 6000 shots:  0.00100
+d=5 p=0.003, 6000 shots:  0.00033
+d=7 p=0.003, 6000 shots:  0.00000      monotone in d, as a code must be
+
+threshold sweep, 20 000 shots per point, decoder alone:
+  p=0.005  d=3 0.00565  d=5 0.00355  d=7 0.00230
+  p=0.006  d=3 0.00735  d=5 0.00645  d=7 0.00375
+  p=0.007  d=3 0.00930  d=5 0.00900  d=7 0.00740
+  p=0.008  d=3 0.01290  d=5 0.01350  d=7 0.01000   <- ordering reverses
+```
+
+**Threshold p ≈ 0.007.** The reversal above it is the point: a threshold is only a real
+result if more distance eventually *hurts*, and a test asserts the ordering flips rather
+than only checking the sub-threshold half.
+
+**No third-party matcher is needed.** The decoding path imports `stim` for the circuit
+and the DEM, and nothing else. Verified by blocking `pymatching` at the import system so
+a hidden use becomes a hard error:
+
+```text
+HAVE_PYMATCHING = False,  pymatching in sys.modules: False
+d=3 p=0.003: 4/2000    d=5: 1/2000    d=7: 0/2000    decoder='in-package'
+```
+
+**And the corrections are identical to PyMatching's** — the same edge set at the same
+total weight, on 4,359 of 4,359 shots at d=3 and d=5. That is a stronger claim than
+"comparable accuracy": on this circuit family the two decoders compute the same thing, so
+the dependency is removable without a quality trade.
+
+**Two defects this fixed in an earlier in-package attempt**, both worth knowing because
+each produced plausible-looking wrong answers:
+
+- **Observables must be parsed per `^`-separated component.** `stim` writes
+  `error(p) D4 D6 ^ D5 L0`, where `L0` belongs to the `D5` component *only*. Reading
+  observables across the whole instruction attaches `L0` to pair `(4, 6)` as well.
+- **The edge weight is `log((1-p)/p)`, not `-log(p)`.** The two differ by 0.5–0.7% at
+  the probabilities this code reaches, which is enough to change which path is chosen.
+
+**Scope.** The equivalence is established for rotated surface-code memory-Z with uniform
+depolarising noise at d=3, 5, 7. It is not claimed for other error models. There is no
+`surface` CLI command yet — the decoder is reachable through the Python API
+(`logical_error_rate`) and the tests, and `matcher="pymatching"` selects the reference for
+comparison.
+
+## Repeater placement
+
+`topology/placement.py` answers the synthesis question directly: given candidate sites
+along a span, which subset and what key rate?
+
+```python
+from quantumnet.topology.placement import PlacementProblem, CandidateSite, best_placement
+
+best = best_placement(PlacementProblem(
+    end_a=CandidateSite("A", 0.0), end_b=CandidateSite("B", 200.0),
+    candidates=[CandidateSite(f"S{i}", 20.0 * (i + 1)) for i in range(8)]))
+# 4 sites at 40/80/120/160 km -> 1.16e5 Hz, F = 0.96079, longest link 40 km
+```
+
+`best_placement` is a dynamic program over sites in position order carrying a **Pareto
+frontier** of (rate, fidelity) per state — because the best rate per state is not
+sufficient: two chains reaching the same site with the same repeater count are not
+interchangeable. It is **exact**, verified against constraint-matched brute force on 25
+random instances (0 suboptimal).
+
+`topology/chance_placement.py` adds the piece a literature search found missing. Existing
+formulations are *discrete* — choosing components from a catalogue, or greenfield siting —
+plus post-hoc sensitivity analysis. This states the requirement as a chance constraint
+over a **continuous** coherence-time prior:
+
+```text
+Pr[ F(chain; T1, T2) >= F_req ] >= 1 - eps
+```
+
+It is reduced without sampling via the isoquantile principle, and **the two-parameter case
+is conservative, not exact, and says so**: the identity does not extend to two independent
+parameters, so both a product-margin bound and a common-factor bound are computed and
+enforced. The correlated case — one material quality setting both coherence times, the
+usual hardware situation — is *declared* rather than guessed, and changes the answer.
+
+## Logical key rate
+
+"Key rate after error correction" is a number almost nobody reports, which is why it is
+worth stating carefully. `logical_key_rate` composes the physical pair's fidelity with the
+logical flip through the **Werner product** and reports the qubit cost alongside:
+
+```text
+F_phys = 0.99, p = 0.003, five syndrome rounds
+  d=3:  F_log 0.98186   key fraction 0.8509    34 physical qubits per logical pair
+  d=5:  F_log 0.98556   key fraction 0.8765    98
+  d=7:  F_log 0.98926   key fraction 0.9035   194
+```
+
+**A bug worth recording, because it was mine and it was large.** An earlier version
+combined the two error sources as a *weighted average of fidelities*,
+`F = F_phys(1-q) + (1-F_phys)q`, which treats a bit-flip *probability* as a fidelity. The
+correct composition is the Werner product above, and the two differ by up to **9%
+absolute** — with the sign of the error not even consistent across inputs:
+
+```text
+F_phys  F_log     q      corrected      old      overstatement
+ 0.990  0.996  0.004      0.982114   0.986080      +0.003966
+ 0.950  0.900  0.050      0.815500   0.905000      +0.089500
+```
+
+It went unnoticed for as long as it did because at `F_phys = 1` the two forms agree, and
+that is the input the other modules happened to use.
+
 ## What is real and what is simulated
 
 - **Real:** the quantum mechanics. States, gates, measurement collapse, noise
@@ -280,17 +441,38 @@ detector model — not a reproduction of a decoy-state experiment.
 
 ```text
 src/quantumnet/core/        states, gates, measurement, noise, channels, stabiliser, scheduler
+                            surface_code, tjoin_decoder, logical  (the surface-code chain)
+                            multiplexing, photonics, latency      (hardware-layer timing)
 src/quantumnet/protocols/   QKD (incl. decoy state), teleportation, superdense, swapping, distillation, memory, QEC
 src/quantumnet/topology/    graphs, fidelity routing, schedules, visualisation, import surface
-src/quantumnet/cli.py       the 20-command interface, JSON on stdout, everything else on stderr
+                            placement, chance_placement, commodities, fusion_order, load
+src/quantumnet/calibration/ library models checked against published datasets
+src/quantumnet/cli.py       the 21-command interface, JSON on stdout, everything else on stderr
 src/quantumnet/topology/importers/   QEL native JSON, legacy Ghost-Net bridge, Graphviz, SeQUeNCe
-tests/                      1036 tests across core, protocols, topology and the CLI
-scripts/                    audit_imports.py, verify_surface_code.py (dev-only tools)
+tests/                      1036 tests, 63 modules, across core, protocols, topology and the CLI
+validation/                 decoder-agnostic instruments: syndrome invariant, benchmarking
+scripts/                    five development tools, all listed below
 notebooks/demo.ipynb        worked demonstration
 QEL-MASTER-PLAN.md          the consolidated build plan
 research/                   the evidence behind the plan's measured claims
 Quantum Entanglement Link.canvas   the concept map the project was built from
 ```
+
+The five tools in `scripts/`:
+
+| tool | what it does |
+|---|---|
+| `audit_imports.py` | every module must import cleanly — catches a stale import that would break collection |
+| `verify_surface_code.py` | surface-code lattice and schedule checked against `stim` (dev-only) |
+| `claim_audit.py` | extracts every test/command/module/line count from the docs and prints it beside what the repository currently measures |
+| `fix_plan_encoding.py` | repairs the two encoding faults that PowerShell appends have introduced into `QEL-MASTER-PLAN.md` |
+| `make_notebook.py` | regenerates `notebooks/demo.ipynb` |
+
+`claim_audit.py` exists because this repository accumulated **six** stale claims in one
+development session — status rows for finished work, a README claiming 668 tests when the
+suite ran 1036, a website claiming 122. Each was correct when written and rotted silently.
+It reports; it does not decide, because a tool that guessed which number was right would
+produce exactly the confident-but-wrong output the rest of this project is built to avoid.
 
 ## Validation against published results
 
