@@ -2837,3 +2837,56 @@ unexplained constant. Still not competitive at d=5 (3.95% against a physical rat
 **825 passing.**
 
 ---
+
+### 3.19 Round 8: read the reference's own graph, and it contradicted my last change
+
+Round 8 did what §3.18 proposed -- compare against the oracle directly -- and the
+oracle immediately overturned the previous round's central change.
+
+**PyMatching merges parallel mechanisms too.** Its graph for this circuit has **78
+edges**, which is exactly the number of distinct detector pairs, and its edge
+*weights* match mine: `6.4361` against my `6.4374` for the pair `(-1, 0)`. So §3.17's
+"merging is wrong" was **half wrong**: merging is what the reference does, and the
+weights agree. Keeping 556 separate mechanisms was not the fix; the *observable*
+attribution was.
+
+**The observable convention is where they diverge.** The reference attaches the
+observable to an edge when **any** of its mechanisms carries it -- confirmed against
+its `fault_ids`, and it does so on **20 edges** at d=3. XOR keeps it only when an
+*odd* number do, giving **12 edges**. The two conventions disagree on **16 of 78
+edges**, and that disagreement is what made the merged version over-flip: an even
+count of observable-carrying mechanisms silently cancelled.
+
+**So I implemented ANY. It measured worse.**
+
+```
+  merged, ANY observable, 78 edges, 20 with observable
+    d=3 p=0.001:  reference 0/2000   t-join 50/2000
+    d=3 p=0.003:  reference 5/2000   t-join 130/2000
+```
+
+Against the unmerged state's **11** and **30** on the same shots. Reverted.
+
+**Why the reference's convention does not transfer.** Adopting its edge *label* without
+adopting its *decoder* is not a valid comparison: the reference's observable assignment
+is meaningful because its matching minimises weight over that same labelled graph, and
+its correction is the matched edge set. My decoder routes **paths** and toggles
+observables along them, and a path's observable depends on which mechanisms the route
+traverses, not on a per-edge label. Transcribing the label into a path-based decoder
+mixes two conventions; that is why it produced 16 edges' worth of disagreement rather
+than a fix.
+
+**State: 152 -> 14 -> (reverted) 30.** The unmerged state stands as the best measured:
+`11/2000` at d=3 p=0.001 and `30/2000` at d=3 p=0.003, against the reference's `0` and
+`5`.
+
+**What round 8 establishes, and it is worth more than the reverted change:** the edge
+*weights* are right, the graph structure is right, and the remaining gap is in how a
+**path** accumulates observables. That is now a single, well-posed question rather than
+a search: the decoder needs either a matching formulation (where per-edge labels are
+meaningful) or a path-based observable rule that is internally consistent. The current
+code does the second, half-way.
+
+**825 passing.** Not wired into `logical_error_rate`.
+
+---
