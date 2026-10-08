@@ -2475,3 +2475,61 @@ correctness property rather than a quality one. Error rate comes after.
 measured worse is reverted again, and the reason is recorded in the module.
 
 ---
+
+### 3.13 Round 2: three structural fixes, invariant 100% -> 37.8%, still not working
+
+The objective asked whether Union-Find is wrong or whether my approach to it is. This
+round is strong evidence for the second, and the correctness metric moved a long way
+while the error rate did not.
+
+**Fixes, each found by inspecting a specific failing shot rather than by reasoning:**
+
+1. **Peeling must run to convergence, not one pass.** A node that is not a leaf
+   initially becomes one only after its neighbours are stripped, so a single queue
+   pass left strippable leaves in place. Symptom that exposed it: a two-event shot
+   peeled *correctly* while the violation rate over all shots stayed at 54% -- the
+   signature of an algorithm that works only when the first pass happens to suffice.
+2. **The boundary node must be odd.** It is where a chain terminates, so peeling must
+   not strip its incident edge. Treating it as an ordinary leaf removed the only route
+   out for an odd boundary-touching cluster. Verified on shot 8 at d=3: one event,
+   parity 1, `touches` True, peeled result `[]`. Fixed: 54% -> 37.8%.
+3. **Grown edges must be grouped by their CURRENT root.** ``members`` is written keyed
+   by whichever root existed at merge time and path compression later reassigns roots,
+   so a lookup by root silently returns empty for any cluster whose root moved --
+   dropping its correction. Grouping by ``find`` removes the staleness structurally.
+   (Measured: no change on its own. Kept because the staleness is real even though it
+   is not currently the dominant term.)
+
+**Growth order was not the problem.** I rewrote ``_grow`` as genuine radius growth --
+one pass in weight order, merging only *unfinished* clusters, which is what
+Delfosse-Nickerson specify and what the previous version never did. It changed the
+headline numbers by **nothing**. That is a useful negative result: the objective's
+hypothesis that radius growth was the missing piece is **not supported**, and the
+earlier note in §3.12 naming it as "the gap" was wrong.
+
+**The error rate is worse than the empty-correction state, and that is expected.**
+Measured over five seeds at d=3, p=0.003, 2000 shots: Union-Find **253.8** errors
+against the reference's **3.6**. The broken version that returned an empty correction
+scored *better* (33/1000) because predicting "no observable flip" is right ~97% of the
+time. A decoder that is often wrong in a correction is worse than one that abstains --
+which is why a **correctness** metric and a **quality** metric must be reported
+separately, and why 37.8% is the number that matters this round.
+
+**What is still wrong, precisely.** 37.8% of shots at d=3 produce a correction whose
+boundary disagrees with the syndrome on a mean of **2 detectors**. The failing case
+inspected (shot 8, one event on detector 19) yields an empty correction even though the
+cluster holds six edges with parity 1. So the boundary-termination path is still not
+wired correctly for odd boundary-touching clusters: the boundary edge is present in the
+grown set, is protected from stripping, and still does not survive into the result.
+
+**Answer to the objective, as far as this round establishes it:** it is my approach,
+not the algorithm. Six independent structural defects have now been found in this
+decoder and each one is a plain implementation error rather than a limitation of
+Union-Find; nothing so far suggests the algorithm cannot reach the reference. But
+"retry until it's working" is **not met** -- the decoder is provably wrong on 37.8% of
+shots and 70x worse than the reference on the metric that matters for a threshold.
+
+**825 passing.** Not wired into `logical_error_rate`; the threshold still comes from
+PyMatching.
+
+---

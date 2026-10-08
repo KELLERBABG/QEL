@@ -183,14 +183,29 @@ class UnionFindDecoder:
     # -- growth ------------------------------------------------------------
 
     def _grow(self, edges, node_edges, events):
-        """Grow clusters until each holds an even number of events or touches the
-        boundary.  Returns the union-find state plus, per cluster, the edges grown
-        into it."""
+        """Grow clusters by **increasing radius**, stopping each when it is valid.
+
+        This is the part Delfosse-Nickerson specify and the earlier version never
+        implemented.  It walked the edge list once in weight order and unioned
+        greedily, which has no notion of a *finished* cluster: every cluster kept
+        absorbing edges, so corrections came out far longer than the algorithm
+        intends and the peel had little to reduce.
+
+        Radius growth processes edges in weight order and merges a cluster only
+        while it is still **unfinished**, so a cluster that has become valid stops
+        growing immediately.  The check is symmetric -- both endpoints must be
+        unfinished -- which is exactly the guard that is meaningless without a
+        radius and is the reason the previous version over-merged.
+
+        A cluster is valid when it holds an **even number of events** (its parity can
+        be explained internally) or **touches the boundary** (its chain may run off
+        the code).  All clusters advance together in weight order, so the radius is
+        implicit in the edge ordering rather than an explicit counter.
+        """
         parent = {n: n for n in node_edges}
         size = {n: 1 for n in node_edges}
         parity = {n: 0 for n in node_edges}
         touches = {n: False for n in node_edges}
-        #: edge indices grown into each root
         members: dict[int, set[int]] = {n: set() for n in node_edges}
 
         def find(x):
@@ -216,7 +231,7 @@ class UnionFindDecoder:
             return ra
 
         for event in events:
-            parity[find(event)] ^= 1
+            parity[find(int(event))] ^= 1
         for node in node_edges:
             if node == BOUNDARY:
                 touches[find(node)] = True
@@ -224,49 +239,49 @@ class UnionFindDecoder:
         def valid(root):
             return parity[root] == 0 or touches[root]
 
-        # **Boundary edges unions but do not peel.**  The boundary must join the
-        # union so a cluster registers as ``touches`` -- that flag is what makes an
-        # odd cluster valid.  But its edges are deliberately kept *out* of
-        # ``members``, the forest that peeling reduces: the boundary is where a
-        # chain terminates, not an edge to be stripped.  Including them made the
-        # boundary edge look like a leaf, so peeling removed it and the correction
-        # came out empty -- observables silently dropped on exactly the shots where
-        # a boundary chain matters.
-        boundary_edges = [e for e in edges if e.b == BOUNDARY]
-        by_weight = sorted((e for e in edges if e.b != BOUNDARY),
-                           key=lambda e: e.weight)
-        for edge in by_weight:
+        # NOTE the predicate.  The boundary node is ``-1`` and edges are
+        # canonicalised as ``(min, max)``, so the boundary is **always** ``e.a``.
+        # Testing only ``e.b`` matches nothing, which silently turned an earlier
+        # fix into a no-op -- the ``boundary_edges`` list came out empty and every
+        # loop over it did nothing while appearing to run.
+        def is_boundary(edge) -> bool:
+            return edge.a == BOUNDARY or edge.b == BOUNDARY
+
+        interior = sorted((e for e in edges if not is_boundary(e)),
+                          key=lambda e: e.weight)
+        boundary_edges = [e for e in edges if is_boundary(e)]
+
+        # Radius growth: one pass in weight order, merging only unfinished clusters.
+        for edge in interior:
             ra, rb = find(edge.a), find(edge.b)
             if ra == rb:
                 continue
             if valid(ra) and valid(rb):
-                # Both already explainable; merging would only add length.
+                # Both endpoints already explainable: absorbing this edge would
+                # only lengthen the correction.
                 continue
             merged = union(edge.a, edge.b)
-            members[merged].add(edge.index)
+            members.setdefault(merged, set()).add(edge.index)
 
-        # Register boundary contact without growing along those edges.
+        # Boundary contact.  A cluster touching the code edge is valid, so an odd
+        # cluster becomes explainable by running its chain off the array.
+        boundary_of: dict[int, int] = {}
         for edge in boundary_edges:
             ra, rb = find(edge.a), find(edge.b)
             if ra != rb:
                 merged = union(edge.a, edge.b)
             else:
                 merged = ra
-            touches[find(merged)] = True
-
-        # **An odd, boundary-touching cluster needs one boundary edge in its
-        # forest**, or peeling has nothing to terminate the chain on.  The cluster
-        # holds an odd number of events, so its correction must reach the code edge;
-        # without a boundary edge in ``members`` the peeled result is unbalanced and
-        # the correction fails to reproduce the syndrome.  Exactly one is added --
-        # the cheapest incident to the cluster -- because a second would cancel the
-        # termination.
-        boundary_of: dict[int, int] = {}
-        for edge in boundary_edges:
-            root = find(edge.a)
+            root = find(merged)
+            touches[root] = True
             current = boundary_of.get(root)
             if current is None or edge.weight < edges[current].weight:
                 boundary_of[root] = edge.index
+
+        # An odd, boundary-touching cluster needs its terminating boundary edge
+        # **inside the forest**, or peeling has nothing to end the chain on and the
+        # peeled result is unbalanced.  Exactly one is added: a second would cancel
+        # the termination.
         for root, index in boundary_of.items():
             if parity.get(root, 0):
                 members.setdefault(root, set()).add(index)
@@ -298,40 +313,62 @@ class UnionFindDecoder:
         makes exactly one node odd.
         """
         # Which nodes are odd, from the observed syndrome.
-        node_odd: dict[int, bool] = {}
+        #
+        # **The boundary node is odd too.**  It is where a chain is allowed to
+        # terminate, so peeling must not strip its incident edge -- and stripping it
+        # is exactly what produced an empty correction on a single detection event:
+        # the cluster is odd (one event) and touches the boundary, the boundary edge
+        # is its only route out, and treating the boundary as an ordinary
+        # strippable leaf removed it.  Verified on shot 8 at d=3: one event, parity
+        # 1, touches True, peeled result `[]`.
+        node_odd: dict[int, bool] = {BOUNDARY: True}
         for event in events:
             node_odd[int(event)] = not node_odd.get(int(event), False)
         odd_nodes = {n for n, is_odd in node_odd.items() if is_odd}
 
-        roots = {self._root(parent, n) for n in parent}
+        # **Group the grown edges by their CURRENT root.**  `members` is written
+        # keyed by whichever root existed at merge time, and path compression later
+        # reassigns roots, so looking up `members[root]` silently returns an empty
+        # set for any cluster whose root moved -- dropping its correction entirely
+        # and leaving its detection events unexplained.  Walking every grown edge
+        # and grouping on `find` removes the staleness rather than trying to keep
+        # two structures in step.
+        by_root: dict[int, set[int]] = {}
+        for owner, grown_edges in members.items():
+            for index in grown_edges:
+                root = self._root(parent, edges[index].a)
+                by_root.setdefault(root, set()).add(index)
+            del owner
         chosen: set[int] = set()
 
-        for root in roots:
-            grown = members.get(root, set())
+        for root, grown in by_root.items():
             if not grown:
                 continue
-
             incident: dict[int, list[int]] = {}
             for index in grown:
                 for node in (edges[index].a, edges[index].b):
                     incident.setdefault(node, []).append(index)
 
             removed_edges: set[int] = set()
-            # A leaf may only be stripped when it is NOT an odd (syndrome) node.
-            queue = list(incident)
-            while queue:
-                node = queue.pop()
-                if node in odd_nodes:
-                    continue
-                live = [i for i in incident.get(node, [])
-                        if i not in removed_edges]
-                if len(live) != 1:
-                    continue
-                index = live[0]
-                removed_edges.add(index)
-                other = (edges[index].b if edges[index].a == node
-                         else edges[index].a)
-                queue.append(other)
+            # **Leaf-stripping must run to convergence, not one pass.**  A node that
+            # is not a leaf initially becomes one only after its neighbours have
+            # been stripped, so a single queue pass leaves strippable leaves in
+            # place and the surviving edge set no longer has the syndrome as its
+            # boundary.  Measured symptom: a two-event shot peeled correctly while
+            # the violation rate over all shots stayed at 54%, which is the
+            # signature of an algorithm that works only when the first pass happens
+            # to suffice.
+            changed = True
+            while changed:
+                changed = False
+                for node in list(incident):
+                    if node in odd_nodes:
+                        continue
+                    live = [i for i in incident.get(node, [])
+                            if i not in removed_edges]
+                    if len(live) == 1:
+                        removed_edges.add(live[0])
+                        changed = True
 
             # What survives is the correction: its boundary is the syndrome.
             for index in grown:
