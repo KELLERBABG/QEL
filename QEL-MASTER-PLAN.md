@@ -625,7 +625,7 @@ The old roadmap's M1→M2→M3 was right about sequence. It was wrong that any o
 | P1.3 | **Barrett–Kok generation.** `core/photonics.py`, `BarrettKok`: excite, interfere, herald on coincidence. `p ≤ 1/2` exact at zero loss, `p ∝ η²`, loss costs rate and not fidelity, and a dark coincidence herald corrupts the pair. | Success probability vs loss matches `p_link = ½·η_det²·η_mem,0·η_mem,1·10^(-αL/10)` | S–M | **Done** |
 | P1.4 | **Memory model + state machine.** `raw / entangled / occupied` with enforced transitions, pair-correct decay, all-or-nothing allocation, and expiry that frees a decayed slot rather than stranding it. Platform presets (erbium/NV) still to add. | A memory cannot be allocated twice; expiry is observable | S | **Done** |
 | P1.5 | **Resource management + reservations.** `Reservation` with target fidelity, memory count, start/end windows and a full lifecycle; priority-then-FIFO arbitration; both-ends negotiation with rollback; early-expiry release. | Two competing requests contend and exactly one is refused | M | **Done** |
-| P1.6 | **Application layer + classical control plane.** Request generator with arrival statistics; classical messages with configurable delay, counted. | Throughput is undefined without load — show it becomes defined | S | Todo |
+| P1.6 | **Application layer + classical control plane.** `topology/load.py`: a Poisson `RequestGenerator` with reproducible arrivals, `ClassicalControlPlane` with round-trip delay **counted per message**, and `throughput(...)` over a request stream. The milestone's acceptance test is deliberately negative and is asserted: **throughput is `None` with no load and defined with one**, bounded above by the arrival rate. | Throughput is undefined without load — show it becomes defined | S | **Done** |
 
 **Why P1.5 before Phase 3:** a synthesis tool built on a simulator with no contention
 solves the wrong problem. This was the old roadmap's best judgement and it still holds.
@@ -648,7 +648,7 @@ Do not start before Phase 1. These are where QEL is actually different.
 |---|---|---|---|---|
 | P3.1 | **Repeater placement as optimisation** (§4.3). Link-based ILP/CP-SAT over candidate sites; objective delivered key rate. | A layout, and a key rate for it | L | Todo |
 | P3.2 | **Robust placement** — the genuinely open gap (§4.3.3). Scenario-based or chance-constrained over coherence-time uncertainty. | A layout that survives a parameter sweep the nominal-optimal one does not | L | Todo |
-| P3.3 | **Surface code** (§5). Rotated code, distance `d` a parameter, syndrome extraction, a real decoder. | Logical error rate falls with `d` below threshold | L | Todo |
+| P3.3 | **Surface code** (§5). Rotated code, distance `d` a parameter, syndrome extraction, a real decoder. | Logical error rate falls with `d` below threshold | L | **Partial — see below** |
 | P3.4 | **Logical key rate.** "Key rate after error correction" — a number almost nobody reports. | A defensible per-logical-qubit rate, with the code's cost in fidelity *and* rate stated | L | Todo |
 | P3.5 | **Multi-commodity routing under contention** (§4.3.4). Several source–destination pairs served simultaneously. | Contention changes the answer vs one-route-at-a-time | L | Todo |
 
