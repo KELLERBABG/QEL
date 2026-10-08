@@ -3371,3 +3371,74 @@ precisely what the ``(1 - F_log)/3`` term carries), and the qubit overhead is
 **955 tests passing.**
 
 ---
+
+
+### 3.28 P3.1 is already solved; P3.2 built
+
+**P3.1 needs no ILP.** The plan asks for "link-based ILP/CP-SAT over candidate sites", but
+`best_placement` already solves this exactly: a dynamic program over sites in position
+order carrying a **Pareto frontier** of (rate, fidelity) per state, precisely because the
+best rate per state is not sufficient -- two chains reaching the same site with the same
+repeater count are not interchangeable.
+
+I nearly recorded a defect here. My first comparison ran the DP under `max_repeaters=3`
+against an unconstrained brute force and found **43.89%** suboptimality. That was an
+artefact of my own test: the brute force was enumerating layouts the DP was forbidden to
+choose. Constraint-matched, over 25 random instances:
+
+```
+  DP vs brute force, max_repeaters enforced on both:  0 of 25 suboptimal
+  Hand-checked instance:  DP rate 116002.1991 == brute force 116002.1991
+```
+
+So the DP is exact and the item is closed with evidence rather than rewritten. The
+lesson is the same one that has recurred all session: **the comparison was wrong, not the
+code.**
+
+**P3.2: chance-constrained placement over a continuous prior** --
+`topology/chance_placement.py`. The existing `robust_placement` takes a caller-supplied
+list of `Scenario` objects and returns *a* layout meeting the requirement in each. That
+is not a probabilistic statement: it says nothing about unlisted assumptions and cannot
+answer "how likely is this to still work", which is the question when a hardware
+parameter is a range.
+
+The construction requires ``Pr[ F(chain; T1, T2) >= F_req ] >= 1 - eps`` and reduces it
+without sampling:
+
+* **Monotonicity** -- fidelity is non-decreasing in both coherence times, so better memory
+  never hurts. Verified numerically in the tests, and the tests assert that the operating
+  point is **sensitive** (fidelity moves > 0.05 across the prior), because an earlier
+  version used T1 ~ 100 s where the model saturates at 0.970398 for T1 anywhere from 10 s
+  to 200 s and every assertion passed without exercising anything.
+* **The isoquantile principle** -- for a non-decreasing function of *one* random variable,
+  ``Q_alpha(phi(X)) = phi(Q_alpha(X))``, so the constraint becomes a condition at a
+  quantile with no distributional assumption beyond the quantiles.
+* **The two-parameter case is conservative, not exact, and says so.** The identity does
+  not extend to two independent parameters. Both a **product-margin** bound
+  ``(1 - eps/2)^2`` and a **common-factor** bound at ``1 - eps`` are computed and both
+  enforced. The correlated case is *declared*, not guessed: it is the usual hardware
+  situation where one material quality sets T1 and T2 together, and it changes the answer
+  (paired draws vs independent marginals), so a mismatched-length prior is refused.
+
+A targeted literature search confirms the gap is real: the formulations in use are
+**discrete** -- component selection from a catalogue, or greenfield repeater siting -- plus
+post-hoc sensitivity analysis. A chance constraint over a *continuous* hardware parameter
+is not a standard construction, which is what
+[arXiv:2501.06291](https://export.arxiv.org/pdf/2501.06291) and the
+[greenfield formulation](https://export.arxiv.org/pdf/2501.06291#6#3) show.
+
+**What it reports, and the honest limit.** The objective remains the nominal key rate, so
+the result is the best layout meeting the reliability target rather than the first one
+found. An unreachable target returns ``None`` with "no layout meets ... at this
+reliability" rather than a layout that misses it -- relaxing the requirement to make the
+number look good is exactly the failure this guards against. **The claim is bounded by
+the scenarios constructed:** it says the layout meets the requirement at the chosen
+quantiles, not that a Monte-Carlo estimate of the failure probability has been measured.
+
+For the candidate sets tried, the constraint does not bind -- the same layout wins at
+``eps`` from 0.5 down to 0.01 -- because those layouts clear the quantile requirement with
+margin. The mechanism is therefore demonstrated on the quantile direction and the
+monotonicity properties rather than on a rate difference, and the tests say so instead of
+implying otherwise.
+
+**974 tests passing**, 57 modules.
