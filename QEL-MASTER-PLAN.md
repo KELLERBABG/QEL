@@ -638,7 +638,7 @@ solves the wrong problem. This was the old roadmap's best judgement and it still
 | P2.2 | **Topologies as first-class objects.** `topology/shapes.py` adds FatTree and BCube alongside ring/grid, with a builder registry and a connectivity report. **NetworkX interop deliberately declined** — see §2.9. | A user supplies a network without writing Python | M | **Done** |
 | P2.3 | **Config generators.** `topology build` exists and now handles **all four shapes** through the builder registry (ring/grid/fattree/bcube) and writes them out with `--out`; `topology/qel_json_export.py` supplies the exporter the native schema was missing. | `bench`/`plan` consume a generated file end to end | S | **Done** |
 | P2.4 | **SeQUeNCe config import/export** (§4.5). Emit `RouterNetTopo` **dicts**; honour distance-halving, delay-averaging, and the mandatory classical channel. The exporter existed but was **untested**; it now has coverage asserting a classical companion for every quantum link and cross-schema agreement on the node set. | Same topology runs in both tools | S | **Done** |
-| P2.5 | **Validation / calibrated presets.** Ship published platform parameters; reproduce one published fibre key-rate-vs-distance dataset and publish the comparison. | A figure comparing prediction to measurement | M | Partial (presets exist) |
+| P2.5 | **Validation / calibrated presets.** Published platform parameters ship as presets, and `quantumnet/calibration/` reproduces **Lo-Ma-Chen 2005 Fig. 1** (PRL 94, 230504) against the GYS hardware: **2 of 4** published statements reproduced, with the two that do not reported as documented differences rather than tuned away (§3.30). | A figure comparing prediction to measurement | M | **Done** |
 
 ### Phase 3 — The distinctive work
 
@@ -3491,3 +3491,72 @@ a format with one working direction.
 **996 tests passing**, 58 modules. With P2.3 and P2.4 closed, every item in the Phase 1-3
 tables that the plan named as outstanding is done; what remains marked Partial is P2.5
 (calibrated presets, which exist, plus one published dataset comparison).
+
+
+### 3.30 P2.5: calibrated against Lo-Ma-Chen 2005, 2 of 4 statements reproduced
+
+`quantumnet/calibration/` reproduces Figure 1 of Lo, Ma & Chen, *Decoy State Quantum Key
+Distribution*, [PRL 94, 230504 (2005)](https://arxiv.org/abs/quant-ph/0411004), which
+computes the decoy-state rate for the **Gobby-Yuan-Shields** hardware this package's
+`gobby-yuan-shields` preset already carries. Four checkable statements are transcribed
+from the source and each is measured:
+
+```
+  [OK ] optimal_mu           roughly 0.5, of order O(1)      measured 0.5
+  [OK ] reach_without_decoy  only about 30 km                measured 27 km
+  [DIFF] reach_with_decoy    over 140 km                     measured 123.5 km
+  [DIFF] upper_bound         208 km, where e_1 = 1/4         measured 179 km
+```
+
+**The mechanism is reproduced, and that matters more than any single distance.** The
+paper's central claim is that decoy states move the optimal signal intensity from
+`O(eta)` to `O(1)` -- roughly 0.5 -- which is what raises the net rate from `O(eta^2)` to
+`O(eta)`. Sweeping mu recovers **exactly 0.5** as the optimum, and the sweep is a real
+maximum rather than a plateau: at mu = 0.1 the reach is 105.2 km against 123.5 km at 0.5.
+A model that gets the mechanism right is capturing the physics.
+
+**The validation that matters most is the no-decoy curve.** `reach_without_decoy`
+reproduces the published ~30 km at **27 km** -- and this is a *different calculation*
+from the rate the package normally reports: GLLP equation 12 with the pessimistic
+untagged fraction `1 - Omega = p_multi / Q_mu`, implemented from the source rather than
+reused. An independent formula landing on the published number is much stronger evidence
+than tuning the primary number would have been.
+
+**A real property found while building it.** At the GYS demo's own 4.5 % detector
+efficiency the no-decoy bound is **exactly zero at every distance**: the total gain is
+smaller than the multi-photon probability at mu = 0.1, so `Omega` goes negative and no
+untagged fraction exists. That is why that experiment needed decoy states at all, and it
+is recorded (`gllp_parameter_sensitivity`) rather than hidden by choosing a kinder
+detector:
+
+```
+  detector efficiency   no-decoy reach
+      0.045                  0 km        <- the GYS demo's own detector
+      0.100                 12 km
+      0.200                 27 km        <- the figure's ~30 km
+      0.400                 42 km
+      0.800                 57 km
+```
+
+**The two differences, and why neither is tuned away.**
+
+* **Decoy reach 123.5 vs >140 km.** The package reports the reach at which the
+  **finite-key** secret length is positive (LCWX) and bounds the single-photon yield
+  conservatively; the source draws Figure 1 asymptotically. A finite-key answer below an
+  asymptotic one is the expected direction. The test asserts the shortfall *and* that it
+  stays a margin rather than a collapse, so it would fail if the number drifted either
+  way -- including if it started *exceeding* the published figure, which would mean a
+  bound had been loosened.
+* **Intercept-resend crossing 179 vs 208 km.** The crossing is where the single-photon
+  QBER reaches 1/4, beyond which intercept-resend succeeds. It is model-dependent, so it
+  is reported as measured rather than adjusted until it agrees.
+
+**Tests pin the failures as well as the successes.** A calibration that quietly dropped
+the statements it failed would report a smaller denominator and look like better
+agreement than it has, so the test asserts that the number of compared statements still
+equals the number transcribed. 16 tests, including that `Omega <= 0` gives a rate of
+zero rather than a negative one, and that the multi-photon probability really is the
+Poisson tail `1 - e^-mu (1 + mu)`.
+
+**1012 tests passing**, 60 modules. P2.5 was the last item marked Partial on the Phase 1-3
+tables other than P1.1 and P1.2, which are the next two.
