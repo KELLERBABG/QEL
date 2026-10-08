@@ -2302,3 +2302,58 @@ rate and therefore no threshold at all. What has changed is that the gap is now
 **825 passing, 54 modules.**
 
 ---
+
+### 3.10 Union-Find decoder: in progress, not yet competitive
+
+`core/union_find.py` implements Delfosse-Nickerson Union-Find with peeling — cluster
+growth by increasing edge weight, then leaf-stripping to reduce the grown forest to
+edges whose boundary is the observed syndrome. Peeling is the piece earlier attempts
+lacked: without it a decoder returns a plausible edge set that does **not** reproduce
+the syndrome, which is a wrong answer rather than an error.
+
+**It is not wired into `logical_error_rate`**, deliberately. Measured against
+PyMatching on identical shots it currently stands at **10-117 errors per 1000**
+against the reference's **0-1**, so substituting it would replace a validated
+threshold with an invalid one. The threshold continues to come from PyMatching, and
+the module is explicit about being work in progress.
+
+**Graph construction is a real advance, independent of the matcher.** Mechanisms
+are now **merged**: a detector carries up to 35 parallel single-detector components
+at d=3, each its own mechanism with its own probability and observable signature.
+Merging them into one edge with probability ``1 - prod(1 - p_i)`` and observable
+**XOR** (not OR — two mechanisms carrying the same observable cancel) reduces the
+d=3 graph from 556 components to **78 edges**. Treating them as independent both
+inflates the graph ninefold and makes "which one fired" a coin toss.
+
+**Defects found while building it, and the diagnosis of the current failure:**
+
+1. **Boundary edges were treated as peelable forest edges.** For a lone detection
+   event the boundary edge became a leaf, peeling stripped it, and the correction
+   came out empty — observables silently dropped on exactly the shots where a
+   boundary chain matters. Boundary edges now **union but do not peel**: the
+   boundary joins the union so a cluster registers as touching it, but its edges
+   stay out of the forest that peeling reduces.
+2. **Not yet fixed:** single-event shots still return **no observables**. The
+   cheapest boundary edge incident to an odd, boundary-touching cluster is meant to
+   be added to the correction after peeling, and that path is not firing — verified
+   directly: 21 single-event shots at d=3, every one returning an empty observable
+   set. This is the next thing to fix, and it is the dominant error source, because
+   the observable is dropped rather than applied wrongly.
+
+**Envelope, measured** (why this is worth finishing beyond accuracy):
+
+```
+  d=3:  24 detectors,   188 edge components,  368 boundary components
+  d=5: 120 detectors,  2108,                 1598
+  d=7: 336 detectors,  8078,                 3752
+  d=9: 720 detectors, 19825,                 6670
+```
+
+One `compare_to_reference` call at d=3 / 2000 shots takes **~25 s** with the greedy
+decoder, which cascades a Dijkstra per event. Union-Find is near-linear per shot, so
+it is load-bearing for **speed as well as accuracy** — at current speed a full
+threshold curve is slow to produce.
+
+**825 passing, 55 modules.**
+
+---
