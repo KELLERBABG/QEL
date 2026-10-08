@@ -138,6 +138,20 @@ ol.refs li{margin:.5rem 0}
 sup.cite{font-family:var(--mono);font-size:.64em;color:var(--accent);
   vertical-align:super;line-height:0}
 
+/* ── language control ───────────────────────────────────────────────────
+   The page is English and there is no German twin, so this does not swap text:
+   it invokes the browser's own translation, which is machine translation with
+   the quality caveats that implies. It scrolls to the section you are reading
+   afterwards, because translation reloads the document. */
+.lang-btn{font:inherit;font-family:var(--sans);font-size:.78rem;color:var(--accent);
+  background:none;border:1px solid currentColor;border-radius:2px;
+  padding:.12rem .45rem;cursor:pointer;line-height:1.4}
+.lang-btn:hover{background:rgba(122,46,46,.07)}
+.lang-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#lang-hint{font-family:var(--sans);font-size:.76rem;color:var(--ink-3);
+  margin:.5rem 0 0;max-width:52ch}
+#lang-hint code{font-size:.94em}
+
 /* ── result / limitation blocks ─────────────────────────────────────── */
 .note{border:1px solid var(--rule);border-left:3px solid var(--accent-2);
   background:#fff;padding:.85rem 1rem;margin:1.4rem 0;font-size:.9rem}
@@ -220,7 +234,10 @@ footer a:hover{color:var(--accent)}
     <span>v0.1.0</span>
     <span>Apache-2.0</span>
     <span><a href="https://github.com/KELLERBABG/QEL">github.com/KELLERBABG/QEL</a></span>
+    <span><button type="button" id="lang-de" class="lang-btn"
+      title="Diese Seite ist auf Englisch. Öffnet die Übersetzungsfunktion Ihres Browsers — die Seite selbst wird nicht verändert.">Deutsch&nbsp;›</button></span>
   </div>
+  <p id="lang-hint" hidden></p>
 </header>
 
 <!-- ── abstract ───────────────────────────────────────────────────────── -->
@@ -963,37 +980,73 @@ best: 4 sites at [40, 80, 120, 160] km
 
 <script>
 // Progressive enhancement only: the page is complete and readable without this.
-// It highlights the current section in the marginal navigation and does nothing else.
+// Two things: highlight the current section in the marginal navigation, and offer a
+// language hint. Nothing here changes the text -- see the button's own comment.
 (function () {
+  /* ---- marginal navigation ------------------------------------------- */
   var links = Array.prototype.slice.call(document.querySelectorAll('.rail nav a'));
-  if (!links.length || !('IntersectionObserver' in window)) return;
-
-  var byId = {};
-  var targets = [];
-  links.forEach(function (a) {
-    var el = document.getElementById(a.getAttribute('href').slice(1));
-    if (el) { byId[el.id] = a; targets.push(el); }
-  });
-  if (!targets.length) return;
-
-  function setCurrent(id) {
-    links.forEach(function (a) { a.removeAttribute('aria-current'); });
-    if (byId[id]) byId[id].setAttribute('aria-current', 'true');
+  if (links.length && 'IntersectionObserver' in window) {
+    var byId = {};
+    var targets = [];
+    links.forEach(function (a) {
+      var el = document.getElementById(a.getAttribute('href').slice(1));
+      if (el) { byId[el.id] = a; targets.push(el); }
+    });
+    if (targets.length) {
+      var setCurrent = function (id) {
+        links.forEach(function (a) { a.removeAttribute('aria-current'); });
+        if (byId[id]) byId[id].setAttribute('aria-current', 'true');
+      };
+      var observer = new IntersectionObserver(function (entries) {
+        // The entry nearest the top of the viewport that is still intersecting, so the
+        // marker does not flicker between two sections at a boundary.
+        var best = null;
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          if (!best || e.boundingClientRect.top < best.boundingClientRect.top) best = e;
+        });
+        if (best) setCurrent(best.target.id);
+      }, { rootMargin: '-10% 0px -70% 0px', threshold: 0 });
+      targets.forEach(function (t) { observer.observe(t); });
+      setCurrent(targets[0].id);
+    }
   }
 
-  var observer = new IntersectionObserver(function (entries) {
-    // Choose the entry nearest the top of the viewport that is still intersecting,
-    // so the marker does not flicker between two sections at a boundary.
-    var best = null;
-    entries.forEach(function (e) {
-      if (!e.isIntersecting) return;
-      if (!best || e.boundingClientRect.top < best.boundingClientRect.top) best = e;
-    });
-    if (best) setCurrent(best.target.id);
-  }, { rootMargin: '-10% 0px -70% 0px', threshold: 0 });
+  /* ---- language hint --------------------------------------------------
+     There is no German translation of this document and this button does not
+     pretend otherwise. It cannot: translating ~1000 lines of technical prose
+     would either go stale silently (the failure mode this project spends its
+     effort avoiding) or require a second maintained copy.
 
-  targets.forEach(function (t) { observer.observe(t); });
-  setCurrent(targets[0].id);
+     So it triggers the browser's own translation instead, and re-anchors to the
+     section the reader was in, because translation reloads the document. The
+     wording it shows is German, so it is useful to the person who needs it. */
+  var btn = document.getElementById('lang-de');
+  var hint = document.getElementById('lang-hint');
+  if (!btn || !hint) return;
+
+  var wantsGerman = function () {
+    var langs = navigator.languages || [navigator.language || ''];
+    return langs.some(function (l) { return /^de\b/i.test(l); });
+  };
+
+  // A reader whose browser is already German should not have to go looking.
+  if (wantsGerman()) {
+    hint.hidden = false;
+    hint.innerHTML = 'Diese Seite ist auf Englisch. ';
+  }
+
+  btn.addEventListener('click', function () {
+    hint.hidden = false;
+    hint.innerHTML =
+      'Diese Seite ist auf Englisch und es gibt keine deutsche Fassung. ' +
+      'Der Knopf öffnet die <b>Übersetzungsfunktion Ihres Browsers</b> ' +
+      '(Chrome/Edge: Rechtsklick &rarr; „Auf Deutsch übersetzen“; ' +
+      'Firefox: Symbol in der Adressleiste; Safari: Ansicht &rarr; Übersetzen). ' +
+      'Das ist Maschinenübersetzung &mdash; bei Fachbegriffen wie ' +
+      '<i>threshold</i>, <i>syndrome</i> oder <i>decoy state</i> lohnt ein Blick ' +
+      'auf das englische Original.';
+  });
 })();
 </script>
 </body>
