@@ -2890,3 +2890,49 @@ code does the second, half-way.
 **825 passing.** Not wired into `logical_error_rate`.
 
 ---
+
+### 3.20 Round 9: adopting the reference's own formulation measured 6x worse
+
+Round 9 implemented the course change §3.19 identified -- switch to the reference's own
+formulation: merged graph, ANY observable labels, and a matching whose observable comes
+from the **XOR of endpoint labels** rather than from reconstructed routes.
+
+The reasoning was sound and the algebra is exact. For a route between two vertices the
+XOR of edge labels equals the XOR of the *endpoint* labels, because each interior vertex
+contributes its label once on the way in and once on the way out. So route parity is
+independent of which shortest route is taken, and reconstructing routes -- which an
+earlier version got wrong -- becomes unnecessary.
+
+**It measured 193 errors per 2000 at d=3, p=0.003, against the unmerged path-based
+decoder's 30.** Six times worse. Reverted.
+
+| decoder | d=3 p=0.003 (reference = 5) |
+|---|---|
+| merged graph, ANY labels, endpoint-label matching | 193 |
+| **unmerged graph, path-based, minimum-weight pairing** | **30** |
+
+**So the reference's formulation does not reproduce the reference's quality here, and
+the reason is now the interesting question rather than the answer.** Three plausible
+causes remain, and none has been separated:
+
+1. **My matching is not the reference's.** Both are minimum weight over the same
+   weights, but I enumerate perfect matchings on the *metric closure*, which is not
+   generally the minimum-weight T-join -- the true optimum may route two pairs through
+   shared edges, which no perfect matching over precomputed pairwise distances can
+   express.
+2. **Boundary handling.** The reference has a distinct boundary node type; I fold it in
+   as node ``-1`` with edges, and a matching may use it multiple times in ways my
+   enumeration does not fully cover (I try exactly one boundary-terminated event).
+3. **The merged weight is not the right cost for a matching.** Folding parallel
+   mechanisms into ``1 - prod(1-p)`` is right for *edge existence* but the reference
+   may weight differently internally.
+
+**State.** Best measured remains the unmerged path-based decoder at **11/2000** and
+**30/2000** against the reference's **0** and **5**. Nine rounds have produced a decoder
+that is **valid by construction** and now within roughly **6x** at d=3 p=0.001, from
+**152x** at the start -- but it is still not competitive at d=5 and still not wired into
+`logical_error_rate`.
+
+**825 passing.**
+
+---
