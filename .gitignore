@@ -23,10 +23,9 @@ research/
 # copies of source files and notes. Promote from here into src/ deliberately.
 decoder_work/
 
-# Scratch output from development scripts.
-_jscheck.txt
-_enc_report.txt
-_plan_base.txt
-_plan_tail.txt
-_plan_fixed.md
-_plan_repaired.md
+# Scratch output and throwaway test harnesses from development. Listed by extension
+# rather than as `_*`, which would also have suppressed `__init__.py`.
+_*.js
+_*.html
+_*.txt
+_*.md
