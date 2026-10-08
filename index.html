@@ -202,7 +202,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;overflow-x:hidden}
 
   <div class="steps">
 
-    <section class="step" data-stage="created" data-fid="0.990" data-note="source pair"
+    <section class="step" data-stage="created" data-act="one" data-fid="0.990" data-note="source pair"
              data-cost="a source pair is never perfect" data-live="1">
       <span class="no">Stage one &middot; created</span>
       <h2>A pair is made, and it is already imperfect</h2>
@@ -217,7 +217,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;overflow-x:hidden}
       <p class="cost">Fidelity <b>0.990</b> &middot; one hop, and nothing spent yet</p>
     </section>
 
-    <section class="step" data-stage="swapped" data-fid="0.972" data-note="after one swap"
+    <section class="step" data-stage="swapped" data-act="one" data-fid="0.972" data-note="after one swap"
              data-cost="a Bell measurement consumes both halves" data-live="2">
       <span class="no">Stage two &middot; extended</span>
       <h2>Extending the link spends the pair</h2>
@@ -232,7 +232,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;overflow-x:hidden}
       <p class="cost">Fidelity <b>0.972</b> &middot; two pairs consumed to make one longer link</p>
     </section>
 
-    <section class="step" data-stage="held" data-fid="0.918" data-note="after memory hold"
+    <section class="step" data-stage="held" data-act="one" data-fid="0.918" data-note="after memory hold"
              data-cost="T1 relaxes the state, T2 destroys the phase" data-live="3">
       <span class="no">Stage three &middot; held</span>
       <h2>Waiting is not free</h2>
@@ -247,7 +247,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;overflow-x:hidden}
       <p class="cost">Fidelity <b>0.918</b> &middot; below the key threshold</p>
     </section>
 
-    <section class="step" data-stage="distilled" data-fid="0.963" data-note="after distillation"
+    <section class="step" data-stage="distilled" data-act="one" data-fid="0.963" data-note="after distillation"
              data-cost="256 pairs in, one clean pair out" data-live="3">
       <span class="no">Stage four &middot; purified</span>
       <h2>Quality is bought with quantity</h2>
@@ -262,7 +262,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;overflow-x:hidden}
       <p class="cost">Fidelity <i>0.963</i> &middot; recovered, at the cost of 256 pairs</p>
     </section>
 
-    <section class="step" data-stage="routed" data-fid="0.963" data-note="route accepted"
+    <section class="step" data-stage="routed" data-act="one" data-fid="0.963" data-note="route accepted"
              data-cost="the threshold is the constraint, not the distance" data-live="4">
       <span class="no">Stage five &middot; routed</span>
       <h2>The shortest path is not the question</h2>
@@ -276,7 +276,7 @@ py -m quantumnet ghost-net --topology mesh.json
       <p class="cost">Fidelity <i>0.963</i> &middot; three hops, distillation applied</p>
     </section>
 
-    <section class="step" data-stage="key" data-fid="0.963" data-note="key extracted"
+    <section class="step" data-stage="key" data-act="one" data-fid="0.963" data-note="key extracted"
              data-cost="BB84 runs at the route's own noise level" data-live="4">
       <span class="no">Stage six &middot; spent</span>
       <h2>Then the key comes out, or nothing does</h2>
@@ -292,7 +292,7 @@ py -m quantumnet all</pre>
       <p class="cost">Fidelity <i>0.963</i> &middot; QBER under 4%, 32 bytes of key</p>
     </section>
 
-    <section class="step" data-stage="pivot" data-fid="—" data-note="the argument turns"
+    <section class="step" data-stage="pivot" data-act="turn" data-fid="—" data-note="the argument turns"
              data-cost="and this is where the interesting question starts" data-live="0">
       <span class="no">Turn</span>
       <h2>That key is only as good as the link it came from</h2>
@@ -341,7 +341,7 @@ py -m quantumnet all</pre>
   </div>
 
   <div class="steps">
-    <section class="step" data-stage="code" data-fid="0.00100" data-note="d=3, p=0.003" data-live="1">
+    <section class="step" data-stage="code" data-act="two" data-fid="0.00100" data-note="d=3, p=0.003" data-live="1">
       <span class="no">Act two &middot; one</span>
       <h2>One logical qubit is many physical ones</h2>
       <p>
@@ -359,7 +359,7 @@ d=7, p=0.003   0.00000</pre>
       <p class="cost">34 / 98 / 194 physical qubits per logical pair at d = 3 / 5 / 7</p>
     </section>
 
-    <section class="step" data-stage="threshold" data-fid="0.007" data-note="the crossing" data-live="2">
+    <section class="step" data-stage="threshold" data-act="two" data-fid="0.007" data-note="the crossing" data-live="2">
       <span class="no">Act two &middot; two</span>
       <h2>There is a point past which more code makes it worse</h2>
       <p>
@@ -377,7 +377,7 @@ p=0.008   d3 0.01290   d5 0.01350   d7 0.01000  <span class="c">&lt;-- d5 now wo
       <p class="cost">Threshold <i>p &#8776; 0.007</i> &middot; measured, not fitted</p>
     </section>
 
-    <section class="step" data-stage="selfcontained" data-fid="4359" data-note="identical corrections" data-live="3">
+    <section class="step" data-stage="selfcontained" data-act="two" data-fid="4359" data-note="identical corrections" data-live="3">
       <span class="no">Act two &middot; three</span>
       <h2>The decoder is in the package, and it agrees with the reference</h2>
       <p>
@@ -530,10 +530,14 @@ py -m pytest -q        <span style="color:var(--dim)"># 1036 tests, about 3 minu
     var value = (raw === null || raw === '\u2014') ? NaN : parseFloat(raw);
     return { fid: value, note: el.getAttribute('data-note') || '', el: el };
   });
-  // The plotted series is act one only. Act two's values are not fidelities --
-  // 0.007 is a threshold and 4359 a shot count -- so putting them on a 0.88-1.0
-  // axis would make them meaningless rather than merely crowded.
-  var PLOT = STAGES.filter(function(s){ return isFinite(s.fid) && s.fid > 0.5; });
+  // The plotted series is act one ONLY, selected by the explicit data-act attribute
+  // rather than by magnitude. Filtering on "fid > 0.5" was a real bug: act two's
+  // "selfcontained" step carries 4359 (a shot count), which passed that test and put a
+  // point 2.9 million units off a 0.88-1.0 fidelity axis -- and plotIndex then returned
+  // 6 for it, aiming the marker at that garbage point.
+  var PLOT = STAGES.filter(function(s){
+    return s.el.getAttribute('data-act') === 'one' && isFinite(s.fid);
+  });
 
   var X0 = 40, X1 = 540, Y0 = 100, Y1 = 20, FMIN = 0.88, FMAX = 1.0;
   function xAt(i){ return X0 + (X1 - X0) * (i / Math.max(1, PLOT.length - 1)); }
@@ -545,8 +549,12 @@ py -m pytest -q        <span style="color:var(--dim)"># 1036 tests, about 3 minu
     }).join(' '));
   }
   // Where a given step sits on the plotted series, or -1 if it is not on it.
-  function plotIndex(stage){
-    for (var i = 0; i < PLOT.length; i++) { if (PLOT[i].el === stage.el) return i; }
+  // The argument is the step ELEMENT, so compare against PLOT[i].el directly.
+  // The earlier version compared PLOT[i].el === stage.el, where `stage` was already an
+  // element -- stage.el was always undefined, so this returned -1 for every step and
+  // the readout sat on its "no fidelity" branch permanently.
+  function plotIndex(element){
+    for (var i = 0; i < PLOT.length; i++) { if (PLOT[i].el === element) return i; }
     return -1;
   }
 
@@ -583,7 +591,7 @@ py -m pytest -q        <span style="color:var(--dim)"># 1036 tests, about 3 minu
        30% of the step. The marker travels on the same parameter as the number, so it
        sits on the plotted segment instead of jumping between waypoints -- which is
        what it did when the marker was positioned by stage index alone. */
-    var mine = plotIndex(stages[idx]);
+    var mine = plotIndex(steps[idx]);
     var e = local < 0.7 ? 0 : (local - 0.7) / 0.3;
     e = e * e * (3 - 2 * e);
 
