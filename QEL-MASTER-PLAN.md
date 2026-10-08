@@ -2159,3 +2159,146 @@ disagrees with the implementation" is not evidence about which one is wrong.
 `tests/test_core/test_logical_entanglement.py`).
 
 ---
+
+### 3.7 The logical_z / stim "mismatch" did not exist
+
+An earlier note in this plan claimed that `RotatedSurfaceCode.logical_z` uses the
+**top** data row while `stim`'s observable uses the **bottom** row, and that the two
+had never been reconciled. **That claim was wrong**, and resolving it took two
+separate corrections -- one to the reading, one to my own test.
+
+**The observables are the same operator.** `stim` reports the observable as
+measurement-record indices, ``OBSERVABLE_INCLUDE`` targets `-7, -8, -9` at d=3.
+Resolved properly -- negative index from the end of the **measurement list**, then
+stim-qubit-id to lattice-local index by position in the sorted data list -- those
+are local data qubits `[2, 1, 0]` at coordinates `(5,1), (3,1), (1,1)`. The support
+is **identical** to `logical_z()`'s `[0, 1, 2]` at `(1,1), (3,1), (5,1)`. Only the
+listing order differs, and support is what a logical operator is.
+
+**Two mistakes produced the false alarm, and both are worth recording:**
+
+1. **Reading record indices as geometry.** `-7` means "seventh-from-last
+   measurement", not "a qubit at some row". The data measurements are emitted in
+   *ascending* qubit order, so a descending record index is an *ascending*
+   coordinate. Treating the index as a geometric statement is what suggested the
+   other row.
+2. **Comparing stim's global qubit ids against lattice-local indices.** stim
+   numbers qubits globally and its data qubits are not contiguous: ids `[1, 3, 5]`
+   are local indices `[0, 1, 2]`. Skipping that mapping makes two identical
+   operators look disjoint.
+
+The second mistake was in my *verification*, not in the library -- so the false
+claim was produced by a broken test rather than by broken code, and it survived
+several rounds because the test "confirmed" it.
+
+**Now pinned** by `tests/test_core/test_observable_agreement.py` (10 tests): support
+equality at d=3, 5, 7; both operators on a constant row with `y = 1`; the descending
+record order asserted explicitly so the misreading cannot be repeated; and
+`logical_operator_for(code, "Z")` set-equal to stim's observable, which is the
+property a decoder's logical-flip decision actually depends on.
+
+**825 passing.**
+
+---
+
+### 3.8 In-package DEM decoder: built, measured, and not yet competitive
+
+`core/dem_decoder.py` builds a decoder from `stim`'s DEM with **observable
+attribution**, which is what the earlier attempts lacked: a DEM is a *detector*
+model and names no data qubits, so reconstructing qubits from detector pairs
+produced empty corrections for boundary matches. Carrying observable flips removes
+the reconstruction entirely, and the logical decision needs nothing else.
+
+**It works, and it is far worse than the reference.** Measured on identical shots
+via `compare_to_reference`, which turns the adjective into a number:
+
+```
+    d        p   reference   in-package     ratio
+    3    0.001     1/2000     29/2000     29.0x
+    3    0.003     4/2000    106/2000     26.5x
+    5    0.001     0/2000     24/2000      n/a
+    5    0.003     1/2000     77/2000     77.0x
+```
+
+**The in-package rates (1.5-3.9%) are above the physical error rate (0.1-0.3%)**,
+which is the part that matters: this decoder cannot recover a threshold at all, so
+substituting it for PyMatching in §2.27 would replace a validated number with an
+invalid one. That is why the threshold still stands on the reference decoder -- not
+for convenience, but because the alternative does not work.
+
+**One real bug found and fixed on the way.** Observables compose by **XOR**, not by
+union -- two matched paths carrying the same signature cancel, exactly as a Pauli
+applied twice is the identity. Union double-counts: 41 errors per 2000 shots
+against 29 by XOR on the same shots at d=3. The first version used union, which is
+the kind of error that yields a plausible-looking number rather than a crash.
+
+**The diagnosed cause of the remaining gap, with evidence.** Costs are counted in
+**hops**, and the DEM's error *probabilities* are discarded. That is not a
+technicality here because the graph is far denser in boundary edges than expected:
+
+```
+  detector 6: 34 boundary edges      detector 9:  34
+  detector 14: 35                    detector 17: 34
+  boundary edges carrying an observable: 131 of 368
+```
+
+A detector with 34 parallel boundary edges, only some of which carry the
+observable, is decided by my decoder on a **length-1 tie broken arbitrarily**. So
+the observable is dropped or applied by accident rather than by likelihood. The
+probabilities needed to choose correctly are present in the DEM and unused.
+
+**The fix is therefore specific**: weight edges by `-log(probability)` so that the
+likely mechanism wins the tie, which is the standard decoding cost and the reason
+the DEM carries probabilities at all. That is a bounded change to
+`shortest_paths_with_observables` and the graph construction.
+
+**What I am not claiming.** This is still greedy pairing, not minimum-weight
+matching and not Union-Find with peeling. Even with correct weighting it may not
+close a 30-70x gap, because greedy pairing is not minimum-weight. The honest
+statement is that the **dependency is still not removed**, the reason is diagnosed,
+and the next step is the weighted cost -- with the possibility that a proper
+Union-Find is needed afterwards.
+
+**825 passing.**
+
+---
+
+### 3.9 Weighted costs applied: better, still not competitive
+
+The diagnosed fix from §3.8 is implemented. Edges now cost ``-log(probability)``
+(Dijkstra) instead of one per hop, with the largest probability winning where
+several mechanisms connect the same pair. ``weighted=False`` retains the hop-count
+behaviour, because the difference between the two is a measurement rather than an
+opinion.
+
+```
+    d        p   reference   weighted (was hop-count)
+    3    0.001     1/2000    22/2000   (was 29)
+    3    0.003     4/2000    78/2000   (was 106)
+    5    0.001     0/2000    25/2000   (was 24)
+    5    0.003     1/2000    83/2000   (was 77)
+```
+
+**It helps where the diagnosis predicted and not enough to matter.** The
+improvement is real at d=3 (29 -> 22, 106 -> 78) and absent at d=5, which is
+consistent with the boundary-tie diagnosis being *one* cause and not the only one.
+
+**The remaining limit is the matcher, not the cost.** Greedy nearest-neighbour
+pairing is not minimum-weight matching. It commits to each event's partner before
+seeing the consequences, and no choice of edge weights fixes a greedy decision.
+Closing a 20-80x gap needs a real matcher -- Union-Find with peeling, or Blossom.
+
+**So the honest status of the threshold's dependency is unchanged**: it still comes
+from PyMatching, because the alternative produces rates above the physical error
+rate and therefore no threshold at all. What has changed is that the gap is now
+**measured and its causes identified** rather than described as "worse":
+
+| cause | status |
+|---|---|
+| observables accumulated by union | **fixed** (XOR) |
+| costs counted in hops, discarding DEM probabilities | **fixed** (``-log p``) |
+| greedy pairing instead of minimum-weight matching | **open** |
+
+**825 passing, 54 modules.**
+
+---
