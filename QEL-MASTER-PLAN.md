@@ -2936,3 +2936,51 @@ that is **valid by construction** and now within roughly **6x** at d=3 p=0.001, 
 **825 passing.**
 
 ---
+
+### 3.21 Round 10: the weight hypothesis is dead -- the lighter solution is the wrong one
+
+Round 10 tested §3.20's leading explanation -- that matching over the **metric closure**
+is heavier than the true minimum-weight T-join -- by asking the reference for the edges
+it chose and totalling their weights.
+
+**It is not heavier. It is lighter.**
+
+```
+  d=3, 85 comparable shots: my routes HEAVIER 0, LIGHTER 77, equal 8
+                            mean gap -2.69
+  d=5, 305 comparable shots: HEAVIER 0, LIGHTER 289, equal 16
+                            mean gap -3.95
+```
+
+My correction is **strictly lighter than the reference's on 87% of shots** and never
+heavier. Yet it produces **7.2x more logical errors** (multi-seed, 2000 shots, d=3
+p=0.003: reference mean 4.0, mine 28.8, across seeds 3/7/9/11/13).
+
+**That combination is diagnostic, and it rules out the weight model.** If cost were
+miscalibrated, my solution would be *heavier*, not lighter. A solution that is genuinely
+lighter while making more logical errors means **the weight is not what decides the
+observable** -- the decoder is finding a cheap correction that nonetheless crosses the
+logical operator.
+
+**A methodology note, since it nearly misled the round.** A 400-shot sample at seed 9
+showed **2 errors against the reference's 0**, which would have read as "essentially
+solved". The multi-seed 2000-shot measurement shows 7.2x. Small samples at these rates
+are not informative, and the earlier single-seed figures in §3.17-3.20 should be read as
+one sample each rather than as stable measurements.
+
+**What the evidence now says.** Ten rounds established that the graph is right (weights
+match the reference to 0.2%), the reduction is right (0% invalid corrections), the
+pairing is minimum-weight over its distances, and the cost model is right (my solutions
+are lighter). The failure is therefore in **what the decoder treats as the logical
+outcome**: a lighter correction is being chosen that flips the observable, which means
+the observable attribution along the chosen routes remains wrong even though each
+individual edge label matches the reference.
+
+That is a narrower statement than any previous round, and it is testable: take the
+shots where the two decoders disagree and compare the observable contributed by the
+**reference's edge set** against mine, edge by edge.
+
+**State: 7.2x at d=3 p=0.003, from 152x at the start.** Still above the physical rate, so
+still not wired into `logical_error_rate`. **825 passing.**
+
+---
