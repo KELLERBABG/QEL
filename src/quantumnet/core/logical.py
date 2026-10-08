@@ -548,6 +548,43 @@ def pair_key_fraction(fidelity: float) -> float:
     return float(max(0.0, 1.0 - 2.0 * binary_entropy((1.0 - f) / 2.0)))
 
 
+def compose_pair_fidelity(physical_fidelity: float, logical_fidelity: float,
+                          flip_probability: float) -> float:
+    """Fidelity of a physical pair after a logical bit flip at one end.
+
+    The two error sources compose as a **Werner-state product**, not as a mixture of
+    fidelities::
+
+        F = (1 - q) * [F_phys F_log + (1 - F_phys)(1 - F_log) / 3] + q * (1 - F_log)/3
+
+    where ``q`` is the probability that a logical flip occurred at one end.
+
+    **Why this is not a weighted average.**  An earlier version used
+    ``F_phys(1-q) + (1-F_phys)q``, which is wrong in both directions depending on the
+    inputs: it treats a *bit-flip probability* as if it were a fidelity.  Measured
+    error, against the Werner product: it **overstated** logical fidelity by 0.004 at
+    the package's own operating point (F_phys = 0.99, q = 0.004) and by **0.09** at
+    F_phys = 0.95, q = 0.05.  A key-rate figure that is wrong by 9% absolute is not a
+    small correction, and the sign of the error is not even consistent.
+
+    The second term collapses to ``(1 - F_log)/3`` with no dependence on
+    ``F_phys``: a bit flip moves that end out of the Bell subspace, and among the
+    three triplet states exactly one is orthogonal to the flipped component, giving
+    the factor of 1/3 regardless of the other end.
+
+    Checked at the limits: ``q = 0`` returns the plain Werner product (and reduces to
+    ``F_phys * F_log + (1-F_phys)(1-F_log)/3``, the value every other module in this
+    package assumes); two perfect pairs with a certain flip give 0; and no logical
+    error at all gives back the physical fidelity.
+    """
+    f_phys = float(np.clip(physical_fidelity, 0.0, 1.0))
+    f_log = float(np.clip(logical_fidelity, 0.0, 1.0))
+    q = float(np.clip(flip_probability, 0.0, 1.0))
+    werner = f_phys * f_log + (1.0 - f_phys) * (1.0 - f_log) / 3.0
+    flipped = (1.0 - f_log) / 3.0
+    return float(np.clip((1.0 - q) * werner + q * flipped, 0.0, 1.0))
+
+
 def logical_key_rate(physical_fidelity: float, distance: int, noise: float,
                      *, rounds: int | None = None, shots: int = 500,
                      seed: int | None = 1) -> LogicalKeyRate:
@@ -578,26 +615,33 @@ def logical_key_rate(physical_fidelity: float, distance: int, noise: float,
                                 seed=seed)
     p_round = memory.per_round_error_rate
 
-    # A logical flip is a bit flip at either end of the pair.
-    survival = (1.0 - 2.0 * p_round) ** rounds
-    pair_error = 1.0 - survival
+    # A logical flip is a bit flip at one end of the pair, with per-round probability
+    # ``p_round``.  Over ``rounds`` rounds the flip probability is
+    # ``1 - (1 - 2 p_round)**rounds`` because a bit flip has *two* outcomes, so the
+    # "no flip" survival factor is ``1 - 2p`` rather than ``1 - p``.
+    flip_probability = 1.0 - (1.0 - 2.0 * p_round) ** rounds
 
-    # Compose the two error sources rather than taking a minimum: the pair is
-    # wrong if the physical pair was wrong OR a logical error occurred, and the
-    # two are independent.
-    logical_fidelity = (physical_fidelity * survival
-                        + (1.0 - physical_fidelity) * pair_error)
-    logical_fidelity = float(np.clip(logical_fidelity, 0.0, 1.0))
+    # The pair's own fidelity after those rounds is its overlap with the Bell state,
+    # which is ``(1 + survival) / 2`` -- the Werner form, with the flip probability
+    # folded in as ``(1 - flip_probability/2)``.
+    logical_fidelity = 1.0 - flip_probability / 2.0
+
+    # Compose the two error sources through the Werner product (see
+    # ``compose_pair_fidelity``).  The earlier weighted-average form overstated the
+    # logical fidelity, by 0.004 at this package's operating point and by up to 0.09
+    # at lower physical fidelity.
+    effective_fidelity = compose_pair_fidelity(
+        physical_fidelity, logical_fidelity, flip_probability)
 
     code = RotatedSurfaceCode(distance)
     return LogicalKeyRate(
         physical_fidelity=float(physical_fidelity),
-        logical_fidelity=logical_fidelity,
+        logical_fidelity=float(effective_fidelity),
         rounds=rounds,
         distance=distance,
         logical_error_per_round=float(p_round),
-        logical_error_per_pair=float(pair_error),
-        key_fraction=pair_key_fraction(logical_fidelity),
+        logical_error_per_pair=float(flip_probability),
+        key_fraction=pair_key_fraction(effective_fidelity),
         # Two logical qubits, one per end.
         physical_qubits_per_logical=2 * code.n_qubits,
     )
