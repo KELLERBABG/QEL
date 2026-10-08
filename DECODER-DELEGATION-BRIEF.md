@@ -313,6 +313,17 @@ decoder that was **100% invalid**. Validity first, always.
 
 ## 7. Commands
 
+> **The commands in this section are the ones the brief shipped with, against the tree as
+> it was at handoff. Several no longer resolve**, because the task completed and the tree
+> changed: `research/uf_invariant.py`, `uf_weight_gap.py` and `uf_edge_diff.py` were later
+> removed from the repository, and `core/tjoin.py` — the module the accuracy checks below
+> import — was replaced by `core/tjoin_decoder.py`. The retargeted copies of those three
+> diagnostics survive in `decoder_work/` as `*_retargeted.py`.
+>
+> They are kept verbatim because they are the record of what was run to reach §4's
+> conclusions, and rewriting them would erase the evidence trail — the same reason §1's
+> snapshot is left unchanged. **For what works now, see the end of this section.**
+
 ### Working directory — use your own subfolder
 
 You have been asked to work in a **separate subfolder** for testing, building and
@@ -410,6 +421,41 @@ py scripts\audit_imports.py
   edge** yields a non-empty correction. That specific case was empty for four rounds.
 - A test asserting the correction's boundary **equals** the observed syndrome, on a fixed
   sample — the invariant no decoder in this package checked until round 5.
+
+### What works now
+
+The task this brief describes is **complete**. The decoder is `core/tjoin_decoder.py`, it
+is the default on the threshold path, and no third-party matcher is needed. Current
+equivalents of the commands above:
+
+```powershell
+# the suite, including the decoder's own tests
+py -m pytest -q                                   # 1036 tests
+py -m pytest tests/test_core/test_in_package_decoder.py -q
+
+# decode and report, with pymatching blocked so hidden use is a hard error
+py -c "
+import sys
+class B:
+    def find_spec(self, name, path=None, target=None):
+        if name.startswith('pymatching'): raise ImportError('blocked')
+        return None
+sys.meta_path.insert(0, B())
+from quantumnet.core.logical import logical_error_rate
+for d in (3, 5, 7):
+    r = logical_error_rate(d, 0.003, shots=6000, seed=5)
+    print(d, r.logical_errors, r.shots, r.decoder)"
+
+# the reference comparison, for cross-checking
+py -c "from quantumnet.core.tjoin_decoder import compare_to_reference; print(compare_to_reference(3, 0.003, shots=2000, seed=7))"
+
+# documentation drift, and the published-comparison table
+py scripts/claim_audit.py
+py -m quantumnet validate
+```
+
+The result, and the two defects this work fixed, are written up in `WHITEPAPER.md` §5.2 and
+§6.1. The retargeted diagnostics remain in `decoder_work/` alongside the delegate's notes.
 
 ---
 
