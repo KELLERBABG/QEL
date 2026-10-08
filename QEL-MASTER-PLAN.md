@@ -2776,3 +2776,64 @@ the opposite of the previous four rounds.
 **825 passing.**
 
 ---
+
+### 3.18 Round 7: the fallback hypothesis was wrong; the direction of error differs by distance
+
+Round 7 tested the hypothesis left at the end of §3.17 -- that ``max_events=12`` was
+forcing the greedy fallback at d=5 and suppressing quality -- and **disproved it**.
+
+```
+  d=5, p=0.003, 1000 shots: 734 shots with events
+    exact pairing used:   731   (99.6%)
+    greedy fallback:        3   (0.4%)
+    event count: mean 4.0, max 14
+```
+
+The fallback is negligible. So the d=5 gap (79x in §3.17) is **not** a fallback
+artefact, and raising ``max_events`` would not have helped. Worth recording as another
+plausible hypothesis that measurement removed -- the same discipline that removed
+"radius growth is the gap" in §3.13.
+
+**The more useful finding is the direction of the error, which is not constant.**
+
+```
+  d=5, p=0.003, 1000 shots
+    shots with events (734): truth flip rate 0.1471, mine 0.0845   -> UNDER-flips
+    shots without events (266): truth 0.0000, mine 0.0000          -> correct
+    errors: 0 on event-free shots, 50 on event shots
+```
+
+At d=5 the decoder **under-flips** on event-bearing shots, predicting a logical flip
+about 57% as often as it should. In §3.17's d=3 measurement the decoder was
+**over**-flipping (58 errors on 224 event shots against ~33 expected). The two
+directions are opposite, which rules out a single systematic bias such as a
+mis-mapped observable or an inverted convention: those would push one way at every
+distance.
+
+A signature that changes sign with distance points at the **weighting** rather than the
+structure -- the decoder is choosing routes by ``-log(p)`` on a graph whose parallel
+mechanisms have not been normalised against each other, so the relative cost of
+observable-flipping and non-flipping routes shifts with the graph's size. Confirming
+that requires comparing the chosen route's weight against the reference's implied route
+on individual shots, which is the next measurement rather than another guess.
+
+**Where the objective stands after seven rounds.**
+
+| established | how |
+|---|---|
+| It is my approach, not Union-Find | every defect is a plain implementation error |
+| Growth order was a red herring | radius rewrite changed nothing |
+| The peel was the defect | isolated test on the full edge set |
+| The reduction is correct by construction | **0% invalid** (§3.16) |
+| Merging parallel mechanisms discarded observables | 64 raw vs 12 merged (§3.17) |
+| Greedy pairing was valid but heavy | 152 -> 58 (§3.17) |
+| The greedy fallback is not the d=5 cause | 0.4% of shots (§3.18) |
+
+Quality went from **152 errors per 1000 to 14** at d=3, p=0.003 over rounds 6-7, and
+the remaining gap is characterised as a distance-dependent direction rather than an
+unexplained constant. Still not competitive at d=5 (3.95% against a physical rate of
+0.3%), so still not wired into ``logical_error_rate``.
+
+**825 passing.**
+
+---
