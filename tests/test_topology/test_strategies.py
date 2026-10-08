@@ -1,6 +1,6 @@
 """Pluggable routing: the interface, the registry, and the measured comparison.
 
-The comparison is the point of this file.  The master plan's claim is that QEL
+The comparison is the point of this file.  The claim under test is that QEL
 routes *better* than a general-purpose simulator, and the incumbent's stock
 static routing is Dijkstra on **physical distance**.  That policy is implemented
 here as :class:`~quantumnet.topology.strategies.LengthRouting` purely so the
@@ -279,7 +279,7 @@ def test_fidelity_optimal_matches_brute_force_on_random_graphs(seed):
 # ---------------------------------------------------------------------------
 
 def test_fidelity_optimal_beats_shortest_distance_where_they_diverge():
-    """The master plan's claim, measured.
+    """The claim under test, measured.
 
     A short mediocre span competes with three short good ones.  Distance
     minimisation takes the single hop; fidelity minimisation takes the detour,

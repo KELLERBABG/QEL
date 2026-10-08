@@ -12,8 +12,8 @@ parameter is a range rather than a number.
 A targeted search of the literature found exactly this division: the formulations in use
 are **discrete** -- choosing components from a catalogue, or siting repeaters in a
 greenfield network -- plus post-hoc sensitivity analysis.  A chance constraint over a
-*continuous* hardware parameter does not appear as a standard construction.  So this is
-the module the master plan calls P3.2, and it is built rather than cited.
+*continuous* hardware parameter does not appear as a standard construction, so the
+construction below is built here rather than cited.
 
 The construction
 ----------------

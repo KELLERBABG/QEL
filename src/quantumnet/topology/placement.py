@@ -10,9 +10,8 @@ this is the part that produces a design rather than a measurement.
 Why not a general MILP
 ----------------------
 The published formulation of this problem (Rabbie, Chakraborty, Avis, Wehner,
-[arXiv:2005.14715](https://arxiv.org/abs/2005.14715)) is a binary program, and
-the master plan originally scoped it as "MILP or CP-SAT".  That is unnecessary
-here, and avoiding it is a deliberate choice rather than a shortcut.
+[arXiv:2005.14715](https://arxiv.org/abs/2005.14715)) is a binary program.  That is
+unnecessary here, and avoiding it is a deliberate choice rather than a shortcut.
 
 Along a *chain* the constraint structure is a longest-segment bound, which makes
 the minimum-repeater problem exactly a shortest-path problem and the
@@ -110,8 +109,8 @@ class PlacementProblem:
     #: Storage time charged per segment before its swap.
     #:
     #: **One microsecond, not one millisecond.**  A BSM is an optical and
-    #: electronic operation, and the master plan's whole premise is microsecond
-    #: causality rather than picosecond theatre.  The earlier millisecond
+    #: electronic operation, so the timescale that matters is microseconds rather
+    #: than picosecond theatre.  The earlier millisecond
     #: default was an arbitrary choice with a large consequence: a 1 ms hold
     #: against a 50 s T2 is harmless, but against the short coherence times a
     #: robustness study is *about* (milliseconds) it destroys the pair, so every
@@ -768,10 +767,10 @@ def robust_placement(problem: PlacementProblem,
     it says the layout meets the requirement for each scenario given, and
     nothing about scenarios not given.
 
-    This is the part of placement the master plan identifies as genuinely open --
-    a targeted search found no published robust or chance-constrained
-    formulation over continuous hardware uncertainty, only discrete component
-    survivability and post-hoc sensitivity analysis.
+    This is the part of placement that is genuinely open -- a targeted search
+    found no published robust or chance-constrained formulation over continuous
+    hardware uncertainty, only discrete component survivability and post-hoc
+    sensitivity analysis.
     """
     if not scenarios:
         raise ValueError("at least one scenario is required")

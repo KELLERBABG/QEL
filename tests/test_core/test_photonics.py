@@ -1,6 +1,6 @@
 """Photonic hardware layer: detectors, Bell-state measurement, multiplexing.
 
-The M2 acceptance criterion in the master plan is that **Barrett-Kok success
+The acceptance criterion for the photonic layer is that **Barrett-Kok success
 probability falls with link loss exactly as the closed form predicts**.  These
 tests hold the implementation to that, and to the two published properties of
 the scheme that everything else follows from:

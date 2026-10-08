@@ -7,9 +7,7 @@ instrument, not the code**. Five separate times a diagnostic reported a defect t
 not exist, or an absence of output that was read as a result:
 
 * a checker compared the correction's odd-degree set against the boundary, which is
-  *legitimately* odd, and reported **57.4% failures** that were not failures
-  (``research/uf_invariant.py`` still does this -- it measures the abandoned union-find
-  decoder and prints 37.8%, while the active decoder is 0.0%);
+  *legitimately* odd, and reported **57.4% failures** that were not failures;
 * a script silently unpacked a stale tuple length, printed **nothing**, and the blank
   output was treated as a measurement;
 * three consecutive "fixes" changed the headline numbers by exactly nothing, because the

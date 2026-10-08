@@ -1,30 +1,26 @@
-"""Demonstrate the validation instruments on the decoders in this repository.
+"""Demonstrate the validation instruments on the decoder in this repository.
 
 Run this before trusting any other measurement::
 
-    py validation/demo.py
+    py validation/demo.py            # quick
+    py validation/demo.py --full     # every seed and distance
 
 It prints, in order:
 
 1. **Instrument self-validation** -- the syndrome checker shown to accept known-good
    corrections *and* reject a known-bad one. Until this passes, no other number in this
-   file means anything.
-2. **A benchmark of the active decoder** against the reference, on identical shots over
-   several seeds, with spread and the per-seed values.
-3. **The same for the abandoned union-find decoder**, showing that
-   ``research/uf_invariant.py`` reports 37.8% for it while the active decoder is clean --
-   the trap flagged in ``DECODER-DELEGATION-BRIEF.md``.
-
-The point of (3) is that a number is only interpretable if you know *which* code produced
-it. That confusion cost a round.
+   file means anything, and the run stops if it fails.
+2. **A benchmark of the in-package decoder** against the reference, on identical shots
+   over several seeds, with spread and the per-seed values.
+3. **A runtime note.** The in-package decoder is exact and therefore slower than the
+   Rust reference; the point of the replacement is removing the dependency, not winning
+   a speed contest.
 """
 
 from __future__ import annotations
 
 import sys
 from pathlib import Path
-
-import numpy as np
 
 # Works whether run as ``py validation/demo.py`` or ``py -m validation.demo``: as a
 # script the repository root is not on the path, and a demo that will not start is not a
@@ -42,26 +38,6 @@ def active_decoder(dem, detection_events):
     from quantumnet.core.tjoin_decoder import decode_observable
 
     return decode_observable(dem, detection_events)
-
-
-def superseded_decoder(dem, detection_events):
-    """The old union-find decoder, retained only to show the instrument's history.
-
-    Its syndrome invariant was broken -- this is the code ``research/uf_invariant.py``
-    measured when it printed 37.8%, while the decoder that replaced it measures 0.0%.
-    Both files were later removed from the package; this helper exists so the demo can
-    still demonstrate *why* a number is only interpretable if you know which code
-    produced it.
-    """
-    import importlib
-
-    try:
-        module = importlib.import_module("quantumnet.core.union_find")
-    except ImportError:
-        return None
-    decoder = module.UnionFindDecoder()
-    decoder.graph_from_dem(dem)
-    return bool(0 in decoder.decode(dem, detection_events))
 
 
 def main() -> int:

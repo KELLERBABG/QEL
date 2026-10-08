@@ -8,7 +8,7 @@ for a specific reason: they are deliberately built with **different path
 redundancy at different levels**, so they separate routing policies that a grid
 cannot.  On a symmetric grid every sensible policy picks nearly the same route;
 on a FatTree the distance-minimising and fidelity-minimising routes genuinely
-diverge, which is exactly the comparison the master plan needs to make.
+diverge, which is exactly the comparison a routing-policy study needs to make.
 
 Both are defined in their standard form:
 

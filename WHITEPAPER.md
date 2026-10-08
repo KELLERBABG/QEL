@@ -549,12 +549,23 @@ implements the LCWX bound.
 - Source: <https://github.com/KELLERBABG/QEL>
 - Licence: Apache-2.0
 - Citation metadata: `CITATION.cff`
-- Documentation: `README.md` (usage and results), `QEL-MASTER-PLAN.md` (the full
-  development record, including every measurement and every reversal)
+- Documentation: `README.md` — usage, results, and the scope statement
 - Verification: `py -m pytest -q` (1036 tests), `py -m quantumnet validate` (published
-  comparisons), `py scripts/claim_audit.py` (documentation drift)
+  comparisons, scored and explicitly unscored), `py scripts/claim_audit.py` (documentation
+  drift)
 
-The development record in `QEL-MASTER-PLAN.md` is deliberately longer than a changelog:
-it contains the measurements that failed, the hypotheses that were removed, and the
-reasoning at the time, because those are the parts a reader needs in order to judge the
-parts that worked.
+**What is deliberately not published.** Two categories of artifact are held back, and the
+reasons are recorded here rather than left to look like omissions:
+
+- **Third-party source material.** Extracted text and LaTeX from the publications cited in
+  §4 are kept locally for reference and are not redistributed, because that is a copyright
+  matter and they are not needed to use or verify the code. The citations point at the
+  originals.
+- **The development record.** A running log kept during this work — including the
+  measurements that failed and the hypotheses that were removed — is not part of the
+  released tree. The findings that matter for judging the results are in §6; the log
+  itself was a working document.
+
+This document is the authoritative account of what the code does and how far it can be
+trusted. Where it states a limit, the limit is real and the tests are written to fail if
+the number drifts — in either direction.

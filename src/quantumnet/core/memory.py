@@ -4,8 +4,7 @@ What this is for
 ----------------
 Until a memory can be *in use*, a network simulator measures a single-user link.
 Contention -- two demands wanting the same memory at the same time -- is what
-makes a network a network, and it is precisely what the incumbent comparison in
-the master plan says QEL lacks.  This module supplies the state that contention
+makes a network a network.  This module supplies the state that contention
 is decided over.
 
 Memory states

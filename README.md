@@ -451,26 +451,23 @@ src/quantumnet/cli.py       the 21-command interface, JSON on stdout, everything
 src/quantumnet/topology/importers/   QEL native JSON, legacy Ghost-Net bridge, Graphviz, SeQUeNCe
 tests/                      1036 tests, 63 modules, across core, protocols, topology and the CLI
 validation/                 decoder-agnostic instruments: syndrome invariant, benchmarking
-scripts/                    five development tools, all listed below
+scripts/                    four development tools, all listed below
 notebooks/demo.ipynb        worked demonstration
-QEL-MASTER-PLAN.md          the consolidated build plan
-research/                   the evidence behind the plan's measured claims
-Quantum Entanglement Link.canvas   the concept map the project was built from
+WHITEPAPER.md               the research write-up: results, negative results, limits
 ```
 
-The five tools in `scripts/`:
+The four tools in `scripts/`:
 
 | tool | what it does |
 |---|---|
 | `audit_imports.py` | every module must import cleanly — catches a stale import that would break collection |
 | `verify_surface_code.py` | surface-code lattice and schedule checked against `stim` (dev-only) |
 | `claim_audit.py` | extracts every test/command/module/line count from the docs and prints it beside what the repository currently measures |
-| `fix_plan_encoding.py` | repairs the two encoding faults that PowerShell appends have introduced into `QEL-MASTER-PLAN.md` |
 | `make_notebook.py` | regenerates `notebooks/demo.ipynb` |
 
-`claim_audit.py` exists because this repository accumulated **six** stale claims in one
-development session — status rows for finished work, a README claiming 668 tests when the
-suite ran 1036, a website claiming 122. Each was correct when written and rotted silently.
+`claim_audit.py` exists because this repository accumulated stale claims during
+development — a README asserting a test count the suite had moved past, a website
+asserting another. Each was correct when written and rotted silently.
 It reports; it does not decide, because a tool that guessed which number was right would
 produce exactly the confident-but-wrong output the rest of this project is built to avoid.
 
@@ -518,15 +515,27 @@ the *model those authors used*. It is not a claim about hardware.
 
 ## Where the numbers come from
 
-`QEL-MASTER-PLAN.md` states a rule and follows it: every claim about QEL's own
-state is either labelled **[measured]** with the command that produced it, or it
-is not stated. No feature is called done because a file exists or a symbol has
-the right name.
+The rule this repository follows, and the standard to hold it to: **every claim about
+QEL's own state is either backed by a command that produced it, or it is not stated.** No
+feature is called done because a file exists or a symbol has the right name.
 
-`research/` holds the evidence — independent reimplementations, extracted paper
-sources, and a note on what those passes verified and what they got wrong. Read
-[research/README.md](research/README.md) before trusting any single number in
-the plan.
+That rule is enforced rather than trusted. Where the code and the documentation disagree,
+one of them is a bug:
+
+```bash
+py -m pytest -q             # the claim "N tests pass"
+py -m quantumnet validate   # every published comparison, scored or explicitly unscored
+py scripts/claim_audit.py   # every numeric claim in the docs, beside what is measured
+```
+
+`claim_audit.py` reports and does not decide. It cannot know which number is right, and a
+tool that guessed would produce exactly the confident-but-wrong output the rest of this
+project is built to avoid.
+
+**Where the model disagrees with its sources, the disagreement is kept.** Two of the four
+statements transcribed from Lo–Ma–Chen do not reproduce, and both are reported with the
+reason rather than tuned away. The test suite fails if the decoy reach drifts toward
+*better* agreement, because that would mean a bound had been loosened.
 
 ## Is 1036 tests a lot?
 

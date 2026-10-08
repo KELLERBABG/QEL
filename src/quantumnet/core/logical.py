@@ -3,8 +3,8 @@
 What this adds
 --------------
 The surface code and the decoy-state analysis both worked and were not joined up.
-This module joins them, producing the number the master plan calls the one almost
-nobody reports: **key rate after error correction**, with the code's cost in
+This module joins them, producing the number that almost nobody reports:
+**key rate after error correction**, with the code's cost in
 fidelity *and* in qubit overhead stated.
 
 Two quantities that must not be conflated

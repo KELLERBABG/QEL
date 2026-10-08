@@ -10,10 +10,9 @@ diagnostic reported a defect that did not exist, or an absence of output that wa
 a result. The instruments here are therefore designed to be **trustworthy before they are
 used**, and each is tested against inputs whose answers are known in advance.
 
-> **Not to be confused with the delegate's working folder.** If you are building a
-> decoder, work in your own subfolder as briefed. This folder is the *instrument*, not the
-> workbench. Copy from it if useful; do not grow it into an experiment area, and do not
-> put decoder code in it — its value is that it stays independent of what it measures.
+> **This folder is the instrument, not the workbench.** Do not grow it into an
+> experiment area, and do not put decoder code in it — its value is that it stays
+> independent of what it measures.
 
 ---
 
@@ -91,13 +90,13 @@ It prints, in order:
    *and* reject a known-bad one. **Until this passes, no other number means anything.**
    An instrument only ever shown to accept is indistinguishable from one that always
    accepts.
-2. A benchmark of the **active** decoder against the reference.
-3. The same for the **abandoned** union-find decoder.
+2. A benchmark of the **in-package** decoder against the reference.
+3. A note that the decoder is exact and therefore slower than the Rust reference.
 
-Step 3 is there on purpose. `research/uf_invariant.py` reports **37.8% violations** — and
-that number belongs to the *abandoned* `core/union_find.py`, **not** to the active
-`core/tjoin.py`, which is clean at **0.0%**. A number is only interpretable if you know
-which code produced it, and that confusion cost a round.
+The instruments are decoder-agnostic: nothing in this folder imports the decoders in
+`src/`, so they measure a decoder without depending on it. That independence is what lets
+the same syndrome check be pointed at a new implementation, and it is why the folder is
+kept as the instrument rather than the workbench.
 
 > **Known issue, recorded rather than hidden:** step 2 is slow at d=5, because the active
 > decoder enumerates perfect matchings combinatorially. Its runtime grows with the

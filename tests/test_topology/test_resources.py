@@ -1,6 +1,6 @@
 """Resource management and contention tests.
 
-The headline test is the M3 acceptance criterion in the master plan: **two
+The headline test is the acceptance criterion for resource management: **two
 competing requests contend and exactly one is refused**.  That is a different
 question from "does allocation work".  A manager that grants both requests has
 no contention at all, and would make every multi-user network result wrong in

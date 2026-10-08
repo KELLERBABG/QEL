@@ -2,7 +2,7 @@
 
 What this is for
 ----------------
-The master plan calls this the **credibility gate**, and the reasoning is
+This is the **credibility gate**, and the reasoning is
 straightforward: nothing in QEL has been checked against hardware, and a
 simulator whose numbers agree with nothing is a simulator whose numbers mean
 nothing.  A single reproduced published figure is worth more than any feature.

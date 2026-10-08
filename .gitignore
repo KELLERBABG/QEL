@@ -8,30 +8,25 @@ venv/
 
 # --- deliberately not published -------------------------------------------
 #
-# research/paper-sources/ holds extracted text and LaTeX source from third-party
-# publications (Boaron, GYS, LCWX, Ma). Redistributing those here would be a
-# copyright problem, and they are not needed to use or verify the code: the
-# citations in WHITEPAPER.md and `quantumnet validate` point at the originals.
-# Kept on disk for local reference only.
-research/paper-sources/
+# research/ holds working material: extracted text and LaTeX source from
+# third-party publications (Boaron, GYS, LCWX, Ma), locally written verification
+# scripts, and superseded planning documents. None of it is needed to use or
+# verify the code -- the citations in WHITEPAPER.md and the output of
+# `quantumnet validate` point at the published originals -- and redistributing
+# the third-party sources would be a copyright problem. Kept on disk only.
+research/
 
 # A single local tool identifier, not project content.
 .freebuff/
 
-# The delegated decoder workspace: a working subfolder by design, holding its own
-# copies of source files and notes. See DECODER-DELEGATION-BRIEF.md. Promote from
-# here into src/ deliberately, or not at all.
+# A decoder prototype workspace: a working subfolder by design, holding its own
+# copies of source files and notes. Promote from here into src/ deliberately.
 decoder_work/
 
-# Superseded planning documents, retained locally for provenance.
-research/superseded/
-
-# Scratch output and local debug captures from development.
+# Scratch output from development scripts.
 _jscheck.txt
 _enc_report.txt
 _plan_base.txt
 _plan_tail.txt
 _plan_fixed.md
 _plan_repaired.md
-research/qec_*.py
-research/decoy-bb84/

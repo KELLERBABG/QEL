@@ -5,8 +5,8 @@ Why this exists
 A memory array with states is necessary but not sufficient.  The question that
 makes a network a network is *who gets the memory when two demands want it*,
 and that question has no answer without an allocator and a policy.  This module
-is that answer, and it is the piece the master plan identifies as the largest
-conceptual gap against the incumbent simulator.
+is that answer, and it is the largest conceptual gap between a link simulator
+and a network one.
 
 The shape, following SeQUeNCe's design
 --------------------------------------
@@ -30,8 +30,8 @@ The shape, following SeQUeNCe's design
 
 The acceptance test this is built for
 -------------------------------------
-Two competing requests contend and exactly one is refused.  That is the M3
-criterion in the master plan, and it is a *different* question from "does
+Two competing requests contend and exactly one is refused.  That is a
+*different* question from "does
 allocation work" -- a manager that grants both requests has no contention at
 all, and would make every multi-user network result wrong in the optimistic
 direction.

@@ -1,6 +1,6 @@
 """Chance-constrained repeater placement over a continuous coherence prior.
 
-This is the item the master plan calls the genuinely open gap (P3.2). The tests pin the
+This is the genuinely open gap in placement. The tests pin the
 properties the construction depends on, because the reduction from a probability
 statement to a deterministic one is only valid if they hold:
 

@@ -2,7 +2,7 @@
 
 WHY THIS FILE EXISTS
 --------------------
-The master plan's guardrail is *never quote a threshold or logical-error-rate
+The rule here is *never quote a threshold or logical-error-rate
 number that has not been both cited and reproduced locally*.  The same applies
 to the syndrome-extraction circuit, for a sharper reason: a wrong CNOT ordering
 does not raise.  It still runs, still returns syndromes, and still produces a

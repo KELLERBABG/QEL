@@ -3,7 +3,7 @@
 The finite-key path once returned a zero key length **as a legitimate number** --
 no exception, `secure` still true, and the asymptotic validation path unaffected,
 so nothing failed loudly. Four distinct defects were found by differential
-testing against the independent reference in ``research/decoy-bb84/``:
+testing against an independently written reference implementation:
 
 1. the fluctuation width used the count *at one intensity* instead of the basis
    block total;
