@@ -2984,3 +2984,66 @@ shots where the two decoders disagree and compare the observable contributed by 
 still not wired into `logical_error_rate`. **825 passing.**
 
 ---
+
+### 3.22 Round 11: the complete diagnosis, located to 12 edge pairs
+
+Round 11 ran the edge-by-edge comparison §3.21 proposed, and it closed the gap in
+understanding even though it did not close the gap in quality.
+
+**The two decoders choose almost the same edges.** Of the shots where the observables
+differ:
+
+```
+  d=3: 31 of 2000   shots where I used a different edge: 1
+  d=5: 102 of 2000  shots where I used a different edge: 6
+```
+
+So the disagreement is **not** in which edges are chosen. My routes and the reference's
+matched edge set coincide on almost every disagreeing shot.
+
+**It is in the observable attached to those edges.** Of the 78 distinct detector pairs
+in the reference's graph, **12 have a merged observable that disagrees with the
+reference's ``fault_ids``** -- the earlier XOR merge cancelled them.
+
+**The complete causal chain, now established end to end:**
+
+1. The reference **merges** parallel mechanisms into one edge per detector pair, and
+   attaches the observable when **any** mechanism carries it (verified against
+   ``fault_ids``: 20 edges by ANY, 12 by XOR, disagreeing on 16 of 78).
+2. My graph **unmerges** them: 556 parallel edges against the reference's 78. On the
+   unmerged graph the observable is per-mechanism, so the XOR of a pair's mechanisms is
+   0 for those 12 pairs -- while the reference's single merged edge carries the
+   observable.
+3. A route therefore has a choice among parallel mechanisms for the same detector pair.
+   Where it takes a non-observable mechanism, the correction's observable differs from
+   the reference's **even though the detector-pair routes are identical**.
+4. That produces the measured signature: equivalent edge sets, **lighter** total weight
+   (the non-observable parallel mechanism is often cheaper), and **7.2x** more logical
+   errors.
+
+**Why the two obvious fixes both failed.** §3.17 merged with XOR -- wrong convention,
+and it measured 130 against the unmerged 30. §3.20 merged with ANY and matched the
+weights -- and measured 193 against 30. Neither reproduces the reference, because
+merging changes *which routes are cheapest* as well as what the observable is: on the
+merged graph the decoder cannot express "this specific mechanism fired", so route costs
+change globally. Adopting the label without the topology does not work, and adopting the
+topology without the label does not either.
+
+**The fix the evidence points to, stated precisely.** Keep the unmerged graph -- which is
+what makes the routes match the reference -- and correct only the **observable
+attribution**: for a detector pair whose merged observable is set, every parallel
+mechanism of that pair must be treated as observable-carrying, not just the ones that
+individually are. That is what the reference's merged label means, expressed on an
+unmerged graph. It is a 12-pair correction and is directly testable against the
+reference.
+
+**Objective status after eleven rounds.** The question asked was whether this is the
+algorithm or my approach. It is **my approach**, and the answer is now complete: seven
+distinct implementation defects, each found by measurement, culminating in a
+twelve-edge attribution error with a stated fix. Quality improved from **152x to 7.2x**
+at d=3, p=0.003, with the decoder valid by construction throughout.
+
+**Still not wired into `logical_error_rate`.** At d=5 the rate remains above the physical
+rate, so no threshold is recoverable from this decoder yet. **825 passing.**
+
+---
