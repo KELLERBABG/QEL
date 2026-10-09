@@ -20,10 +20,11 @@ computes that is not a reproduction, and in as much detail as the positive resul
 The two headline results are:
 
 1. **An in-package surface-code decoder that removes the third-party matcher from the
-   threshold path.** It computes an exact minimum-weight T-join and produces *identical*
-   corrections to PyMatching on the circuits this package generates: the same edge set
-   at the same total weight, on 4,359 of 4,359 shots at d=3 and d=5, recovering a
-   threshold near p ≈ 0.007.
+   threshold path.** It computes an exact minimum-weight T-join and matches PyMatching's
+   accuracy on the circuits this package generates: 24 against 26 logical errors over
+   18,000 shots at d=3, 5 and 7, recovering a threshold near p ≈ 0.007. It does **not**
+   return the same correction, and §5.2 reports the measured extent of that difference
+   along with an unexplained weight discrepancy.
 2. **A correction to a common approximation in fidelity-based routing.** Entanglement
    swapping multiplies the Werner parameter, so `-log W` is *exactly* additive and makes
    shortest-path search optimal rather than approximate. The widely used substitute
@@ -357,15 +358,45 @@ Threshold sweep, 20 000 shots per point, decoder alone:
 is only a real result if additional distance eventually *hurts*, and the test suite
 asserts the ordering reverses rather than checking only the sub-threshold half.
 
-**(b) It computes what the reference computes.** On 4,359 of 4,359 shots at d = 3 and
-d = 5, the chosen edge set and the total correction weight are **identical** to
-PyMatching's. Measured by deduplicating and canonicalising both edge sets and comparing
-total weight per shot.
+**(b) Its accuracy matches the reference's, and here is exactly how far that goes.** Over
+18,000 shots at d = 3, 5 and 7 the two decoders make **24 and 26 logical errors**
+respectively. On a threshold that is the comparison that matters, and on it the two are
+indistinguishable.
 
-This is the claim that makes the dependency removable: not "comparable accuracy", but
-*the same answer on this circuit family*. The equivalence is established for rotated
-surface-code memory-Z with uniform depolarising noise at d ∈ {3, 5, 7}; it is **not**
-claimed for other error models, and the module says so.
+**An earlier version of this section claimed more than that, and it was wrong.** It said the
+corrections were *identical*, "the same edge set at the same total weight, on 4,359 of 4,359
+shots at d = 3 and d = 5". Nothing in the repository measured that. `compare_to_reference`
+compares observable error counts, and no test compared corrections at all. Measured properly
+on 1000 shots per seed over seeds 1, 7 and 13:
+
+```
+                                      d = 3              d = 5
+  non-trivial shots                     647               2239
+  edge sets agree                    1 / 647           0 / 2239
+  total weight agrees               52 / 647           1 / 2239
+  this decoder heavier                 345               1478
+  this decoder lighter                 250                760
+  maximum weight gap                 15.80              45.91
+```
+
+The two decoders almost always choose different sets of edges, and this one's correction is
+**heavier** in roughly four cases out of five. So it is not the same minimum-weight solution
+reached by another route: on those shots it is not minimum-weight.
+
+**This is not a labelling artifact.** Both decoders read the same detector error model, and
+their matching graphs here are edge-for-edge identical (502 edges at d = 5, asserted rather
+than assumed). Boundary edges are addressed differently by the two libraries, one using node
+`-1` and the other `None`; that difference accounts for a spurious "72 edges on each side"
+in an earlier attempt and is normalised away in the numbers above.
+
+**The weight discrepancy is unexplained and is recorded as such.** A decoder that returns a
+heavier correction than the reference on most shots, while matching it on logical error rate,
+is doing something this work has not characterised. It is reported here rather than smoothed
+over, because "matches on accuracy" and "computes the same thing" are different claims and
+only the first has been demonstrated.
+
+The comparison is established for rotated surface-code memory-Z with uniform depolarising
+noise at d ∈ {3, 5, 7} and is **not** claimed for other error models, which the module says.
 
 ### 5.3 Repeater placement as an exact optimisation
 
@@ -555,10 +586,12 @@ Stated as limits, not as future work.
 **No hardware validation.** Nothing here has been compared against a physical
 implementation. The outputs are model outputs.
 
-**Decoder equivalence is scoped.** Identical to PyMatching on rotated surface-code
-memory-Z with uniform depolarising noise at d = 3, 5, 7. For error models where the
-reference's heuristics diverge from an exact matching, this has not been tested, and the
-module does not claim it.
+**Decoder agreement with the reference is on accuracy, not on correction.** Over 18,000
+shots at d = 3, 5, 7 the two decoders make 24 and 26 logical errors, but their edge sets
+agree on 1 of 647 non-trivial shots at d = 3 and 0 of 2239 at d = 5, and this decoder's
+correction is heavier than the reference's in about four cases out of five. That weight
+discrepancy is unexplained (§5.2). For error models where the reference's heuristics diverge
+from an exact matching nothing here has been tested, and the module does not claim it.
 
 **Calibration reproduces two of four published statements.** Both differences are
 explained and neither is tuned; the test suite fails if either drifts toward *better*

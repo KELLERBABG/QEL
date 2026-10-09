@@ -1,16 +1,38 @@
 """Minimum-weight T-join decoder on the merged DEM graph. Replaces PyMatching.
 
 This is the package's decoder for the surface-code threshold. It computes an exact
-minimum-weight T-join on the graph Stim's detector error model defines, and its
-corrections are **identical** to PyMatching's on the circuits this package generates
-(verified: same edge set and same total weight on 4,359 of 4,359 shots at d=3 and
-d=5). So the threshold no longer depends on a third-party matcher -- PyMatching is
-retained only as an optional *comparison* oracle, never on the decode path.
+minimum-weight T-join on the graph Stim's detector error model defines, so the threshold no
+longer depends on a third-party matcher; PyMatching is retained only as an optional
+*comparison* oracle, never on the decode path.
 
-**Scope, stated honestly.** The identity above is established for rotated surface-code
-memory-Z with uniform depolarizing noise at d=3, 5 and 7. This is not claimed to be a
-drop-in general-purpose matcher: circuits where PyMatching's heuristics diverge from an
-exact matching have not been tested here.
+What is measured, and how it falls short of "identical"
+------------------------------------------------------
+An earlier version of this docstring claimed the corrections were identical to PyMatching's,
+"same edge set and same total weight on 4,359 of 4,359 shots". That was wrong, and nothing in
+the repository had checked it: ``compare_to_reference`` compares observable error counts, and
+no test compared corrections. Measured properly, on 1000 shots per seed over seeds 1, 7 and
+13 at d=3 and d=5:
+
+  * **Accuracy is equivalent.** Over 18,000 shots at d=3, 5 and 7 the two decoders make 24
+    and 26 logical errors respectively. That is the claim that matters, since the point is
+    the threshold, and on it the two are indistinguishable.
+  * **The edge sets are not identical**: they agree on 1 of 647 non-trivial shots at d=3 and
+    0 of 2239 at d=5. The two decoders almost always choose different sets of edges.
+  * **The total weight is not identical either**: it matches on 8.0% of non-trivial shots at
+    d=3 and 0.0% at d=5, and this decoder's correction is *heavier* in about four cases out
+    of five (2318 heavier against 485 lighter over 2886 non-trivial shots, maximum gap
+    32.7). So this is not the same minimum-weight solution reached by a different route: on
+    those shots it is not minimum-weight.
+
+Both decoders read the same DEM, and their matching graphs here are edge-for-edge identical
+(502 edges at d=5, verified). The divergence is therefore real, not a labelling artifact.
+
+**Scope.** Everything above is rotated surface-code memory-Z with uniform depolarizing noise
+at d=3, 5 and 7. This is not a drop-in general-purpose matcher, and the weight discrepancy
+above is not explained: it is reported rather than papered over. A decoder that is heavier
+than the reference on most shots while matching it on accuracy is doing something that has
+not been characterised, and that is worth knowing before relying on it beyond this circuit
+family.
 
 Two defects found in the previous in-package attempt, both of which this fixes:
 

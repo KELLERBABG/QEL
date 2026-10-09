@@ -222,6 +222,7 @@ py -m quantumnet validate            # recompute published key-rate figures
 
 py scripts/audit_imports.py         # every module must import cleanly
 py scripts/verify_surface_code.py   # surface-code invariants vs stim (dev-only)
+py scripts/decoder_claim_check.py   # in-package decoder vs the reference (needs both)
 ```
 
 The 21 commands: `bb84`, `e91`, `teleport`, `superdense`, `swap`, `shor`,
@@ -380,10 +381,19 @@ HAVE_PYMATCHING = False,  pymatching in sys.modules: False
 d=3 p=0.003: 4/2000    d=5: 1/2000    d=7: 0/2000    decoder='in-package'
 ```
 
-**And the corrections are identical to PyMatching's**: the same edge set at the same
-total weight, on 4,359 of 4,359 shots at d=3 and d=5. That is a stronger claim than
-"comparable accuracy": on this circuit family the two decoders compute the same thing, so
-the dependency is removable without a quality trade.
+**And its accuracy matches PyMatching's.** Over 18,000 shots at d=3, 5 and 7 the two decoders
+make **24 and 26 logical errors** respectively, which is the comparison a threshold cares
+about, so the dependency is removable without a quality trade.
+
+**It does not return the same correction, though**, and an earlier version of this file
+claimed it did ("identical corrections, same edge set at the same total weight, 4,359 of
+4,359 shots"). Measured properly on 1000 shots per seed at d=3 and d=5: the edge sets agree
+on **1 of 647** non-trivial shots at d=3 and **0 of 2239** at d=5, and this decoder's
+correction is *heavier* than the reference's in about four cases out of five. The two
+matching graphs are edge-for-edge identical, so the divergence is real. The weight
+discrepancy is recorded in `core/tjoin_decoder.py` as unexplained rather than smoothed over:
+a decoder that is heavier than the reference on most shots while matching it on accuracy is
+doing something not yet characterised.
 
 **Two defects this fixed in an earlier in-package attempt**, both worth knowing because
 each produced plausible-looking wrong answers:
@@ -475,12 +485,14 @@ that is the input the other modules happened to use.
 - **Real, and self-contained:** the surface-code decoder. `tjoin_decoder`
   computes an exact minimum-weight T-join on the graph Stim's detector error
   model defines. **No third-party matcher is needed to get a threshold**:
-  measured at p ≈ 0.007 with `stim` and `numpy` alone, and verified to produce
-  *identical* corrections to PyMatching (same edge set, same total weight) on
-  4,359 of 4,359 shots at d=3 and d=5. PyMatching remains an optional
-  **comparison** oracle, not a dependency. `matcher="pymatching"` selects it
+  measured at p ≈ 0.007 with `stim` and `numpy` alone, and its accuracy matches
+  PyMatching's (24 against 26 logical errors over 18,000 shots at d=3, 5, 7). It does
+  **not** return the same correction: edge sets agree on 1 of 647 non-trivial shots at
+  d=3 and 0 of 2239 at d=5, and its correction is heavier in about four cases out of
+  five, which `core/tjoin_decoder.py` records as unexplained. PyMatching remains an
+  optional **comparison** oracle, not a dependency. `matcher="pymatching"` selects it
   to check the in-package result, and nothing on the default path imports it.
-  The identity is established for rotated surface-code memory-Z with uniform
+  The comparison is established for rotated surface-code memory-Z with uniform
   depolarizing noise at d=3, 5, 7; it is not claimed for other error models.
 - **Simulated:** the hardware and the network. There are no photons, no
   fibre and no sockets; `ipc_node` uses real processes, but the links between
@@ -508,14 +520,20 @@ notebooks/demo.ipynb        worked demonstration
 WHITEPAPER.md               the research write-up: results, negative results, limits
 ```
 
-The four tools in `scripts/`:
+The five tools in `scripts/`:
 
 | tool | what it does |
 |---|---|
 | `audit_imports.py` | every module must import cleanly. Catches a stale import that would break collection |
 | `verify_surface_code.py` | surface-code lattice and schedule checked against `stim` (dev-only) |
 | `claim_audit.py` | extracts every test/command/module/line count from the docs and prints it beside what the repository currently measures |
+| `decoder_claim_check.py` | measures the in-package decoder against PyMatching: accuracy, edge-set agreement and weight. Exits non-zero if the accuracy claim fails |
 | `make_notebook.py` | regenerates `notebooks/demo.ipynb` |
+
+`decoder_claim_check.py` exists for a specific reason. This repository claimed for a while
+that the decoder's corrections were *identical* to PyMatching's, "same edge set and same total
+weight on 4,359 of 4,359 shots". Nothing measured it. When it was finally measured, the claim
+was wrong. A claim nobody can re-run is how it survived, so the measurement is now a script.
 
 `claim_audit.py` exists because this repository accumulated stale claims during
 development: a README asserting a test count the suite had moved past, a website

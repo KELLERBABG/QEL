@@ -353,10 +353,16 @@ def minimum_weight_decoder(distance: int, rounds: int, decoder: str = "auto"):
 
     Why the in-package decoder is now the default
     --------------------------------------------
-    It computes an exact minimum-weight T-join on the merged DEM graph, and its
-    corrections are **identical** to PyMatching's on this package's own circuits --
-    the same edge set at the same total weight, verified on 4,359 of 4,359 shots at
-    d=3 and d=5.  It also recovers a threshold at p ~ 0.007 in the published range.
+    It computes an exact minimum-weight T-join on the merged DEM graph, and **its accuracy
+    matches PyMatching's** on this package's own circuits: over 18,000 shots at d=3, 5 and 7
+    the two make 24 and 26 logical errors respectively, which is the comparison that matters
+    for a threshold. It also recovers a threshold at p ~ 0.007 in the published range.
+
+    It does **not** return the same correction. Measured on 1000 shots per seed at d=3 and
+    d=5, the edge sets agree on 1 of 647 non-trivial shots at d=3 and 0 of 2239 at d=5, and
+    this decoder's correction is heavier than the reference's in about four cases out of
+    five. Those measurements are recorded in full in :mod:`quantumnet.core.tjoin_decoder`,
+    including the fact that the weight discrepancy is unexplained.
 
     A previous in-package decoder was 7.2x worse than the reference and this
     docstring said so; the two defects behind that (whole-instruction observable

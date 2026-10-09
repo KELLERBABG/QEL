@@ -236,11 +236,12 @@ footer a:hover{color:var(--accent)}
     </p>
     <p>
       Two results are specific to this work. First, a surface-code decoder that computes an
-      exact minimum-weight T-join and produces <b>identical corrections to PyMatching</b> on
-      this package's circuits: the same edge set at the same total weight, on 4,359 of
-      4,359 shots at d = 3 and d = 5, so the third-party matcher is removable from the
-      threshold path with no change in answer. It recovers a threshold near
-      <b>p ≈ 0.007</b>. Second, the correct additive routing weight for Werner-state
+      exact minimum-weight T-join and <b>matches PyMatching's accuracy</b> on this package's
+      circuits: 24 against 26 logical errors over 18,000 shots at d = 3, 5 and 7, so the
+      third-party matcher is removable from the threshold path without a quality trade. It
+      recovers a threshold near <b>p ≈ 0.007</b>. It does not return the same correction, and
+      §4.2 reports the measured extent of that along with an unexplained weight discrepancy.
+      Second, the correct additive routing weight for Werner-state
       entanglement swapping is <b>−log W</b>, not the commonly substituted −log F; the
       substitute under-penalises low-fidelity links and selects a strictly worse path about
       1.3% of the time on random graphs.
@@ -256,8 +257,9 @@ footer a:hover{color:var(--accent)}
   <dl class="findings">
     <dt>Threshold</dt>
     <dd><b>p ≈ 0.007</b>, ordering reverses above it · 20,000 shots per point</dd>
-    <dt>Decoder equivalence</dt>
-    <dd><b>4,359 / 4,359</b> shots give the same edge set and total weight as the reference</dd>
+    <dt>Decoder accuracy</dt>
+    <dd><b>24 against 26</b> logical errors over 18,000 shots — accuracy matches the reference
+      without matching its correction</dd>
     <dt>Published reproduction</dt>
     <dd><b>140.61 km</b> against a published <b>140.55 km</b>, a 60-metre difference</dd>
     <dt>Routing weight</dt>
@@ -668,17 +670,46 @@ d=7, p=0.003   0.00040  [0.00023, 0.00070]     12/30000    <span class="c">monot
   </figure>
 
   <p>
-    <b>(b) It computes what the reference computes.</b> On 4,359 of 4,359 shots at d = 3 and
-    d = 5, the chosen edge set and the total correction weight are <b>identical</b> to
-    PyMatching's. Measured by deduplicating and canonicalising both edge sets and comparing
-    total weight per shot.
+    <b>(b) Its accuracy matches the reference's, and that is as far as it goes.</b> Over
+    18,000 shots at d = 3, 5 and 7 the two decoders make <b>24 and 26 logical errors</b>. On a
+    threshold that is the comparison that matters, and on it the two are indistinguishable.
   </p>
-  <p>
-    This is the claim that makes the dependency removable: not “comparable accuracy”, but
-    <i>the same answer on this circuit family</i>. The equivalence is established for
-    rotated surface-code memory-Z with uniform depolarising noise at d ∈ {3, 5, 7}; it is
-    not claimed for other error models, and the module says so.
-  </p>
+  <div class="note warn">
+    <h3>An earlier version of this section claimed more, and it was wrong</h3>
+    <p>
+      It said the corrections were <b>identical</b>, "the same edge set at the same total
+      weight, on 4,359 of 4,359 shots at d = 3 and d = 5". Nothing in this repository
+      measured that: the comparison function counts observable errors, and no test compared
+      corrections at all. Measured properly on 1000 shots per seed:
+    </p>
+<pre>                                      d = 3              d = 5
+  non-trivial shots                     647               2239
+  edge sets agree                    1 / 647           0 / 2239
+  total weight agrees               52 / 647           1 / 2239
+  this decoder heavier                 345               1478
+  this decoder lighter                 250                760
+  maximum weight gap                 15.80              45.91</pre>
+    <p>
+      The two decoders almost always choose different edges, and this one's correction is
+      <b>heavier</b> in roughly four cases out of five. It is not the same minimum-weight
+      solution reached another way; on those shots it is not minimum-weight.
+    </p>
+    <p>
+      <b>Not a labelling artifact.</b> Both read the same detector error model and their
+      matching graphs are edge-for-edge identical (502 edges at d = 5, asserted rather than
+      assumed). The libraries address boundary edges differently, one by node <span
+      class="mono">-1</span> and the other by <span class="mono">None</span>, which produced a
+      spurious "72 edges on each side" in an earlier attempt and is normalised away above.
+    </p>
+    <p>
+      <b>The weight discrepancy is unexplained and is recorded as such.</b> A decoder that
+      returns a heavier correction on most shots while matching on logical error rate is
+      doing something this work has not characterised. "Matches on accuracy" and "computes
+      the same thing" are different claims, and only the first is demonstrated. The
+      comparison covers rotated surface-code memory-Z with uniform depolarising noise at
+      d ∈ {3, 5, 7}.
+    </p>
+  </div>
 <pre><span class="c"># pymatching blocked at the import system: hidden use becomes a hard error</span>
 HAVE_PYMATCHING = False,  pymatching in sys.modules: False
 d=3 p=0.003   4/2000      d=5   1/2000      d=7   0/2000    decoder='in-package'</pre>
@@ -907,10 +938,12 @@ best: 4 sites at [40, 80, 120, 160] km
       implementation. The outputs are model outputs.
     </li>
     <li>
-      <b>Decoder equivalence is scoped.</b> Identical to the reference on rotated
-      surface-code memory-Z with uniform depolarising noise at d ∈ {3, 5, 7}. For error
-      models where the reference's heuristics diverge from an exact matching this has not
-      been tested, and the module does not claim it.
+      <b>Decoder agreement with the reference is on accuracy, not on correction.</b> Over
+      18,000 shots at d = 3, 5, 7 the two make 24 and 26 logical errors, but their edge sets
+      agree on 1 of 647 non-trivial shots at d = 3 and 0 of 2239 at d = 5, and this decoder's
+      correction is heavier in about four cases out of five. That discrepancy is unexplained
+      (§4.2). For error models where the reference's heuristics diverge from an exact
+      matching nothing here has been tested, and the module does not claim it.
     </li>
     <li>
       <b>Calibration reproduces two of four published statements.</b> Both differences are
