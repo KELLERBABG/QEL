@@ -7,7 +7,7 @@
 A quantum communication network simulation stack: qubits, gates, noise and
 error correction at the bottom; the standard protocols in the middle;
 repeater placement and fidelity-constrained entanglement routing at the
-top. Everything runs in Python on a laptop — no hardware, no optics, no
+top. Everything runs in Python on a laptop. No hardware, no optics, no
 network sockets.
 
 ```text
@@ -23,7 +23,7 @@ network sockets.
 > The "core primitives" figure that used to sit here (9, then omitted) was never
 > reproducible from a command, so it has been replaced by the module count, which
 > is. A number nobody can regenerate is how this line drifted to a test count of
-> 668 while the suite actually ran 1036. Do not estimate this line — regenerate it.
+> 668 while the suite actually ran 1036. Do not estimate this line. Regenerate it.
 
 ## What it is
 
@@ -49,7 +49,7 @@ that turned out to be wrong is marked as retracted rather than deleted.
 **It is not a hardware model.** Nothing here has been validated against physical
 hardware, and the outputs do not predict what hardware would achieve. A modelled
 123 km reach for a preset calibrated to a 122 km experiment is a consistency check on
-the model — not a measurement, and not a claim about a real link.
+the model, not a measurement, and not a claim about a real link.
 
 That distinction governs how to read everything below. Where a figure is a
 reproduction of someone else's published result, it says so and cites it. Where it is
@@ -68,13 +68,13 @@ Four pieces go beyond assembling published methods:
    path.** It computes an exact minimum-weight T-join and produces *identical*
    corrections to PyMatching on this package's circuits, recovering a threshold near
    p ≈ 0.007. See [What is real and what is simulated](#what-is-real-and-what-is-simulated).
-3. **Repeater placement as a chance constraint over continuous uncertainty** — a
+3. **Repeater placement as a chance constraint over continuous uncertainty**, a
    reliability target expressed on coherence-time distributions rather than a
    hand-picked scenario list. A literature search found the existing formulations are
    *discrete* (component choice, greenfield siting), so this is a construction rather
    than a reproduction, and it is stated conservatively for that reason.
-4. **A logical key rate** — "key rate after error correction", which almost nobody
-   reports — with the code's cost in both fidelity and physical qubits stated alongside
+4. **A logical key rate**, meaning "key rate after error correction", which almost nobody
+   reports, with the code's cost in both fidelity and physical qubits stated alongside
    the number.
 
 Each of those has a section below, including its limits.
@@ -111,7 +111,7 @@ make_strategy("fidelity-optimal").forwarding_table(topo)
 | `static` | a supplied table | Reproduces a fixed deployment |
 
 **Why `-log W` and not `-log F`.** Entanglement swapping multiplies the Werner
-parameter, so `W_path = Π W_i` and `-log W` is *exactly* additive — which is what
+parameter, so `W_path = Π W_i` and `-log W` is *exactly* additive, which is what
 makes shortest-path search optimal rather than approximate. `-log F` is the common
 substitute and it is wrong: it under-penalises low-fidelity links, by 1.34× at
 `F = 0.99` and 2.25× at `F = 0.30`. On random graphs, `-log F` picks a strictly
@@ -149,7 +149,7 @@ different problems.
 
 **NetworkX interop is deliberately not provided.** The canonical `QuantumTopology`
 is already the interface every consumer uses, and the project's promise is
-`numpy` only — a second dependency is not worth saving a hundred lines.
+`numpy` only, because a second dependency is not worth saving a hundred lines.
 
 
 ## Routing over a parsed topology
@@ -207,15 +207,15 @@ The model follows Barrett and Kok (PRA **71**, 060310(R), 2005) and holds to the
 two published properties of double heralding:
 
 - **the ideal success probability is 1/2**, which the paper states as the
-  protocol's theoretical upper limit — the model returns it exactly at zero loss;
+  protocol's theoretical upper limit, and the model returns it exactly at zero loss;
 - **it is quadratic in detector efficiency** (`p ∝ η²`), because both photons must
   survive and both must be detected.
 
 The consequence worth knowing when reading any number it prints: **loss costs
 rate, not fidelity.** A photon that fails to arrive is a failed attempt, not a
-corrupted pair. What *does* degrade fidelity is a **dark-count coincidence** —
+corrupted pair. What *does* degrade fidelity is a **dark-count coincidence**,
 indistinguishable from a real herald, and it contributes a maximally mixed pair
-(fidelity 1/4) — along with mode mismatch and memory decoherence.
+(fidelity 1/4), along with mode mismatch and memory decoherence.
 
 `link` prints **two** generation rates deliberately. `QuantumLink.generation_rate()`
 models a *single-photon* scheme (one photon per arm), while Barrett–Kok is
@@ -255,7 +255,7 @@ What it models:
 ## Decoy-state key rate
 
 The `qkd` and `bench` commands compute the **analytic** decoy-state BB84 key
-rate on a lossy fibre link — no qubits are simulated for this number, because
+rate on a lossy fibre link. No qubits are simulated for this number, because
 the closed-form analysis is what the QKD literature reports and what makes a
 quoted rate defensible against a photon-number-splitting attack.
 
@@ -297,12 +297,12 @@ is ~123 km against the 122 km that experiment demonstrated, and
 `sequencer_erlang`, parameterised to be comparable with SeQUeNCe's
 erbium/atom-cavity numbers. Note that GYS predates practical decoy-state
 implementations, so that agreement is a consistency check on the channel and
-detector model — not a reproduction of a decoy-state experiment.
+detector model, not a reproduction of a decoy-state experiment.
 
 ## Surface code and its decoder
 
 `core/surface_code.py`, `core/tjoin_decoder.py` and `core/logical.py` form the
-error-correction chain. The rotated code is built for d ∈ {3, 5, 7, 9} — layouts are
+error-correction chain. The rotated code is built for d ∈ {3, 5, 7, 9}. Layouts are
 **pinned per distance and verified against `stim`**, and any other distance is refused
 rather than guessed, because a wrong ancilla layout still produces plausible numbers.
 
@@ -344,7 +344,7 @@ HAVE_PYMATCHING = False,  pymatching in sys.modules: False
 d=3 p=0.003: 4/2000    d=5: 1/2000    d=7: 0/2000    decoder='in-package'
 ```
 
-**And the corrections are identical to PyMatching's** — the same edge set at the same
+**And the corrections are identical to PyMatching's**: the same edge set at the same
 total weight, on 4,359 of 4,359 shots at d=3 and d=5. That is a stronger claim than
 "comparable accuracy": on this circuit family the two decoders compute the same thing, so
 the dependency is removable without a quality trade.
@@ -360,7 +360,7 @@ each produced plausible-looking wrong answers:
 
 **Scope.** The equivalence is established for rotated surface-code memory-Z with uniform
 depolarising noise at d=3, 5, 7. It is not claimed for other error models. There is no
-`surface` CLI command yet — the decoder is reachable through the Python API
+`surface` CLI command yet. The decoder is reachable through the Python API
 (`logical_error_rate`) and the tests, and `matcher="pymatching"` selects the reference for
 comparison.
 
@@ -379,13 +379,13 @@ best = best_placement(PlacementProblem(
 ```
 
 `best_placement` is a dynamic program over sites in position order carrying a **Pareto
-frontier** of (rate, fidelity) per state — because the best rate per state is not
+frontier** of (rate, fidelity) per state, because the best rate per state is not
 sufficient: two chains reaching the same site with the same repeater count are not
 interchangeable. It is **exact**, verified against constraint-matched brute force on 25
 random instances (0 suboptimal).
 
 `topology/chance_placement.py` adds the piece a literature search found missing. Existing
-formulations are *discrete* — choosing components from a catalogue, or greenfield siting —
+formulations are *discrete*: choosing components from a catalogue, or greenfield siting,
 plus post-hoc sensitivity analysis. This states the requirement as a chance constraint
 over a **continuous** coherence-time prior:
 
@@ -396,8 +396,9 @@ Pr[ F(chain; T1, T2) >= F_req ] >= 1 - eps
 It is reduced without sampling via the isoquantile principle, and **the two-parameter case
 is conservative, not exact, and says so**: the identity does not extend to two independent
 parameters, so both a product-margin bound and a common-factor bound are computed and
-enforced. The correlated case — one material quality setting both coherence times, the
-usual hardware situation — is *declared* rather than guessed, and changes the answer.
+enforced. The correlated case, where one material quality setting fixes both coherence
+times and which is the usual hardware situation, is *declared* rather than guessed, and it
+changes the answer.
 
 ## Logical key rate
 
@@ -416,7 +417,7 @@ F_phys = 0.99, p = 0.003, five syndrome rounds
 combined the two error sources as a *weighted average of fidelities*,
 `F = F_phys(1-q) + (1-F_phys)q`, which treats a bit-flip *probability* as a fidelity. The
 correct composition is the Werner product above, and the two differ by up to **9%
-absolute** — with the sign of the error not even consistent across inputs:
+absolute**, with the sign of the error not even consistent across inputs:
 
 ```text
 F_phys  F_log     q      corrected      old      overstatement
@@ -441,7 +442,7 @@ that is the input the other modules happened to use.
   measured at p ≈ 0.007 with `stim` and `numpy` alone, and verified to produce
   *identical* corrections to PyMatching (same edge set, same total weight) on
   4,359 of 4,359 shots at d=3 and d=5. PyMatching remains an optional
-  **comparison** oracle, not a dependency — `matcher="pymatching"` selects it
+  **comparison** oracle, not a dependency. `matcher="pymatching"` selects it
   to check the in-package result, and nothing on the default path imports it.
   The identity is established for rotated surface-code memory-Z with uniform
   depolarizing noise at d=3, 5, 7; it is not claimed for other error models.
@@ -475,13 +476,13 @@ The four tools in `scripts/`:
 
 | tool | what it does |
 |---|---|
-| `audit_imports.py` | every module must import cleanly — catches a stale import that would break collection |
+| `audit_imports.py` | every module must import cleanly. Catches a stale import that would break collection |
 | `verify_surface_code.py` | surface-code lattice and schedule checked against `stim` (dev-only) |
 | `claim_audit.py` | extracts every test/command/module/line count from the docs and prints it beside what the repository currently measures |
 | `make_notebook.py` | regenerates `notebooks/demo.ipynb` |
 
 `claim_audit.py` exists because this repository accumulated stale claims during
-development — a README asserting a test count the suite had moved past, a website
+development: a README asserting a test count the suite had moved past, a website
 asserting another. Each was correct when written and rotted silently.
 It reports; it does not decide, because a tool that guessed which number was right would
 produce exactly the confident-but-wrong output the rest of this project is built to avoid.
@@ -505,7 +506,7 @@ UPPER BOUND (must fall below, and near)
 Ma, Qi, Zhao and Lo publish **140.55 km** as the maximum secure distance of the
 vacuum+weak decoy method at the GYS parameters they tabulate (0.21 dB/km,
 `e_det` 3.3%, `Y₀` 1.7e-6, `η_Bob` 0.045, `f(e)` 1.22, 2 MHz). Same estimators,
-same `q = 1/2` asymptotic rate — a like-for-like reproduction. QEL returns
+same `q = 1/2` asymptotic rate, so this is a like-for-like reproduction. QEL returns
 **140.61 km: a 60-metre difference.**
 
 Three things this deliberately does *not* do:
@@ -520,7 +521,7 @@ Three things this deliberately does *not* do:
 3. **It does not hide either of the above.** Unscored comparisons are listed with
    their citations, because a suite that only shows what it passes is marketing.
 
-The Boaron loss budget *is* comparable — fibre loss is a property of the fibre —
+The Boaron loss budget *is* comparable, since fibre loss is a property of the fibre,
 and it checks out: all five rows of their Table I agree within 0.5 dB, and the
 implied coefficient is 0.1696–0.1712 dB/km, consistent with the single
 ultra-low-loss fibre they describe.
@@ -568,10 +569,10 @@ re-measured here:
 
 QEL sits inside that range. The *absolute* count is large relative to the line count
 because those 1138 tests come from **972 test functions**, 57 of them parametrised and
-expanding into many cases — one geometric invariant checked at five distances is five
+expanding into many cases. One geometric invariant checked at five distances is five
 tests from one function. The ratio, not the count, is the meaningful figure.
 
-> Every figure in the table above was stale before this revision — the heading still said
+> Every figure in the table above was stale before this revision. The heading still said
 > 1036 tests and the line counts read 15,351 / 11,529 while the tree had grown to
 > 16,182 / 12,358. This is the same failure mode the headline count block warns about,
 > recurring in a second place, which is why `py scripts/claim_audit.py` now measures all
@@ -579,7 +580,7 @@ tests from one function. The ratio, not the count, is the meaningful figure.
 
 The shape differs from those libraries in one deliberate way: a large share of
 QEL's tests check *physical identities and published values* rather than API
-behaviour — `p = 1/2` exactly at zero loss, `p ∝ η²`, gain matching the
+behaviour: `p = 1/2` exactly at zero loss, `p ∝ η²`, gain matching the
 Poissonian identity, `-log W` being exactly additive, brute-force agreement for
 the router and the placement optimiser. Those are the tests that catch a model
 that has quietly become a *different* model, which is a failure mode a coverage

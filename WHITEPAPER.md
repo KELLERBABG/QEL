@@ -14,15 +14,15 @@ contention; topology routing; repeater placement; and a rotated surface code wit
 own exact decoder.
 
 This document reports what the implementation reproduces from published work, what it
-computes that is not a reproduction, and — in as much detail as the positive results —
+computes that is not a reproduction, and in as much detail as the positive results,
 **what it gets wrong, what was retracted, and where it disagrees with its own sources.**
 
 The two headline results are:
 
 1. **An in-package surface-code decoder that removes the third-party matcher from the
    threshold path.** It computes an exact minimum-weight T-join and produces *identical*
-   corrections to PyMatching on the circuits this package generates — the same edge set
-   at the same total weight, on 4,359 of 4,359 shots at d=3 and d=5 — recovering a
+   corrections to PyMatching on the circuits this package generates: the same edge set
+   at the same total weight, on 4,359 of 4,359 shots at d=3 and d=5, recovering a
    threshold near p ≈ 0.007.
 2. **A correction to a common approximation in fidelity-based routing.** Entanglement
    swapping multiplies the Werner parameter, so `-log W` is *exactly* additive and makes
@@ -45,7 +45,7 @@ Simulation of quantum networks has a specific failure mode that is worth naming 
 outset, because this work is organised around avoiding it: **a plausible number is
 indistinguishable from a correct one.** A route selected with a slightly wrong weight, a
 decoder that returns a correction not matching the observed syndrome, an estimator that
-divides by the wrong count — each produces output of exactly the right shape. Nothing
+divides by the wrong count, each produces output of exactly the right shape. Nothing
 crashes. The model has quietly become a different model.
 
 The repository this document describes began in precisely that state. At the start of
@@ -71,8 +71,8 @@ when a documented number and the code disagree, one of them is a bug and the bui
 expected to say which.
 
 The rule was adopted after it failed repeatedly. Over the course of development six
-documented claims went stale — status rows for finished work, a README asserting 668
-tests when the suite ran 1036, a website asserting 122 — each correct when written and
+documented claims went stale: status rows for finished work, a README asserting 668
+tests when the suite ran 1036, a website asserting 122. Each was correct when written and
 each silently rotted. The response was not to re-read the prose more carefully (that had
 already been tried) but to write `scripts/claim_audit.py`, which extracts every numeric
 claim from a document and prints it beside what the repository currently measures. It
@@ -118,8 +118,8 @@ Quantum states are density matrices, not state vectors, so mixedness and decoher
 represented directly rather than modelled as an error probability attached to a pure
 state. Decoherence is then a channel applied to a matrix, and fidelity is computed from
 the matrix. This is more expensive than a state-vector simulator and it is the right
-choice here because the quantities of interest — entanglement fidelity after a chain of
-swaps and memory holds — are properties of mixed states.
+choice here because the quantities of interest, entanglement fidelity after a chain of
+swaps and memory holds, are properties of mixed states.
 
 A stabiliser tableau runs alongside for Clifford circuits, with measurement implemented
 by GF(2) solving, so codes and distillation circuits can be simulated at sizes where a
@@ -138,7 +138,7 @@ this representation, which is what makes §5.1 possible.
 A rotated surface code at distance `d` with `d²` data qubits and `d² - 1` ancillas
 (weights 2 or 4). Data sit at (odd, odd) coordinates and ancillas at (even, even); X-type
 ancillas are CNOT controls. The CNOT layer order was verified against `stim` at
-d = 3, 5, 7, 9, 11 and is a property of the **offset kind**, not of qubit availability —
+d = 3, 5, 7, 9, 11 and is a property of the **offset kind**, not of qubit availability.
 which matters, because a transposed layer order still produces a valid circuit with the
 wrong connectivity, and therefore plausible wrong numbers.
 
@@ -161,7 +161,7 @@ edges whose odd-degree vertices are exactly the detection events.
 
 Reported error rates are **multi-seed**: at least five seeds and at least 2000 shots per
 point for rates above 10⁻³. This is not a stylistic choice. A 400-shot single-seed sample
-once read as "2 errors against the reference's 0 — essentially solved" while the
+once read as "2 errors against the reference's 0, essentially solved" while the
 multi-seed 2000-shot measurement was **7.2×** worse. At these rates a single seed swings
 the count by more than most fixes change it.
 
@@ -199,8 +199,8 @@ match would fail a correct model.
 **Two comparisons are deliberately left unscored, and the reasons are recorded in the
 tool.** The Boaron 421 km record is not scored because its protocol is 3-state time-bin
 with a one-decoy finite-key bound, so comparing rates would measure the protocol
-difference rather than the implementation. Their *loss budget* is comparable — fibre loss
-is a property of the fibre — and all five rows of their Table I agree within 0.5 dB.
+difference rather than the implementation. Their *loss budget* is comparable, since fibre loss
+is a property of the fibre, and all five rows of their Table I agree within 0.5 dB.
 
 ### 4.2 Barrett–Kok double-heralded generation
 
@@ -211,8 +211,8 @@ efficiency** (`p ∝ η²`) because both photons must survive and both must be d
 
 The consequence matters when reading any rate it prints: **loss costs rate, not
 fidelity.** A photon that fails to arrive is a failed attempt, not a corrupted pair. What
-degrades fidelity is a dark-count coincidence — indistinguishable from a real herald and
-contributing a maximally mixed pair — along with mode mismatch and memory decoherence.
+degrades fidelity is a dark-count coincidence, indistinguishable from a real herald and
+contributing a maximally mixed pair, along with mode mismatch and memory decoherence.
 
 ### 4.3 Calibration against a decoy-state figure
 
@@ -233,7 +233,7 @@ net rate from `O(η²)` to `O(η)`. Sweeping μ recovers **0.5** as a genuine ma
 plateau: at μ = 0.1 the reach is 105.2 km against 123.5 km at μ = 0.5.
 
 **The strongest check is the no-decoy curve**, because it is a *different calculation*
-from the rate the package normally reports — GLLP equation 12 with the pessimistic
+from the rate the package normally reports: GLLP equation 12 with the pessimistic
 untagged fraction `1 - Ω = p_multi / Q_μ`, implemented from the source rather than reused.
 It lands on **27 km against the published ~30 km**. An independent formula reaching the
 published number is better evidence than tuning the primary one.
@@ -258,7 +258,7 @@ rather than hidden by choosing a kinder detector:
 bounds the single-photon yield conservatively; a finite-key answer below an asymptotic
 one is the expected direction. The 179 km crossing is where the single-photon QBER
 reaches 1/4, which is model-dependent. The test suite asserts the shortfall *stays* a
-margin, so it fails if the number drifts in **either** direction — including if it began
+margin, so it fails if the number drifts in **either** direction, including if it began
 exceeding the published figure, which would mean a bound had been loosened.
 
 ---
@@ -277,7 +277,7 @@ a factor of 1.34× at `F = 0.99` and 2.25× at `F = 0.30`. On random graphs it s
 strictly worse path about **1.3%** of the time, with observed fidelity losses up to
 **0.02**. A worked counterexample is in `tests/test_topology/test_routing_optimality.py`,
 and `fidelity-optimal` is additionally confirmed against exhaustive brute force on random
-graphs — so "optimal" is checked rather than asserted.
+graphs, so "optimal" is checked rather than asserted.
 
 The practical size of the effect, where a short mediocre span competes with three short
 good ones:
@@ -293,7 +293,7 @@ The decoder computes an exact minimum-weight T-join on the merged detector graph
 properties matter, and they are separate claims:
 
 **(a) It is accurate, and the numbers now carry their uncertainty.** Logical error rate
-against distance, pooled over five seeds at 6000 shots each — 30 000 shots per point:
+against distance, pooled over five seeds at 6000 shots each, 30 000 shots per point:
 
 ```
 d=3 p=0.003:  0.00220   [0.00173, 0.00280]    66/30000
@@ -310,7 +310,7 @@ it required building the uncertainty layer and asking what interval the sample s
 actually support; no amount of re-reading the prose would have exposed it.
 
 **The monotonicity in `d` is real but the per-seed samples are too thin to see it.** The
-per-seed counts at d=5 were 1, 5, 10, 5 and 3 out of 6000 — a tenfold spread. At these
+per-seed counts at d=5 were 1, 5, 10, 5 and 3 out of 6000, a tenfold spread. At these
 rates a single seed cannot distinguish the distances, and any one-seed table that appears
 to would be reporting luck. Pooling is what makes the ordering legible, which is the
 reason the interval is reported beside it rather than instead of it.
@@ -360,11 +360,11 @@ best: 4 sites at [40, 80, 120, 160] km
 Verified **exact** against constraint-matched brute force on 25 random instances: 0
 suboptimal. (A first comparison appeared to show 43.89% suboptimality; the brute force
 had been enumerating layouts the DP was forbidden to choose. The comparison was wrong,
-not the code — recorded in §6.)
+not the code, as recorded in §6.)
 
 ### 5.4 A chance constraint over continuous uncertainty
 
-The existing literature on repeater placement — as far as a targeted search found —
+The existing literature on repeater placement, as far as a targeted search found,
 handles robustness through *discrete* formulations: selecting components from a
 catalogue, or siting repeaters in a greenfield network, plus post-hoc sensitivity
 analysis. A reliability statement over a **continuous** hardware parameter is not a
@@ -381,7 +381,7 @@ and reduces it without sampling. Two facts do the work:
 - **Monotonicity.** `F(chain; T1, T2)` is non-decreasing in both coherence times: better
   memory never makes a chain worse. Verified numerically, and the tests additionally
   assert that the operating point is *sensitive* (fidelity moves by more than 0.05 across
-  the prior) — an earlier version of those tests used T1 ≈ 100 s, where the model
+  the prior); an earlier version of those tests used T1 ≈ 100 s, where the model
   saturates at 0.970398 for T1 anywhere from 10 s to 200 s, and every assertion passed
   without exercising anything.
 - **The isoquantile principle.** For a non-decreasing function of one random variable,
@@ -391,8 +391,8 @@ and reduces it without sampling. Two facts do the work:
 **The two-parameter case is conservative, not exact, and the document and code both say
 so.** The identity does not extend to two independent parameters. Both a product-margin
 bound `(1 - ε/2)²` and a common-factor bound at `1 - ε` are computed and enforced. The
-correlated case — one physical cause setting both coherence times, the usual hardware
-situation — is *declared* rather than guessed, because it changes the answer: with a
+correlated case, where one physical cause sets both coherence times and which is the usual
+hardware situation, is *declared* rather than guessed, because it changes the answer: with a
 correlated prior the quantiles come from paired draws, and a mismatched-length prior is
 refused.
 
@@ -424,7 +424,7 @@ as of the code.
 ## 6. Negative results and retractions
 
 This section is the reason the rest is worth reading. Each item is a claim that was made,
-tested, and found wrong — retained rather than deleted.
+tested, and found wrong, retained rather than deleted.
 
 ### 6.1 A retracted conclusion
 
@@ -515,7 +515,7 @@ website asserting 122, and a section titled "Is 555 tests a lot?". The response 
 `scripts/claim_audit.py` (§1.1).
 
 Related and worth recording: the plan's own status tables were found to *understate*
-progress four times — work marked `Partial` or `Todo` that was complete and tested. This
+progress four times: work marked `Partial` or `Todo` that was complete and tested. This
 is the opposite of the repository's origin story, in which the README advertised tests
 that did not run, but it is the same root cause: prose updated after each task and the
 tables not.
@@ -564,7 +564,7 @@ implements the LCWX bound.
 - Source: <https://github.com/KELLERBABG/QEL>
 - Licence: Apache-2.0
 - Citation metadata: `CITATION.cff`
-- Documentation: `README.md` — usage, results, and the scope statement
+- Documentation: `README.md`, covering usage, results, and the scope statement
 - Verification: `py -m pytest -q` (1138 tests), `py -m quantumnet validate` (published
   comparisons, scored and explicitly unscored), `py scripts/claim_audit.py` (documentation
   drift)
@@ -576,11 +576,11 @@ reasons are recorded here rather than left to look like omissions:
   §4 are kept locally for reference and are not redistributed, because that is a copyright
   matter and they are not needed to use or verify the code. The citations point at the
   originals.
-- **The development record.** A running log kept during this work — including the
-  measurements that failed and the hypotheses that were removed — is not part of the
+- **The development record.** A running log kept during this work, including the
+  measurements that failed and the hypotheses that were removed, is not part of the
   released tree. The findings that matter for judging the results are in §6; the log
   itself was a working document.
 
 This document is the authoritative account of what the code does and how far it can be
 trusted. Where it states a limit, the limit is real and the tests are written to fail if
-the number drifts — in either direction.
+the number drifts, in either direction.

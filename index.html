@@ -13,8 +13,8 @@
 <style>
 :root{
   /* A paper surface, not a screen surface: warm off-white, near-black ink, one
-     restrained accent. No dark mode -- this is a document, and documents are read
-     on paper-white. */
+     restrained accent. No dark mode, because this is a document and documents are
+     read on paper-white. */
   --paper:#fbfaf7;
   --paper-2:#f4f2ec;
   --rule:#d9d5ca;
@@ -237,8 +237,8 @@ footer a:hover{color:var(--accent)}
     <p>
       Two results are specific to this work. First, a surface-code decoder that computes an
       exact minimum-weight T-join and produces <b>identical corrections to PyMatching</b> on
-      this package's circuits — the same edge set at the same total weight, on 4,359 of
-      4,359 shots at d = 3 and d = 5 — so the third-party matcher is removable from the
+      this package's circuits: the same edge set at the same total weight, on 4,359 of
+      4,359 shots at d = 3 and d = 5, so the third-party matcher is removable from the
       threshold path with no change in answer. It recovers a threshold near
       <b>p ≈ 0.007</b>. Second, the correct additive routing weight for Werner-state
       entanglement swapping is <b>−log W</b>, not the commonly substituted −log F; the
@@ -259,7 +259,7 @@ footer a:hover{color:var(--accent)}
     <dt>Decoder equivalence</dt>
     <dd><b>4,359 / 4,359</b> shots give the same edge set and total weight as the reference</dd>
     <dt>Published reproduction</dt>
-    <dd><b>140.61 km</b> against a published <b>140.55 km</b> — a 60-metre difference</dd>
+    <dd><b>140.61 km</b> against a published <b>140.55 km</b>, a 60-metre difference</dd>
     <dt>Routing weight</dt>
     <dd><b>−log W</b> is exactly additive; <b>−log F</b> is not</dd>
     <dt>Verification</dt>
@@ -278,7 +278,7 @@ footer a:hover{color:var(--accent)}
   </p>
   <p>
     A route selected with a slightly wrong weight, a decoder returning a correction that
-    does not match the observed syndrome, an estimator dividing by the wrong count — each
+    does not match the observed syndrome, an estimator dividing by the wrong count, each
     produces output of exactly the right shape. Nothing crashes. The model has quietly
     become a different model.
   </p>
@@ -304,8 +304,8 @@ footer a:hover{color:var(--accent)}
     </p>
     <p>
       The rule was adopted after it failed repeatedly. Six documented claims went stale
-      during development — a README asserting 668 tests when the suite ran 1036, a
-      website asserting 122 — each correct when written and each silently rotted. The
+      during development: a README asserting 668 tests when the suite ran 1036, a
+      website asserting 122. Each was correct when written and each silently rotted. The
       response was not to re-read the prose more carefully but to write
       <span class="mono">scripts/claim_audit.py</span>, which extracts every numeric claim
       from a document and prints it beside what the repository currently measures. It
@@ -325,8 +325,8 @@ footer a:hover{color:var(--accent)}
     Quantum states are density matrices, not state vectors, so mixedness and decoherence
     are represented directly rather than as an error probability attached to a pure state.
     This is more expensive than a state-vector simulator and is the right choice here
-    because the quantities of interest — entanglement fidelity after a chain of swaps and
-    memory holds — are properties of mixed states. A stabiliser tableau runs alongside for
+    because the quantities of interest, entanglement fidelity after a chain of swaps and
+    memory holds, are properties of mixed states. A stabiliser tableau runs alongside for
     Clifford circuits, with measurement by GF(2) solving.
   </p>
 
@@ -347,7 +347,7 @@ footer a:hover{color:var(--accent)}
     (odd, odd) coordinates and ancillas at (even, even); X-type ancillas are CNOT controls.
     The CNOT layer order was verified against <span class="mono">stim</span> at
     d = 3, 5, 7, 9, 11 and is a property of the <b>offset kind</b>, not of qubit
-    availability — which matters, because a transposed layer order still produces a valid
+    availability, which matters, because a transposed layer order still produces a valid
     circuit with the wrong connectivity, and therefore plausible wrong numbers.
   </p>
   <p>
@@ -365,7 +365,7 @@ footer a:hover{color:var(--accent)}
     556 / 3706 / 11830 components exceeded two detectors at d = 3 / 5 / 7.
   </p>
   <p>
-    The decoder computes an exact minimum-weight T-join on the merged graph — one edge per
+    The decoder computes an exact minimum-weight T-join on the merged graph: one edge per
     distinct detector pair, parallel mechanisms combined by parity, log-likelihood weight
     <span class="mono">log((1−p)/p)</span>, and observables parsed <b>per component</b>. A
     correction is a set of edges whose odd-degree vertices are exactly the detection
@@ -377,7 +377,7 @@ footer a:hover{color:var(--accent)}
   <p>
     Reported error rates are multi-seed: at least five seeds and at least 2000 shots per
     point for rates above 10⁻³. This is not stylistic. A 400-shot single-seed sample once
-    read as “2 errors against the reference's 0 — essentially solved” while the multi-seed
+    read as “2 errors against the reference's 0, essentially solved” while the multi-seed
     2000-shot measurement was <b>7.2× worse</b>. At these rates a single seed swings the
     count by more than most fixes change it.
   </p>
@@ -431,7 +431,7 @@ footer a:hover{color:var(--accent)}
     <figcaption>
       <b>Table 1.</b> Published comparisons. The first row is a 60-metre difference on a
       140 km figure. The second is the infinite-decoy ceiling, which a finite-decoy
-      estimator <i>must</i> fall below — scoring it as an equality would fail a correct
+      estimator <i>must</i> fall below, since scoring it as an equality would fail a correct
       model. The third is not scored because its protocol is 3-state time-bin with a
       one-decoy finite-key bound, so comparing rates would measure the protocol difference
       rather than the implementation.
@@ -448,8 +448,8 @@ footer a:hover{color:var(--accent)}
   <p>
     The consequence matters when reading any rate it prints: <b>loss costs rate, not
     fidelity.</b> A photon that fails to arrive is a failed attempt, not a corrupted pair.
-    What degrades fidelity is a dark-count coincidence — indistinguishable from a real
-    herald and contributing a maximally mixed pair — along with mode mismatch and memory
+    What degrades fidelity is a dark-count coincidence, indistinguishable from a real
+    herald and contributing a maximally mixed pair, along with mode mismatch and memory
     decoherence.
   </p>
 
@@ -489,7 +489,7 @@ footer a:hover{color:var(--accent)}
   </p>
   <p>
     <b>The strongest check is the no-decoy curve</b>, because it is a different calculation
-    from the rate the package normally reports — GLLP equation 12 with the pessimistic
+    from the rate the package normally reports: GLLP equation 12 with the pessimistic
     untagged fraction <span class="mono">1 − Ω = p_multi / Q_μ</span>, implemented from the
     source rather than reused. It lands on <b>27 km against the published ~30 km</b>. An
     independent formula reaching the published number is better evidence than tuning the
@@ -542,7 +542,7 @@ footer a:hover{color:var(--accent)}
     F = 0.30. On random graphs it selects a strictly worse path about <b>1.3%</b> of the
     time, with observed fidelity losses up to <b>0.02</b>. A worked counterexample is in
     the test suite, and the fidelity-optimal policy is additionally confirmed against
-    exhaustive brute force on random graphs — so “optimal” is checked rather than asserted.
+    exhaustive brute force on random graphs, so “optimal” is checked rather than asserted.
   </p>
 <pre><span class="c"># where a short mediocre span competes with three short good ones</span>
 shortest-distance   F = 0.700000   1 hop
@@ -555,7 +555,7 @@ fidelity-optimal    F = 0.970398   3 hops</pre>
   </p>
   <p>
     <b>(a) It is accurate, and the numbers carry their uncertainty.</b> Logical error rate
-    against distance, pooled over five seeds at 6000 shots each — 30,000 shots per point:
+    against distance, pooled over five seeds at 6000 shots each, 30,000 shots per point:
   </p>
 <pre><span class="c"># pooled over five seeds, 6000 shots each, in-package decoder</span>
 d=3, p=0.003   0.00220  [0.00173, 0.00280]     66/30000
@@ -567,13 +567,13 @@ d=7, p=0.003   0.00040  [0.00023, 0.00070]     12/30000    <span class="c">monot
       They were not achievable arithmetic at the stated 6000 shots: one event in 6000 is
       0.000167, so 0.00100 would be six events and 0.00033 two, while the measured counts
       were 10, 4 and 2. The error survived review because the three values formed a clean
-      monotone sequence — which is precisely the property they were there to demonstrate.
+      monotone sequence, which is precisely the property they were there to demonstrate.
       It was found by building the uncertainty layer below and asking what interval the
       sample size can actually support.
     </p>
     <p>
       <b>The ordering is real; the per-seed samples are too thin to see it.</b> Per-seed
-      counts at d = 5 were 1, 5, 10, 5 and 3 out of 6000 — a tenfold spread. Any one-seed
+      counts at d = 5 were 1, 5, 10, 5 and 3 out of 6000, a tenfold spread. Any one-seed
       table that appeared to show the effect would have been reporting luck.
     </p>
   </div>
@@ -585,7 +585,7 @@ d=7, p=0.003   0.00040  [0.00023, 0.00070]     12/30000    <span class="c">monot
       rate. Where nothing was observed the report gives an <i>upper bound</i> rather than
       zero, because a zero-width interval would claim a proof no finite sample provides.
       <b>Parameter</b> uncertainty propagates the precision of the inputs through the real
-      calculation by Monte Carlo, not by linearisation — these quantities are not close to
+      calculation by Monte Carlo, not by linearisation, because these quantities are not close to
       linear in their inputs.
     </p>
     <p>
@@ -670,7 +670,7 @@ best: 4 sites at [40, 80, 120, 160] km
 
   <h3>4.4 A chance constraint over continuous uncertainty</h3>
   <p>
-    The existing literature on repeater placement — as far as a targeted search found —
+    The existing literature on repeater placement, as far as a targeted search found,
     handles robustness through <i>discrete</i> formulations: selecting components from a
     catalogue, or siting repeaters in a greenfield network, plus post-hoc sensitivity
     analysis. A reliability statement over a <b>continuous</b> hardware parameter is not a
@@ -688,12 +688,12 @@ best: 4 sites at [40, 80, 120, 160] km
     at a quantile with no distributional assumption beyond the quantiles themselves.
   </p>
   <div class="note warn">
-    <h3>The two-parameter case is conservative, not exact — and says so</h3>
+    <h3>The two-parameter case is conservative, not exact, and says so</h3>
     <p>
       The identity does not extend to two independent parameters. Both a product-margin
       bound <span class="mono">(1 − ε/2)²</span> and a common-factor bound at
-      <span class="mono">1 − ε</span> are computed and enforced. The correlated case — one
-      physical cause setting both coherence times, the usual hardware situation — is
+      <span class="mono">1 − ε</span> are computed and enforced. The correlated case, where one
+      physical cause setting both coherence times, the usual hardware situation, is
       <i>declared</i> rather than guessed, because it changes the answer: with a correlated
       prior the quantiles come from paired draws, and a mismatched-length prior is refused.
     </p>
@@ -736,7 +736,7 @@ best: 4 sites at [40, 80, 120, 160] km
   <h2>Negative results and retractions</h2>
   <p class="lede">
     This section is the reason the rest is worth reading. Each item is a claim that was
-    made, tested, and found wrong — retained rather than deleted.
+    made, tested, and found wrong, retained rather than deleted.
   </p>
 
   <h3>5.1 A retracted conclusion</h3>
@@ -845,8 +845,8 @@ best: 4 sites at [40, 80, 120, 160] km
   <ul class="tight">
     <li>
       <b>Decoy reach, 123.5 km against &gt;140 km.</b> The package reports the reach at
-      which the <i>finite-key</i> secret length is positive — using the tight finite-key
-      analysis of Tomamichel et al.<sup class="cite">[9]</sup> — and bounds the
+      which the <i>finite-key</i> secret length is positive, using the tight finite-key
+      analysis of Tomamichel et al.<sup class="cite">[9]</sup>, and bounds the
       single-photon yield conservatively; the source draws its figure asymptotically. A
       finite-key answer below an asymptotic one is the expected direction.
     </li>
@@ -910,7 +910,7 @@ best: 4 sites at [40, 80, 120, 160] km
         <tr><td>Source</td><td><a href="https://github.com/KELLERBABG/QEL">github.com/KELLERBABG/QEL</a></td></tr>
         <tr><td>Licence</td><td>Apache-2.0</td></tr>
         <tr><td>Citation</td><td><span class="mono">CITATION.cff</span></td></tr>
-        <tr><td>Documentation</td><td><span class="mono">README.md</span> — usage, results, scope</td></tr>
+        <tr><td>Documentation</td><td><span class="mono">README.md</span>, covering usage, results and scope</td></tr>
         <tr><td>Verification</td><td><span class="mono">py -m pytest -q</span> (1138 tests) · <span class="mono">py -m quantumnet validate</span> · <span class="mono">py scripts/claim_audit.py</span></td></tr>
         <tr><td>Environment</td><td><span class="mono">numpy</span> for the core; <span class="mono">stim</span> optional for the surface code; no third-party matcher on the decoding path</td></tr>
       </tbody>
