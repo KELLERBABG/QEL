@@ -608,7 +608,6 @@ implements the LCWX bound.
 ## 8. Availability
 
 - Source: <https://github.com/KELLERBABG/QEL>
-- Archived release with a DOI: <https://doi.org/10.5281/zenodo.23260527>
 - Author ORCID: <https://orcid.org/0009-0009-5887-4257>
 - Licence: Apache-2.0
 - Citation metadata: `CITATION.cff`

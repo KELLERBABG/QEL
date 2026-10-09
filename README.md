@@ -2,7 +2,6 @@
 
 [![licence](https://img.shields.io/badge/licence-Apache--2.0-blue)](LICENSE)
 [![python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23260527.svg)](https://doi.org/10.5281/zenodo.23260527)
 [![more work](https://img.shields.io/badge/more_work-kellersystems.dev-16222c?labelColor=7a2e2e)](https://kellersystems.dev)
 
 A quantum communication network simulation stack: qubits, gates, noise and
