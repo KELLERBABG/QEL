@@ -12,10 +12,13 @@ abstract: >-
   implementation calibrated against a published dataset.
 type: software
 authors:
-  - name: "Lukas Negenborn"
+  - family-names: "Negenborn"
+    given-names: "Lukas"
+    orcid: "https://orcid.org/0009-0009-5887-4257"
 repository-code: "https://github.com/KELLERBABG/QEL"
 url: "https://kellersystems.dev"
 license: Apache-2.0
+doi: "10.5281/zenodo.23260527"
 keywords:
   - quantum networks
   - quantum key distribution
