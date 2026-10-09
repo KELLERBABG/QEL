@@ -205,12 +205,8 @@ def plan_commodities(
             continue
 
         if strategy == "shortest-path":
-            # The blind baseline respects the same capacity limit as the aware
-            # one -- it just does not *route around* congestion.  Letting it
-            # overcommit would make the comparison meaningless: an earlier
-            # version granted past capacity, reported a higher unit count than
-            # the aware strategy, and the "+advantage" was entirely an accounting
-            # artifact.
+            # The blind baseline takes the same capacity limit as the aware one, it just
+            # cannot route around congestion; overcommitting it would be meaningless.
             fitting = [p for p in candidates
                        if all(load.get(n, 0) + commodity.units <= capacity
                               for n in p[1:-1])]
@@ -230,8 +226,8 @@ def plan_commodities(
                         if all(load.get(n, 0) + commodity.units <= capacity
                                for n in p[1:-1])]
             if not feasible:
-                # Nothing fits: refuse rather than overcommit.  Overcommitting
-                # would make the plan look better and be wrong.
+                # Nothing fits: refuse rather than overcommit, which would look better
+                # and be wrong.
                 chosen, cost = min(scored, key=lambda item: (item[1], item[0]))
                 plan.routes.append(CommodityRoute(
                     commodity, chosen, len(chosen) - 1, cost, granted=False,

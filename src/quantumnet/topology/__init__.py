@@ -1,6 +1,6 @@
 """Ghost-Net topology layer (Phase 3): quantum network graphs, fidelity
 routing, swap scheduling, and visualisation. Pure numpy + physics from
-``core.physical`` — no fabricated data.
+``core.physical``: no fabricated data.
 """
 
 from .graph import (

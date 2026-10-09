@@ -1,7 +1,7 @@
 """Quantum network topology: nodes, optical links, and physical fidelity models.
 
 Everything is derived from the physical-layer models in ``core.physical``
-(fibre attenuation, dark counts, detector efficiency, pulse rates) — no
+(fibre attenuation, dark counts, detector efficiency, pulse rates): no
 hand-tuned "plausible" numbers.
 
 Link fidelity model

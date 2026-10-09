@@ -44,9 +44,7 @@ class LoadError(ValueError):
     """Raised for an invalid request stream or load parameter."""
 
 
-# ---------------------------------------------------------------------------
 # The control plane
-# ---------------------------------------------------------------------------
 
 @dataclass
 class ClassicalMessage:
@@ -117,9 +115,7 @@ class ClassicalControlPlane:
         }
 
 
-# ---------------------------------------------------------------------------
 # Arrivals
-# ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
 class Request:
@@ -137,12 +133,10 @@ class Request:
 class RequestGenerator:
     """A Poisson request stream, reproducible from a seed.
 
-    Poisson arrivals are the standard memoryless choice and, more usefully here, have
-    **checkable** statistics: inter-arrival times are exponential with mean ``1/rate``
-    and the count in a window of length ``T`` is Poisson with mean ``rate * T``. A
-    generator whose statistics can be tested is worth more than one that merely looks
-    plausible, because a mis-specified arrival process silently changes every
-    throughput number downstream.
+    Poisson arrivals are the standard memoryless choice and have checkable statistics:
+    inter-arrival times are exponential with mean ``1/rate``, and the count in a window
+    of length ``T`` is Poisson with mean ``rate * T``. A mis-specified arrival process
+    silently changes every throughput number downstream.
     """
 
     def __init__(self, rate_per_s: float, pairs: list[tuple[str, str]],
@@ -161,7 +155,7 @@ class RequestGenerator:
         self._next_time = 0.0
         self._generated = 0
         #: An arrival that overshot a window, held until the next call so no demand is
-        #: lost when a simulation horizon is extended.
+        #: lost.
         self._pending: Request | None = None
 
     def next_request(self) -> Request:
@@ -223,9 +217,7 @@ class RequestGenerator:
             path=list(nodes or [request.source, request.target]))
 
 
-# ---------------------------------------------------------------------------
 # Throughput
-# ---------------------------------------------------------------------------
 
 def throughput(requests: list[Request], granted: int,
                horizon_s: float) -> dict:

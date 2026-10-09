@@ -86,10 +86,9 @@ class PublishedDataset:
             raise ValueError(f"unknown dataset kind {self.kind!r}")
 
 
-#: The GYS parameter set, exactly as Ma et al. tabulate it (their Table I).
-#:
-#: ``alpha = 0.21 dB/km``, ``e_detector = 3.3%``, ``Y_0 = 1.7e-6``,
-#: ``eta_Bob = 0.045``, ``f(e) = 1.22``, 2 MHz repetition rate.
+#: The GYS parameter set, exactly as Ma et al. tabulate it (their Table I):
+#: ``alpha = 0.21 dB/km``, ``e_detector = 3.3%``, ``Y_0 = 1.7e-6``, ``eta_Bob = 0.045``,
+#: ``f(e) = 1.22``, 2 MHz repetition rate.
 GYS_PARAMETERS = {
     "alpha_db_km": 0.21,
     "detector_efficiency": 0.045,
@@ -247,9 +246,8 @@ def validate_dataset(dataset: PublishedDataset) -> dict:
     row["absolute_error_km"] = computed - dataset.target_km
     row["relative_error_pct"] = (100.0 * (computed - dataset.target_km)
                                  / dataset.target_km)
-    # 2% tolerance: tight enough that a real modelling error fails, loose enough
-    # to absorb a published maximum distance read off a figure and rounded to
-    # two decimals.
+    # 2% tolerance: tight enough that a real modelling error fails, loose enough to
+    # absorb a published maximum distance read off a figure and rounded to two decimals.
     row["within_2pct"] = abs(row["relative_error_pct"]) <= 2.0
 
     if dataset.kind == "validated":

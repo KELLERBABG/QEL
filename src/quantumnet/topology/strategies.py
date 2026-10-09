@@ -50,9 +50,7 @@ class RoutingError(ValueError):
     """Raised when a routing strategy cannot be resolved or applied."""
 
 
-# ---------------------------------------------------------------------------
 # Edge weights
-# ---------------------------------------------------------------------------
 
 def werner_parameter(fidelity: float) -> float:
     """``W = (4F - 1) / 3``, the parameter that multiplies under swapping."""
@@ -81,9 +79,7 @@ def hop_weight(link) -> float:
     return 1.0
 
 
-# ---------------------------------------------------------------------------
 # Base class and registry
-# ---------------------------------------------------------------------------
 
 @dataclass
 class RoutingStrategy:
@@ -293,9 +289,7 @@ def make_strategy(name: str, **kwargs) -> RoutingStrategy:
     return _REGISTRY[name](**kwargs)
 
 
-# ---------------------------------------------------------------------------
 # Shared helpers
-# ---------------------------------------------------------------------------
 
 def route_from_path(topology: QuantumTopology, path: list[str]) -> Route:
     """Build a :class:`Route` from a node path, resolving fidelities and order."""

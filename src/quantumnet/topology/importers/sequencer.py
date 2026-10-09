@@ -62,9 +62,9 @@ _SCAFFOLDING_TYPES = frozenset({
     "BSMNode", "BSM", "Controller", "Barretter", "QuantumSwitch",
 })
 
-#: Speed of light in fibre, for deriving a classical delay when one is absent.
-#: 2.0e8 m/s is the community standard (QuISP writes exactly
-#: ``distance / 200000km * 1s``); SeQUeNCe's examples span 2.0-2.05e8.
+#: Speed of light in fibre, for deriving a classical delay when one is absent. 2.0e8 m/s
+#: is the community standard (QuISP writes ``distance / 200000km * 1s``); SeQUeNCe
+#: spans 2.0-2.05e8.
 C_FIBER_KM_PER_S = 200_000.0
 
 #: Default fibre attenuation in dB/km when a config omits it (1550 nm).
@@ -279,9 +279,7 @@ class SequencerImporter(TopologyImporter):
         return merged
 
 
-# ---------------------------------------------------------------------------
 # Export
-# ---------------------------------------------------------------------------
 
 def export_document(topology, topology_name: str = "qel_export",
                     stop_time_ps: int = 1_000_000_000_000,
@@ -328,8 +326,8 @@ def export_document(topology, topology_name: str = "qel_export",
         delay_ps = int(length_km / C_FIBER_KM_PER_S * 1e12)
         out_cconnections.append({"node1": a, "node2": b, "delay": delay_ps})
 
-    # Every router pair needs a classical path for the auto-expanded BSM
-    # nodes too; SeQUeNCe averages the declared delays for those.
+    # Every router pair needs a classical path for the auto-expanded BSM nodes too;
+    # SeQUeNCe averages the declared delays for those.
     for i, a in enumerate(node_names):
         for b in node_names[i + 1:]:
             if not any(c["node1"] == a and c["node2"] == b

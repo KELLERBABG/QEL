@@ -31,9 +31,8 @@ from __future__ import annotations
 
 from .graph import QuantumNode, QuantumTopology
 
-#: Link attenuation used for data-centre topologies.  Intra-datacentre fibre is
-#: short, so the default km spacing barely affects fidelity -- the *topology* is
-#: what decides the answer here, which is the point of including them.
+#: Link attenuation used for data-centre topologies. Intra-datacentre fibre is short, so
+#: the default km spacing barely affects fidelity; the topology decides the answer here.
 DEFAULT_DC_ALPHA_DB_KM = 0.2
 
 
@@ -62,8 +61,8 @@ def fat_tree(k: int = 4, *, link_km: float = 1.0,
                                   t1_s=t1_s, t2_s=t2_s,
                                   is_repeater=repeater))
 
-    # Core layer, aggregated switch layer, edge layer, hosts.  Positions are
-    # laid out by layer in y so the visualiser produces something legible.
+    # Core layer, aggregated switch layer, edge layer, hosts. Positions are laid out by
+    # layer in y so the visualiser produces something legible.
     for c in range(n_core):
         add(f"core{c}", float(c) * link_km, 0.0, True)
     for p in range(k):
@@ -80,8 +79,8 @@ def fat_tree(k: int = 4, *, link_km: float = 1.0,
         topo.connect(a, b, length_km=link_km, alpha_db_km=alpha_db_km,
                      **link_kw)
 
-    # Every aggregation switch reaches every core switch: this full bipartite
-    # layer is what gives a FatTree its cross-pod bisection bandwidth.
+    # Every aggregation switch reaches every core switch: this full bipartite layer is
+    # what gives a FatTree its cross-pod bisection bandwidth.
     for p in range(k):
         for a in range(half):
             for c in range(n_core):

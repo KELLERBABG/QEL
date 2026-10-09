@@ -64,8 +64,8 @@ from typing import Sequence
 
 import numpy as np
 
-#: Features reported by Burenkov et al. (2013), in seconds.
-#: These are transcribed from the paper's stated values, not fitted to its figures.
+#: Features reported by Burenkov et al. (2013), in seconds, transcribed from the paper's
+#: stated values rather than fitted to its figures.
 AFTERPULSE_PEAK_S = 180e-9
 SECONDARY_AFTERPULSE_PEAK_S = 360e-9
 DEAD_ZONE_S = 80e-9
@@ -246,7 +246,7 @@ def afterpulse_amplitude_from_bias(bias_uA: float, critical_uA: float,
         raise ReadoutChainError(
             f"bias {bias_uA} uA is at or above the critical current {critical_uA} uA; "
             f"the detector is not in a detecting regime")
-    # Amplitude falls off with the *relative* margin, so the behaviour is set by how close
+    # Amplitude falls off with the relative margin, so the behaviour is set by how close
     # to critical the device runs rather than by the absolute current scale.
     relative = margin / max(reference_margin_uA, 1e-9)
     return float(min(1.0, scale * math.exp(-relative)))
@@ -315,9 +315,8 @@ class ReadoutChainRecovery:
             """Draw from the two-peak mixture, or return a non-positive to mean none."""
             if self.afterpulse.amplitude <= 0.0:
                 return float("nan")
-            # amplitude is the total probability that *an* afterpulse occurs; which peak it
-            # belongs to is the mixture weight, so the two are sampled separately rather
-            # than conflated into one density.
+            # amplitude is the total probability that an afterpulse occurs and the
+            # mixture weight picks which peak, so the two are sampled separately.
             if rng.random() >= self.afterpulse.amplitude:
                 return float("nan")
             total = 1.0 + self.afterpulse.secondary_ratio
@@ -333,8 +332,8 @@ class ReadoutChainRecovery:
             if not (delay > 0.0):
                 return
             at = after + delay
-            # An afterpulse that lands while the chain is still blind is not registered.
-            # The reference is the click that caused it, not the chain's earlier click.
+            # An afterpulse that lands while the chain is still blind is not registered,
+            # the reference being the click that caused it, not the earlier click.
             if at - after < self.dead_time_s:
                 return
             clicks.append(at)
@@ -370,8 +369,8 @@ class ReadoutChainRecovery:
         p_detect = np.clip(nominal_efficiency * eff, 0.0, 1.0)
         p_afterpulse = self.afterpulse.at(delays)
         # Either route produces a click: a real photon detected with the recovered
-        # efficiency, or a spurious afterpulse. They are treated as exclusive at the small
-        # probabilities involved, with the joint term dropped rather than double counted.
+        # efficiency, or a spurious afterpulse. Exclusive at these small probabilities,
+        # with the joint term dropped rather than double counted.
         return np.clip(p_detect + p_afterpulse, 0.0, 1.0)
 
     @classmethod

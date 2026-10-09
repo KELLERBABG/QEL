@@ -78,9 +78,8 @@ class CoherencePrior:
     name: str
     t1_samples_s: np.ndarray
     t2_samples_s: np.ndarray
-    #: True when a single physical cause moves both times together.  This is the usual
-    #: hardware case (one material quality sets both), and it changes the answer, so it
-    #: is declared rather than guessed.
+    #: True when a single physical cause moves both times together, the usual hardware
+    #: case; it changes the answer, so it is declared rather than guessed.
     correlated: bool = True
 
     def __post_init__(self) -> None:
@@ -136,8 +135,8 @@ class CoherencePrior:
             t1, t2 = self.quantiles(alpha)
             scenarios.append(Scenario(name=f"{self.name}:{label}", t1_s=t1, t2_s=t2))
         if self.correlated:
-            # One physical cause: the common-factor quantile is the right one, and the
-            # margin split is strictly more conservative -- so both are enforced.
+            # One physical cause: enforce both the common-factor quantile and the
+            # strictly more conservative margin split.
             return scenarios, "correlated -> conservative of margin and common"
         return scenarios, "independent -> product-margin bound"
 
@@ -181,8 +180,8 @@ def chance_constrained_placement(problem: PlacementProblem, prior: CoherencePrio
     """
     scenarios, method = prior.to_scenarios(eps)
 
-    # Feasibility is required under every quantile scenario, which makes the accepted set
-    # the intersection and therefore conservative.
+    # Feasibility is required under every quantile scenario, so the accepted set is the
+    # intersection and is therefore conservative.
     robust = robust_feasible_best(problem, scenarios, max_repeaters)
     if robust is None:
         return ChanceReport(placement=None, scenarios=scenarios, method=method, eps=eps)

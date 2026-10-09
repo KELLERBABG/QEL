@@ -50,9 +50,7 @@ class UncertaintyError(ValueError):
     """Raised for an invalid uncertainty request."""
 
 
-# ---------------------------------------------------------------------------
 # Kind 1: statistical, from counted events
-# ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
 class CountEstimate:
@@ -162,9 +160,7 @@ def combine_counts(estimates: Iterable[CountEstimate]) -> CountEstimate:
                          trials=sum(e.trials for e in items), level=level)
 
 
-# ---------------------------------------------------------------------------
 # Kind 2: parameter sensitivity, by propagation
-# ---------------------------------------------------------------------------
 
 @dataclass
 class Uncertain:
@@ -240,10 +236,9 @@ class Sensitivity:
 
     @property
     def half_width(self) -> float:
-        # Cast to a Python float. These come out of numpy operations, and a numpy scalar
-        # propagating into a caller's formatting or comparison produces surprises
-        # (math.isclose typing, repr including the array type) that have nothing to do
-        # with the statistics.
+        # Cast to a Python float: these come out of numpy operations, and a numpy
+        # scalar propagating into a caller's formatting or comparison produces surprises
+        # that have nothing to do with the statistics.
         return float(self.high - self.low) / 2.0
 
     @property
@@ -281,12 +276,10 @@ def propagate(name: str, function: Callable[..., float],
 
     values = np.empty(n, dtype=float)
     for i in range(n):
-        # A caller may hand us a function that raises at the edge of its domain --
-        # math.log(0.0) raises ValueError, math.sqrt(-1) raises ValueError -- rather than
-        # returning a non-finite float. Both mean the same thing here: the parameter range
-        # leaves the function's domain, so the interval would be meaningless. Catch the
-        # arithmetic failures and report them as this module's own error type, so a caller
-        # never has to know which flavour of function they passed.
+        # A caller's function may raise at the edge of its domain (math.log(0.0),
+        # math.sqrt(-1)) rather than return a non-finite float; either way the range has
+        # left the domain and the interval is meaningless, so report this module's own
+        # error type.
         try:
             values[i] = function(**{p.name: float(p.draws[i]) for p in items})
         except (ValueError, ZeroDivisionError, OverflowError) as exc:
@@ -309,9 +302,7 @@ def propagate(name: str, function: Callable[..., float],
         draws=values, parameters=tuple(p.name for p in items), level=level)
 
 
-# ---------------------------------------------------------------------------
 # Reporting: never let the three kinds look like one
-# ---------------------------------------------------------------------------
 
 @dataclass
 class Report:
@@ -377,9 +368,7 @@ def compare_with_reference(name: str, mine: float, reference: float, *,
     return report
 
 
-# ---------------------------------------------------------------------------
 # The multi-seed runner: what turns a measured spread into a reported interval
-# ---------------------------------------------------------------------------
 
 def sampled_rate(name: str, run: Callable[[int], tuple[int, int]],
                  seeds: Sequence[int], *, level: float = DEFAULT_LEVEL,

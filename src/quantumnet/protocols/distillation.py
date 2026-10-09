@@ -2,13 +2,13 @@
 
 Three rounds-trip algorithms on Werner states:
 
-- ``bbssw_distill`` — BBPSSW (Bennett et al. 1996): bilateral CNOT + measure.
+- ``bbssw_distill``, BBPSSW (Bennett et al. 1996): bilateral CNOT + measure.
   Raises fidelity toward 1 for input F > 1/2; success even/odd parity.
-- ``deutsch_distill`` — Deutsch et al. variant with extra Hadamards, better
+- ``deutsch_distill``, Deutsch et al. variant with extra Hadamards, better
   yield at moderate fidelity.
-- ``dejmps_distill`` — DEJMPS (Deutsch et al. 1996): same bilateral CNOTs but
+- ``dejmps_distill``, DEJMPS (Deutsch et al. 1996): same bilateral CNOTs but
   measuring in the X basis.  Converges strictly faster than BBPSSW on
-  depolarising noise — the standard choice for quantum repeaters.
+  depolarising noise, the standard choice for quantum repeaters.
 
 Yield tracking: ``run_distillation_round`` reports how many pairs survived,
 so callers can compute pairs-consumed-per-output across a distillation chain.
@@ -71,8 +71,8 @@ def dejmps_distill(pair1: QubitState, pair2: QubitState, rng=None):
     """DEJMPS: bilateral CNOTs then *X-basis* measurement of the target pair.
 
     For depolarising noise the DEJMPS analytic map raises fidelity faster
-    than BBPSSW (smaller second-order coefficient), so fewer rounds — and
-    fewer input pairs — reach the target fidelity.  Success criterion is the
+    than BBPSSW (smaller second-order coefficient), so fewer rounds, and
+    fewer input pairs, reach the target fidelity.  Success criterion is the
     same even/odd parity in the rotated basis.
     """
     if rng is None:
@@ -98,7 +98,7 @@ def prepare_noisy_bell_pairs(n, fidelity, rng=None):
 def run_distillation_round(pairs, protocol="bbssw", rng=None):
     """One distillation round over ``pairs`` (consumed two at a time).
 
-    Returns ``(surviving_pairs, successes, yield)`` — ``yield`` is the
+    Returns ``(surviving_pairs, successes, yield)``.  ``yield`` is the
     fraction of *input* pairs that produced output, the number repeater
     rate budgets multiply by.  ``protocol`` selects ``bbssw`` | ``deutsch``
     | ``dejmps``.

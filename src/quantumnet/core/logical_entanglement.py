@@ -66,9 +66,7 @@ def pauli_commutes(a: tuple[int, int], b: tuple[int, int]) -> bool:
     return ((a[0] & b[1]) ^ (a[1] & b[0])) == 0
 
 
-# ---------------------------------------------------------------------------
 # Two patches
-# ---------------------------------------------------------------------------
 
 @dataclass
 class TwoPatchLayout:
@@ -165,9 +163,7 @@ class TwoPatchLayout:
                 f"({self.n_data} per patch)")
 
 
-# ---------------------------------------------------------------------------
 # Logical Pauli frame
-# ---------------------------------------------------------------------------
 
 @dataclass
 class LogicalPauliFrame:
@@ -196,9 +192,7 @@ class LogicalPauliFrame:
         return f"frame = {pauli_name(self.pauli)}"
 
 
-# ---------------------------------------------------------------------------
 # Logical Bell pair
-# ---------------------------------------------------------------------------
 
 def transversal_cnot_pairs(distance: int) -> list[tuple[int, int]]:
     """Data-qubit pairs for a transversal logical CNOT from patch A to patch B.
@@ -255,13 +249,8 @@ def prepare_logical_bell_pair() -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# Logical teleportation
-# ---------------------------------------------------------------------------
-
 #: Bell-measurement outcomes on ``(X_A X_B, Z_A Z_B)`` and the logical Pauli the
-#: receiver must apply.  Derived from the standard circuit identity, and verified
-#: exhaustively by :func:`verify_teleportation_identity`.
+#: receiver must apply; verified exhaustively by :func:`verify_teleportation_identity`.
 BELL_OUTCOME_CORRECTIONS: dict[tuple[int, int], tuple[int, int]] = {
     (0, 0): PAULI_I,
     (0, 1): PAULI_X,
@@ -294,8 +283,8 @@ def teleportation_frame(outcome: tuple[int, int],
 
     frame = LogicalPauliFrame(PAULI_I, [])
     frame.apply(incoming_error, "logical error on Alice's input")
-    # The Bell measurement itself is destructive on Alice's side and, in the
-    # standard derivation, contributes a correction that depends on both outcomes.
+    # The Bell measurement is destructive on Alice's side and, in the standard
+    # derivation, contributes a correction that depends on both outcomes.
     measurement_pauli = BELL_OUTCOME_CORRECTIONS[outcome]
     frame.apply(measurement_pauli, f"Bell outcome {outcome}")
     frame.apply(measurement_pauli, "Bob's dictated correction")
@@ -385,8 +374,8 @@ def verify_transversal_cnot_action(layout: TwoPatchLayout | None = None) -> dict
                 f"{name} transformed to {got}, expected {expected[name]}"
             )
 
-    # The pairing must be a bijection on local indices, or the "transversal" CNOT
-    # would leave some data qubit unpaired and double up on another.
+    # The pairing must be a bijection on local indices, or the "transversal" CNOT would
+    # leave some data qubit unpaired and double up on another.
     pairs = transversal_cnot_pairs(layout.distance)
     if len(pairs) != layout.n_data:
         problems.append(f"{len(pairs)} pairs for {layout.n_data} data qubits")
@@ -422,8 +411,8 @@ def verify_bell_pair_operators(layout: TwoPatchLayout | None = None) -> dict:
         if len(set(layout.logical_x(patch)) & set(layout.logical_z(patch))) % 2 != 1:
             problems.append(f"patch {patch}: its own X and Z do not anticommute")
 
-    # Across patches the single-patch operators act on disjoint qubits, hence
-    # commute; this is what allows the two products to be stabilised at once.
+    # Across patches the single-patch operators act on disjoint qubits, hence commute;
+    # this is what allows the two products to be stabilised at once.
     for op_a in ("X", "Z"):
         for op_b in ("X", "Z"):
             qubits_a = set(layout.logical_x("A") if op_a == "X"

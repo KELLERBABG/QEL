@@ -225,25 +225,22 @@ class BarrettKok:
 
     arm_a: PhotonicLink
     arm_b: PhotonicLink
-    #: Fraction of the heralded state unaffected by frequency/polarisation/
-    #: spatio-temporal mismatch.  1.0 is perfect mode matching.
+    #: Fraction of the heralded state unaffected by frequency/polarisation/spatio-
+    #: temporal mismatch; 1.0 is perfect mode matching.
     mode_matching: float = 1.0
     #: Coincidence window; sets the dark-count exposure per attempt.
     coincidence_window_s: float = 1e-9
-    #: Fidelity of the entangled state when the herald was a dark coincidence.
-    #: Two independent dark counts carry no entanglement, so the pair is
-    #: maximally mixed and its fidelity with any Bell state is 1/4.
+    #: Fidelity when the herald was a dark coincidence: two independent dark counts
+    #: carry no entanglement, so the pair is maximally mixed, at 1/4 with any Bell
+    #: state.
     dark_coincidence_fidelity: float = 0.25
     #: Multi-photon emission probability per pulse (source imperfection).
     multiphoton_probability: float = 0.0
-    #: How much of the intended Bell state survives a **multi-pair** herald.
-    #:
-    #: 1.0 would mean a two-pair pulse heralds the intended state as cleanly as a
-    #: one-pair pulse, which is false: which pair supplied each detected photon is
-    #: unrecorded.  0.0 would mean it is no better than two dark counts, which is
-    #: also false: real photons from a real pair did arrive.  The default 0.5 is
-    #: the conservative reading that the uncorrelated pair contributes as much
-    #: maximally-mixed weight as the intended one.
+    #: How much of the intended Bell state survives a multi-pair herald. 1.0 would mean
+    #: a two-pair pulse is as clean as a one-pair pulse, false because which pair
+    #: supplied each photon is unrecorded; 0.0 would mean no better than dark counts,
+    #: also false because real photons arrived. The default 0.5 is the conservative
+    #: reading: the uncorrelated pair contributes maximally-mixed weight.
     multipair_visibility: float = 0.5
 
     def __post_init__(self):
@@ -336,9 +333,8 @@ class BarrettKok:
             self.coincidence_window_s, self.single_arm_click(self.arm_b))
         if p_ap_a <= 0.0 and p_ap_b <= 0.0:
             return 0.0
-        # Either arm's afterpulse can complete the coincidence.  At the small
-        # probabilities involved the both-afterpulse term is negligible and is
-        # dropped rather than mis-stated as exact.
+        # Either arm's afterpulse can complete the coincidence; the both-afterpulse term
+        # is negligible at these small probabilities and is dropped rather than stated.
         p_real_a = self.single_arm_click(self.arm_a)
         p_real_b = self.single_arm_click(self.arm_b)
         return float(p_ap_a * p_real_b + p_real_a * p_ap_b)
@@ -391,14 +387,14 @@ class BarrettKok:
         if total <= 0.0:
             return 0.0
         f_signal = 1.0 - (1.0 - self.mode_matching) / 2.0
-        # Interpolate between the signal fidelity and the maximally-mixed value:
-        # at visibility 1 a multi-pair herald is as good as a signal one, at 0 it
-        # is no better than dark counts.
+        # Interpolate between the signal fidelity and the maximally-mixed value: at
+        # visibility 1 a multi-pair herald is as good as a signal one, at 0 no better
+        # than dark counts.
         v = float(np.clip(self.multipair_visibility, 0.0, 1.0))
         f_multi = f_signal * v + self.dark_coincidence_fidelity * (1.0 - v)
-        # An afterpulse herald is a real photon on one arm and a spurious click on
-        # the other, so it is uncorrelated and carries the maximally-mixed value --
-        # the same verdict as a dark coincidence, by a different route.
+        # An afterpulse herald is a real photon on one arm and a spurious click on the
+        # other, so it is uncorrelated and carries the maximally-mixed value: the same
+        # verdict as a dark coincidence, by a different route.
         return float((p_signal * f_signal
                       + p_multi * f_multi
                       + (p_dark + p_ap) * self.dark_coincidence_fidelity) / total)

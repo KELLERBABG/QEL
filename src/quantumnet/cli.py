@@ -289,20 +289,14 @@ def _route_fidelity(route, dist):
     return float(route.fidelity()) if route is not None else 0.0
 
 
-#: The seed pinned for the session quantum mix's key label. It is a constant so
-#: both peers ask for the same key from the same `(fidelity, seed)` pair; the
-#: secret is the quantum channel's contribution, not the seed. A production
-#: deployment replaces the label with the QKD appliance's key ID.
+#: The seed pinned for the session quantum mix's key label, so both peers ask for the
+#: same key from the same `(fidelity, seed)` pair; production uses the QKD key ID.
 QKD_LABEL_SEED = 0x51EE
 
-#: The fidelity a route must reach before BB84 privacy amplification still
-#: extracts key material.
-#
-#: Deliberately *above* the observed boundary, which sits just past 0.87 for the
-#: pinned seed (0.870 yields no key, 0.872 does). Distillation aims at this
-#: number rather than the exact boundary so a key is never marginal, and the
-#: Rust quantum-mix step uses the same figure to decide whether a session has
-#: anything to mix.
+#: The fidelity a route must reach before BB84 privacy amplification still extracts key
+#: material. Deliberately above the observed boundary, which sits just past 0.87 for the
+#: pinned seed (0.870 yields no key, 0.872 does), so a key is never marginal; the Rust
+#: quantum-mix step uses the same figure.
 KEY_FIDELITY_CUTOFF = 0.88
 
 
@@ -336,9 +330,8 @@ def _distil_to_key_fidelity(fidelity, seed, max_rounds=6, pairs=256):
     for round_index in range(1, max_rounds + 1):
         live, _successes, _yield = run_distillation_round(live, protocol="bbssw", rng=rng)
         if not live:
-            # Every pair failed the round: the channel was too noisy to
-            # distil. Report the best fidelity reached, which is the honest
-            # answer -- the caller sees it is still below the cutoff.
+            # Every pair failed the round: the channel was too noisy to distil. Report
+            # the best fidelity reached, so the caller sees it is below the cutoff.
             return f, round_index - 1, 0
         ideal = QubitState.bell_phi_plus()
         f = float(np.mean([ideal.fidelity(p) for p in live]))
@@ -363,9 +356,8 @@ def _qkd_key_for_route(fidelity, seed=QKD_LABEL_SEED):
     result = run_bb84(4096, noise=p, rng=rng)
     key = result.get("key")
     qber = float(result.get("qber", 1.0))
-    # run_bb84 returns the sifted key as a string of '0'/'1' characters.
-    # A QBER at/above the 11% security threshold means privacy amplification
-    # would extract nothing -- the honest answer is "no key", not garbage.
+    # run_bb84 returns the sifted key as '0'/'1' characters. A QBER at or above the 11%
+    # security threshold means privacy amplification would extract nothing, so no key.
     if not key or len(key) < 256 or qber >= 0.11:
         return None
     bits = np.array([1 if c == "1" else 0 for c in key[:256]], dtype=np.uint8)
@@ -386,10 +378,8 @@ def _emit_import_json(route, dist):
         "end_to_end_fidelity": _route_fidelity(route, dist) if route is not None else 0.0,
         "swap_nodes": list(route.path[1:-1]) if route is not None and len(route.path) > 2 else [],
         "qkd_key_hex": None,
-        # The fidelity the key is actually derived at, after distillation, and
-        # how many rounds it took. This -- not `end_to_end_fidelity` -- is the
-        # label the two peers agree a key on, because it is the number that
-        # identifies which key material the channel produced.
+        # The fidelity the key is derived at after distillation, and how many rounds it
+        # took. This, not `end_to_end_fidelity`, is the label the peers agree a key on.
         "key_fidelity": None,
         "distillation_rounds": 0,
     }
@@ -419,8 +409,8 @@ def _do_import(args):
     from .topology import describe_ghost_result, parse_positions, route_ghost, plot_matplotlib
 
     positions = parse_positions(args.positions)
-    # The CLI surface is the legacy file path: resolve the schema, parse the
-    # file through the importer, and hand the canonical document to route_ghost.
+    # The CLI surface is the legacy file path: resolve the schema, parse the file
+    # through the importer, and hand the canonical document to route_ghost.
     try:
         importer = importer_for(args.topology)
         doc = importer(args.topology).parse()
@@ -467,9 +457,8 @@ def _derive_key_document(fidelity, seed):
         "end_to_end_fidelity": float(fidelity),
         "swap_nodes": [],
         "qkd_key_hex": key.hex() if key else None,
-        # This side is *handed* the label, so it distils nothing: the fidelity it
-        # was given already is the key fidelity. Same field set as `import`
-        # so the Rust bridge parses one document shape, not two.
+        # This side is handed the label, so it distils nothing: the fidelity it was
+        # given already is the key fidelity. Same field set as `import`, one shape.
         "key_fidelity": float(fidelity),
         "distillation_rounds": 0,
     }
@@ -620,8 +609,8 @@ def _do_contend(args) -> bool:
                 for i in range(args.nodes)}
     manager = NodeEntanglementManager(managers)
 
-    # Demand set: pairs (0,1), (1,2), ... starting together, each asking for a
-    # share of the pool.  Deliberately overlapping so contention is exercised.
+    # Demand set: pairs (0,1), (1,2), ... starting together, each asking for a share of
+    # the pool. Deliberately overlapping so contention is exercised.
     demands = []
     for k in range(args.demands):
         a = k % (args.nodes - 1)
@@ -790,9 +779,8 @@ def _do_bench(args) -> bool:
     return True
 
 
-#: Subparser collection the next ``_layout_help`` call registers into.  ``main``
-#: points it at the top-level parser, or at a nested one (topology build/route),
-#: so every command definition below stays a flat one-liner.
+#: Subparser collection the next ``_layout_help`` call registers into; ``main`` points
+#: it at the top-level or a nested parser, so every command stays a flat one-liner.
 _active_sub = None
 
 def _layout_help(subcommand: str, description: str, *pairs):
@@ -1037,8 +1025,8 @@ def main():
     validate_p.add_argument("--json-output", action="store_true", default=False,
                             help="machine-readable mode: exactly one JSON document")
 
-    # argparse stores the name as *invoked*, so the ghost-net alias surfaces
-    # here verbatim; normalize it so one code path handles both spellings.
+    # argparse stores the name as invoked, so the ghost-net alias surfaces here
+    # verbatim; normalize it so one code path handles both spellings.
     args = parser.parse_args()
     if args.command == "ghost-net":
         args.command = "import"

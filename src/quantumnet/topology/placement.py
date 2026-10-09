@@ -16,7 +16,7 @@ unnecessary here, and avoiding it is a deliberate choice rather than a shortcut.
 Along a *chain* the constraint structure is a longest-segment bound, which makes
 the minimum-repeater problem exactly a shortest-path problem and the
 maximum-rate problem exactly a dynamic program.  Both are polynomial and both are
-**exact** -- no solver, no tolerance, no possibility of returning a layout that
+exact -- no solver, no tolerance, no possibility of returning a layout that
 is quietly suboptimal.  A general-purpose solver would add a heavyweight
 dependency to a library whose promise is `numpy` only, in exchange for solving a
 problem that does not need one.
@@ -106,17 +106,8 @@ class PlacementProblem:
     detector_efficiency: float | None = None
     dark_count_hz: float | None = None
     error_correction_inefficiency: float = 1.16
-    #: Storage time charged per segment before its swap.
-    #:
-    #: **One microsecond, not one millisecond.**  A BSM is an optical and
-    #: electronic operation, so the timescale that matters is microseconds rather
-    #: than picosecond theatre.  The earlier millisecond
-    #: default was an arbitrary choice with a large consequence: a 1 ms hold
-    #: against a 50 s T2 is harmless, but against the short coherence times a
-    #: robustness study is *about* (milliseconds) it destroys the pair, so every
-    #: scenario looked infeasible and robust placement returned ``None``.  The
-    #: value is a modelling assumption, so it is stated and parametrised rather
-    #: than buried.
+    #: Storage time charged per segment before its swap. Microseconds, not milliseconds: a
+    #: 1 ms hold destroys the short-coherence scenarios a robustness study is about.
     t_swap_s: float = 1e-6
     #: ``"barrett-kok"`` (default) treats loss as costing rate, not fidelity,
     #: which is correct for a heralded link.  ``"depolarizing"`` reproduces the
@@ -127,35 +118,19 @@ class PlacementProblem:
     #: Fidelity of the entanglement-swap operation itself.  An ideal swap is
     #: 1.0; real BSMs are not, and this is what makes hop count cost fidelity.
     swap_fidelity: float = 0.99
-    #: Classical control-plane delay model, or ``None`` to charge none.
-    #:
-    #: When set, each swap costs a classical round trip *before* the pair can be
-    #: consumed, and that time is spent in memory decaying.  This couples
-    #: placement to latency the right way round: few long spans generate
-    #: quickly but coordinate slowly, so the optimum is not the same as the
-    #: one that ignores the control plane.  The leading published non-ILP
-    #: placement work omits classical communication entirely (Avis & Krastanov,
-    #: arXiv:2501.06291), so modelling it is a place to be *better* than the
-    #: literature rather than merely comparable to it.
+    #: Classical control-plane delay model, or ``None`` to charge none. With it set, each
+    #: swap costs a round trip that the pair spends decaying in memory, so the optimum
+    #: differs from the one that ignores the control plane.
     classical_link: object | None = None
     #: Additional processing delay per intermediate node, in seconds.
     classical_processing_s: float = 0.0
-    #: How the classical coordination delay is charged.
-    #:
-    #: ``"whole-span"`` (the original) charges every swap a round trip across the
-    #: entire chain, which is an **upper bound**.  ``"segment-aware"`` charges each
-    #: swap only the extent of the two segments it actually fuses.
-    #:
-    #: The bound was measured against a brute-force minimum over all fusion orders
-    #: (`coordination.py`) and **overstates by a factor that grows with chain
-    #: length** -- 1.33x at two links, 2.88x at seven.  A factor that depends on
-    #: the thing being studied is not merely conservative: it biases comparisons
-    #: *between chain lengths*, which is exactly what a placement study does.
+    #: ``"whole-span"`` charges each swap a round trip across the entire chain; the
+    #: ``"segment-aware"`` alternative charges only the two segments it fuses. The
+    #: whole-span bound overstates by a chain-length-dependent factor (1.33x at two links,
+    #: 2.88x at seven), which biases comparisons between chain lengths.
     coordination_model: str = "whole-span"
-    #: Fusion order for the segment-aware model.  ``"sequential"`` fuses the
-    #: leftmost pair repeatedly.  A *better* order is known to exist (up to 1.65x
-    #: less delay at seven links) but no efficient construction was found, so this
-    #: is a reproducible reference rather than an optimum.
+    #: ``"sequential"`` fuses the leftmost pair repeatedly. A better order is known to
+    #: exist but no efficient construction was found, so this is a reproducible reference.
     fusion_order: str = "sequential"
 
     def __post_init__(self):
@@ -285,18 +260,8 @@ def _chain_from_positions(ordered: list[float], problem: PlacementProblem,
     n_links = len(lengths)
     wait_s = problem.t_swap_s if memory_wait_s is None else float(memory_wait_s)
 
-    # Classical coordination: a swap produces one of four Bell states at random
-    # and **both endpoints must be told which**, so each swap costs a round trip
-    # with the pair sitting in memory.
-    #
-    # The span charged is the whole chain rather than the two segments in play.
-    # That is an upper bound, and a deliberately conservative one: the
-    # coordination for a swap has to reach every node whose segment feeds it,
-    # and the outermost endpoints are the ones that matter for the pair the
-    # application will consume.  Charging less would require a message-routing
-    # model (which nodes forward, in what order, with what queueing) that this
-    # module does not have -- and inventing one silently would be worse than
-    # charging a bound and saying so.
+    # A swap costs a round trip across the whole chain: both endpoints must learn which
+    # Bell state resulted. Charging less needs a message-routing model this module lacks.
     coordination_s = 0.0
     if problem.classical_link is not None and n_links > 1:
         from ..core.latency import ClassicalLink
@@ -308,9 +273,7 @@ def _chain_from_positions(ordered: list[float], problem: PlacementProblem,
         span = ordered[-1] - ordered[0]
         model = getattr(problem, "coordination_model", "whole-span")
         if model == "segment-aware":
-            # Charge each swap the extent of the two segments it fuses.  Measured
-            # to be 1.33x-2.88x less than the whole-span bound, and unlike the
-            # bound its ratio does not depend on chain length.
+            # Charge each swap the extent of the two segments it fuses.
             from .coordination import segment_aware_delay
 
             total = segment_aware_delay(list(ordered))["total_s"]
@@ -330,24 +293,14 @@ def _chain_from_positions(ordered: list[float], problem: PlacementProblem,
             )
     total_wait_s = wait_s + coordination_s
 
-    # One product over the chain.  Each factor is a Werner parameter, so the
-    # product is a Werner parameter and the result cannot leave [0, 1].
-    #
-    # Each elementary link contributes:
-    #   * its own heralded fidelity,
-    #   * memory decoherence over the wait before its swap,
-    #   * and, once per swap, the BSM's own fidelity -- so hop count costs
-    #     fidelity, which is the trade-off a placement has to navigate.
+    # Each factor is a Werner parameter, so the product is one and stays in [0, 1]. Each
+    # link contributes its heralded fidelity, memory decoherence over the wait before its
+    # swap, and once per swap the BSM's own fidelity, so hop count costs fidelity.
     survivor = 1.0
     for length in lengths:
         fidelity = elementary_link_fidelity(length, problem)
-        # Memory decoherence multiplies the Werner parameter by its survival
-        # factor.  Written directly rather than routed through
-        # ``bell_pair_fidelity_after_dt``, whose single-qubit asymptote
-        # ``2*f0 - 1`` goes *negative* and would pin the pair at the 1/4 floor
-        # for any finite coherence time -- making every scenario look
-        # infeasible and destroying the very sensitivity a robustness study is
-        # about.
+        # Written directly rather than via bell_pair_fidelity_after_dt, whose single-qubit
+        # asymptote 2*f0 - 1 goes negative and would pin every scenario at the 1/4 floor.
         survival = 1.0
         if t1_s > 0:
             survival *= float(np.exp(-total_wait_s / t1_s))
@@ -376,7 +329,7 @@ def _chain_from_positions(ordered: list[float], problem: PlacementProblem,
 def chain_quality(positions_km: list[float], problem: PlacementProblem,
                   *, t1_s: float = 100.0, t2_s: float = 50.0,
                   memory_wait_s: float | None = None) -> ChainQuality:
-    """Evaluate a **complete** placement: fidelity through the swaps, and the rate.
+    """Evaluate a complete placement: fidelity through the swaps, and the rate.
 
     **Fidelity** is composed exactly.  Each elementary link has a Werner
     parameter ``W = (4F-1)/3``; storing a pair multiplies ``W`` by the survival
@@ -419,7 +372,7 @@ def key_fraction(fidelity: float, problem: PlacementProblem) -> float:
     fibre distance* and read the decoy-state key rate there.  That was wrong on
     two counts.  First, the decoy-state model's loss mechanism is fibre
     attenuation, whereas a heralded link's fidelity is degraded by dark counts
-    and mode mismatch — inverting one against the other relates two unrelated
+    and mode mismatch: inverting one against the other relates two unrelated
     axes.  Second, it produced a cliff: any fidelity below about 0.98 mapped to
     an unreachable distance and returned zero, so nearly every realistic layout
     scored 0 and the optimiser had nothing to optimise.  The threshold here sits
@@ -602,8 +555,8 @@ def max_link_for_fidelity(problem: PlacementProblem,
     requirement into a length bound once, then solve a purely combinatorial
     problem against it.
 
-    The bisection scales a uniform chain that **spans the problem's own
-    endpoints**, so the returned length is consistent with the route being
+    The bisection scales a uniform chain that spans the problem's own
+    endpoints, so the returned length is consistent with the route being
     planned.  Constructing a synthetic chain of ``n_links * max_km`` instead
     produces positions that do not reach ``end_b`` and is rejected by the
     evaluator -- a chain must span the route it claims to be a placement for.
@@ -648,7 +601,7 @@ def best_placement(problem: PlacementProblem,
                    frontier_size: int = 64) -> Placement | None:
     """The layout delivering the highest key rate.
 
-    A dynamic program over the sites **in ascending position order**.  Each state
+    A dynamic program over the sites in ascending position order.  Each state
     carries a **Pareto frontier** of ``(rate, fidelity)`` rather than a single
     best rate, because two chains reaching the same site with the same repeater
     count are not interchangeable: the faster one may carry lower fidelity and
@@ -760,7 +713,7 @@ class Scenario:
 def robust_placement(problem: PlacementProblem,
                      scenarios: list[Scenario],
                      max_repeaters: int | None = None) -> Placement | None:
-    """A layout that satisfies the fidelity requirement under **every** scenario.
+    """A layout that satisfies the fidelity requirement under every scenario.
 
     Scenario-based robustness over a caller-supplied set.  It is *not* a chance
     constraint and makes no claim about a distribution over hardware parameters:

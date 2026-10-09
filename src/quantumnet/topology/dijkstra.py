@@ -1,4 +1,4 @@
-"""Dijkstra routing over fidelity as cost — for graphs where the bounded DFS
+"""Dijkstra routing over fidelity as cost, for graphs where the bounded DFS
 in ``routing.all_simple_paths`` exhausts its visit budget before finding the
 good paths (dense topologies, 500+ nodes).
 
@@ -10,7 +10,7 @@ links the end-to-end Werner parameter is ``w_path = Π w_i`` and the
 end-to-end fidelity is ``F = (1 + 3 w_path) / 4``.
 
 Maximising ``F`` therefore equals maximising ``Σ log w_i`` over the path,
-i.e. minimising ``Σ -log w_i`` — a *sum* of non-negative edge costs when
+i.e. minimising ``Σ -log w_i``, a *sum* of non-negative edge costs when
 ``0 < w_i <= 1`` (true for any physical link, F > 0.25).  That is exactly
 Dijkstra's requirement, so plain Dijkstra with edge weight ``-log w_i``
 returns the fidelity-optimal path.
@@ -44,7 +44,7 @@ class DemandPair:
 def _edge_cost(link) -> float:
     """Dijkstra edge weight for a link: ``-log(w)`` where ``w`` is the
     Werner parameter of the link fidelity.  Returns ``inf`` for a link whose
-    fidelity is at or below the classical limit (F <= 0.25 ⇒ w <= 0) — such a
+    fidelity is at or below the classical limit (F <= 0.25 ⇒ w <= 0): such a
     link can never carry entanglement, so no path may use it."""
     f = link.fidelity()
     w = (4.0 * f - 1.0) / 3.0
@@ -57,7 +57,7 @@ def dijkstra_best_route(topo: QuantumTopology, src: str, dst: str,
                         min_fidelity: float = 0.0) -> Route | None:
     """Fidelity-optimal route via Dijkstra on ``-log(Werner parameter)``.
 
-    ``O(E log V)`` — no hop bound and no enumeration, so it scales to dense
+    ``O(E log V)``: no hop bound and no enumeration, so it scales to dense
     500-node graphs where the bounded DFS does not.  Returns None when the
     destination is unreachable or the best path's fidelity is below
     ``min_fidelity``.

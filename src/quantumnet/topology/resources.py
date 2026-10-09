@@ -231,8 +231,8 @@ class ResourceManager:
                     expired.append(reservation)
                     break
 
-        # Anything else that decayed and is not covered by a reservation is
-        # freed here, so capacity is never overstated by an unusable pair.
+        # Anything else that decayed and is not covered by a reservation is freed here,
+        # so capacity is never overstated by an unusable pair.
         self.memory_array.release_expired(at)
         return expired
 
@@ -261,9 +261,7 @@ def _sequence_counter():
     return _next
 
 
-# ---------------------------------------------------------------------------
 # Arbitration
-# ---------------------------------------------------------------------------
 
 def resolve_contention(candidates: Iterable[Reservation]) -> list[Reservation]:
     """Order competing reservations by the arbitration policy.

@@ -155,7 +155,7 @@ def suppression_advantage(physical_gate_error: float, distance: int,
 
         suppression = p_L / p
 
-    Below threshold this is **less than one** and grows more favourable with
+    Below threshold this is less than one and grows more favourable with
     distance; above threshold it exceeds one and the code makes things worse.  The
     crossing is the threshold, and the *rate* is the honest figure of merit.
 
@@ -190,7 +190,7 @@ def break_even_gate_error(distances=(3, 5, 7), *, shots: int = 3000,
     """Locate the gate error at which each distance stops helping.
 
     A coarse sweep rather than a bisection, because ``p_L`` is measured by
-    sampling and is therefore noisy and *quantised* at ``1/shots`` — bisection on a
+    sampling and is therefore noisy and *quantised* at ``1/shots``: bisection on a
     staircase converges to an artefact of the step size rather than to a crossing.
     The sweep reports the bracket, which is what the data actually supports.
     """

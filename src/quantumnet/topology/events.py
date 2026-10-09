@@ -104,11 +104,9 @@ def distribute_events(
 
     kernel = Scheduler()
 
-    # Live segment state: fidelity, birth time, and the path index of the
-    # segment's right endpoint.  A raw link i spans path[i] -> path[i+1], so its
-    # right endpoint is i + 1.  Fusing the segment at index `lo` with the one at
-    # `hi` merges their extents, and the fusion happens at the shared node --
-    # the current right endpoint of the lower-indexed segment.
+    # Live segment state: fidelity, birth time, and the path index of the segment's
+    # right endpoint (link i spans path[i] -> path[i+1], so that is i + 1). Fusing
+    # `lo` with `hi` merges their extents at the shared node, `lo`'s right endpoint.
     segments: list[dict] = [
         {"fidelity": float(f), "born": t_gen_s, "right": i + 1}
         for i, f in enumerate(route.link_fidelities)
@@ -133,8 +131,8 @@ def distribute_events(
             segments[high]["fidelity"], t - segments[high]["born"], t1, t2)
         merged = swapped_fidelity(f_low, f_high)
 
-        # The fusion node is the shared endpoint, resolved now rather than at
-        # scheduling time, because the array has shrunk since.
+        # The fusion node is the shared endpoint, resolved now rather than at scheduling
+        # time, because the array has shrunk since.
         node = path[segments[low]["right"]]
         swap_times.append(t)
         swap_nodes.append(node)
@@ -148,8 +146,8 @@ def distribute_events(
 
     kernel.on("swap", handle_swap)
 
-    # Each link's pair becomes available at t_gen.  Modelled as an event so the
-    # timeline is explicit and a future resource manager can attach to it.
+    # Each link's pair becomes available at t_gen. Modelled as an event so the timeline
+    # is explicit and a future resource manager can attach to it.
     for index, _ in enumerate(links):
         kernel.schedule(t_gen_s, "link_ready", path[index], {"link": index})
 
@@ -172,9 +170,7 @@ def distribute_events(
     )
 
 
-# ---------------------------------------------------------------------------
 # Contention-driven simulation
-# ---------------------------------------------------------------------------
 
 @dataclass
 class ContentionOutcome:
@@ -296,8 +292,8 @@ def simulate_demands(
                         "expire", reservation.initiator, {})
 
     events_run = kernel.run()
-    # Any reservation still active at the horizon is released, so a caller
-    # inspecting the manager afterwards sees a consistent final state.
+    # Any reservation still active at the horizon is released, so a caller inspecting
+    # the manager afterwards sees a consistent final state.
     manager.sweep(max((r.end_time for r in ordered), default=0.0))
 
     return ContentionResult(
