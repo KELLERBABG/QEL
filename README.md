@@ -1,5 +1,10 @@
 # Quantum Entanglement Link (QEL)
 
+[![tests](https://img.shields.io/badge/tests-1138%20passing-brightgreen)](#run-it)
+[![licence](https://img.shields.io/badge/licence-Apache--2.0-blue)](LICENSE)
+[![python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
+[![more work](https://img.shields.io/badge/more_work-kellersystems.dev-16222c?labelColor=7a2e2e)](https://kellersystems.dev)
+
 A quantum communication network simulation stack: qubits, gates, noise and
 error correction at the bottom; the standard protocols in the middle;
 repeater placement and fidelity-constrained entanglement routing at the
@@ -7,13 +12,14 @@ top. Everything runs in Python on a laptop — no hardware, no optics, no
 network sockets.
 
 ```text
-1036 tests passing · 21 CLI commands · 10 protocols and codes · 61 modules
+1138 tests passing · 21 CLI commands · 10 protocols and codes · 63 modules
 ```
 
-> These counts are measurements, not claims: `1036` is the output of
+> These counts are measurements, not claims: `1138` is the output of
 > `py -m pytest -q` and `21` is the top-level command count from
 > `py -m quantumnet --help`, both re-run whenever this line changes. If you change
-> the code, re-run them and update this line in the same commit.
+> the code, re-run them and update this line in the same commit. `py scripts/claim_audit.py`
+> prints all four beside what they currently measure.
 >
 > The "core primitives" figure that used to sit here (9, then omitted) was never
 > reproducible from a command, so it has been replaced by the module count, which
@@ -168,7 +174,7 @@ That is the whole contract. The import layer only *produces* `nodes` and
 ```bash
 py -m pip install -e ".[dev]"
 
-py -m pytest -q                     # 1036 tests, ~3m
+py -m pytest -q                     # 1138 tests, ~3m
 py -m quantumnet all                # every protocol demo
 py -m quantumnet topology --help    # build / route / visualise a topology
 py -m quantumnet import --help      # route over a parsed topology export
@@ -459,7 +465,7 @@ src/quantumnet/topology/    graphs, fidelity routing, schedules, visualisation, 
 src/quantumnet/calibration/ library models checked against published datasets
 src/quantumnet/cli.py       the 21-command interface, JSON on stdout, everything else on stderr
 src/quantumnet/topology/importers/   QEL native JSON, legacy Ghost-Net bridge, Graphviz, SeQUeNCe
-tests/                      1036 tests, 63 modules, across core, protocols, topology and the CLI
+tests/                      1138 tests, 63 modules, across core, protocols, topology and the CLI
 validation/                 decoder-agnostic instruments: syndrome invariant, benchmarking
 scripts/                    four development tools, all listed below
 notebooks/demo.ipynb        worked demonstration
@@ -547,7 +553,7 @@ statements transcribed from Lo–Ma–Chen do not reproduce, and both are report
 reason rather than tuned away. The test suite fails if the decoy reach drifts toward
 *better* agreement, because that would mean a bound had been loosened.
 
-## Is 1036 tests a lot?
+## Is 1138 tests a lot?
 
 Measured against comparable libraries rather than against intuition. The QEL row is
 re-measured; the three comparator rows are from the original survey and were not
@@ -559,17 +565,18 @@ re-measured here:
 | scipy | 340,112 | 234,272 | 0.69 |
 | networkx | 116,857 | 74,878 | 0.64 |
 | sympy | 492,618 | 260,744 | 0.53 |
-| **QEL** | **15,351** | **11,529** | **0.75** |
+| **QEL** | **16,182** | **12,358** | **0.76** |
 
 QEL sits inside that range. The *absolute* count is large relative to the line count
-because those 1036 tests come from **823 test functions**, 55 of them parametrised and
+because those 1138 tests come from **972 test functions**, 57 of them parametrised and
 expanding into many cases — one geometric invariant checked at five distances is five
 tests from one function. The ratio, not the count, is the meaningful figure.
 
-> Both the count and the line figures here were stale at 555 and 7,588 / 4,853. The
-> source line count in particular had grown by more than a factor of two while the
-> README still described the earlier tree — which is the same failure the headline count
-> block warns about, in a second place.
+> Every figure in the table above was stale before this revision — the heading still said
+> 1036 tests and the line counts read 15,351 / 11,529 while the tree had grown to
+> 16,182 / 12,358. This is the same failure mode the headline count block warns about,
+> recurring in a second place, which is why `py scripts/claim_audit.py` now measures all
+> of them rather than leaving them to be noticed.
 
 The shape differs from those libraries in one deliberate way: a large share of
 QEL's tests check *physical identities and published values* rather than API

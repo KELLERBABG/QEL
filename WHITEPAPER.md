@@ -565,7 +565,7 @@ implements the LCWX bound.
 - Licence: Apache-2.0
 - Citation metadata: `CITATION.cff`
 - Documentation: `README.md` — usage, results, and the scope statement
-- Verification: `py -m pytest -q` (1036 tests), `py -m quantumnet validate` (published
+- Verification: `py -m pytest -q` (1138 tests), `py -m quantumnet validate` (published
   comparisons, scored and explicitly unscored), `py scripts/claim_audit.py` (documentation
   drift)
 
