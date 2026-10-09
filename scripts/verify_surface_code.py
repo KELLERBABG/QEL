@@ -14,8 +14,13 @@ diffed against an authoritative source instead of against a recollection.
 
 Usage
 -----
-    py scripts/verify_surface_code.py            # d = 3, 5
+    py scripts/verify_surface_code.py            # d = 3, 5, 7, 9
     py scripts/verify_surface_code.py 3 5 7      # explicit distances
+
+The default set is the four distances ``VERIFIED_SITES`` pins a layout for, so the default
+run covers exactly what the module claims to have verified. An earlier version defaulted to
+``3 5``, which meant a reader who ran it without arguments checked less than the docstring in
+``surface_code.py`` promised.
 
 Requires ``pip install stim``.  Exits non-zero if a claimed invariant fails.
 """
@@ -88,8 +93,13 @@ def analyse(d: int, rounds: int = 2, noise: float = 0.001) -> dict:
     }
 
 
+#: The distances ``VERIFIED_SITES`` pins a layout for. The default run uses these, so it
+#: checks exactly what the module claims rather than a subset of it.
+DEFAULT_DISTANCES = (3, 5, 7, 9)
+
+
 def main(argv: list[str]) -> int:
-    distances = [int(a) for a in argv[1:]] or [3, 5]
+    distances = [int(a) for a in argv[1:]] or list(DEFAULT_DISTANCES)
 
     print(f"stim {stim.__version__}")
     print()

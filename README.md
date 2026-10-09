@@ -525,7 +525,7 @@ The five tools in `scripts/`:
 | tool | what it does |
 |---|---|
 | `audit_imports.py` | every module must import cleanly. Catches a stale import that would break collection |
-| `verify_surface_code.py` | surface-code lattice and schedule checked against `stim` (dev-only) |
+| `verify_surface_code.py` | surface-code lattice and schedule checked against `stim` at d = 3, 5, 7 and 9 (dev-only; needs `stim`) |
 | `claim_audit.py` | extracts every test/command/module/line count from the docs and prints it beside what the repository currently measures |
 | `decoder_claim_check.py` | measures the in-package decoder against PyMatching: accuracy, edge-set agreement and weight. Exits non-zero if the accuracy claim fails |
 | `make_notebook.py` | regenerates `notebooks/demo.ipynb` |
