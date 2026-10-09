@@ -25,6 +25,42 @@ network sockets.
 > is. A number nobody can regenerate is how this line drifted to a test count of
 > 668 while the suite actually ran 1036. Do not estimate this line. Regenerate it.
 
+## Reproduce every claim in this repository
+
+Each command prints what it measured beside what the text claims, so you can check the
+documents against the code rather than taking either on trust.
+
+```bash
+py -m pytest -q                  # 1138 tests, about 3 minutes
+py -m quantumnet validate        # every published comparison, scored or explicitly unscored
+py scripts/claim_audit.py        # every numeric claim in the docs, beside what is measured
+```
+
+`validate` is the one that matters for the results: it re-derives each published figure,
+scores the comparisons that apply, and lists the ones that do not alongside the reason.
+Scored comparisons carry a **2% tolerance** and the command exits **1** with the failing row
+marked `[MISS]`, so a regression is a failed build rather than a number that drifted quietly.
+`claim_audit` is the one that matters for the prose: it extracts every count the
+documentation asserts and prints the measurement next to it, because a stale number is
+indistinguishable from a correct one until someone recomputes it.
+
+For the decoder, before trusting any threshold it prints:
+
+```bash
+py validation/demo.py            # self-validates the instrument first, then benchmarks
+py validation/demo.py --full     # five seeds and three distances, several minutes
+```
+
+The demo validates its own syndrome checker against known-good and known-bad corrections
+before measuring anything, and stops if that fails. An instrument only ever shown to accept
+is indistinguishable from one that always accepts.
+
+**Where this repository disagrees with its sources, the disagreement is published.** Two of
+four statements transcribed from the decoy-state literature do not reproduce, and both are
+reported as results in §4.4 of `WHITEPAPER.md` with the reason. The test suite fails if
+either drifts toward *better* agreement, because closing that gap would mean a bound had
+been loosened.
+
 ## What it is
 
 QEL is a simulator for quantum communication networks. It asks a question a classical
@@ -536,13 +572,8 @@ QEL's own state is either backed by a command that produced it, or it is not sta
 feature is called done because a file exists or a symbol has the right name.
 
 That rule is enforced rather than trusted. Where the code and the documentation disagree,
-one of them is a bug:
-
-```bash
-py -m pytest -q             # the claim "N tests pass"
-py -m quantumnet validate   # every published comparison, scored or explicitly unscored
-py scripts/claim_audit.py   # every numeric claim in the docs, beside what is measured
-```
+one of them is a bug. The three commands at the top of this file are how you find out
+which, without reading either.
 
 `claim_audit.py` reports and does not decide. It cannot know which number is right, and a
 tool that guessed would produce exactly the confident-but-wrong output the rest of this
