@@ -554,13 +554,47 @@ fidelity-optimal    F = 0.970398   3 hops</pre>
     properties matter, and they are separate claims.
   </p>
   <p>
-    <b>(a) It is accurate.</b> Logical error rate against distance, 6000 shots per point, on
-    the default in-package path:
+    <b>(a) It is accurate, and the numbers carry their uncertainty.</b> Logical error rate
+    against distance, pooled over five seeds at 6000 shots each — 30,000 shots per point:
   </p>
-<pre><span class="c"># logical error rate, 6000 shots each, in-package decoder</span>
-d=3, p=0.003   0.00100
-d=5, p=0.003   0.00033
-d=7, p=0.003   0.00000     <span class="c">monotone in d</span></pre>
+<pre><span class="c"># pooled over five seeds, 6000 shots each, in-package decoder</span>
+d=3, p=0.003   0.00220  [0.00173, 0.00280]     66/30000
+d=5, p=0.003   0.00080  [0.00054, 0.00119]     24/30000
+d=7, p=0.003   0.00040  [0.00023, 0.00070]     12/30000    <span class="c">monotone in d</span></pre>
+  <div class="note warn">
+    <h3>This table used to say 0.00100 / 0.00033 / 0.00000, and those values were wrong</h3>
+    <p>
+      They were not achievable arithmetic at the stated 6000 shots: one event in 6000 is
+      0.000167, so 0.00100 would be six events and 0.00033 two, while the measured counts
+      were 10, 4 and 2. The error survived review because the three values formed a clean
+      monotone sequence — which is precisely the property they were there to demonstrate.
+      It was found by building the uncertainty layer below and asking what interval the
+      sample size can actually support.
+    </p>
+    <p>
+      <b>The ordering is real; the per-seed samples are too thin to see it.</b> Per-seed
+      counts at d = 5 were 1, 5, 10, 5 and 3 out of 6000 — a tenfold spread. Any one-seed
+      table that appeared to show the effect would have been reporting luck.
+    </p>
+  </div>
+
+  <div class="note">
+    <h3>Uncertainty is reported in two kinds, and a third is kept separate</h3>
+    <p>
+      <b>Statistical</b> uncertainty comes from counted events and is bounded exactly for a
+      rate. Where nothing was observed the report gives an <i>upper bound</i> rather than
+      zero, because a zero-width interval would claim a proof no finite sample provides.
+      <b>Parameter</b> uncertainty propagates the precision of the inputs through the real
+      calculation by Monte Carlo, not by linearisation — these quantities are not close to
+      linear in their inputs.
+    </p>
+    <p>
+      <b>Model</b> uncertainty is the two calibration differences in §5.6. It is stated as
+      text and deliberately never as a number, so it cannot be read as an interval or
+      averaged into one. An interval that appeared to cover model error would be worse than
+      no interval, because it would look like a guarantee.
+    </p>
+  </div>
 
   <figure>
     <div class="frame">

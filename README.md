@@ -305,9 +305,19 @@ The decoder computes an **exact minimum-weight T-join** on the graph `stim`'s de
 error model defines. Measured on this package's own circuits:
 
 ```text
-d=3 p=0.003, 6000 shots:  0.00100
-d=5 p=0.003, 6000 shots:  0.00033
-d=7 p=0.003, 6000 shots:  0.00000      monotone in d, as a code must be
+d=3 p=0.003, 5 seeds x 6000 shots:  0.00220  [0.00173, 0.00280]   66/30000
+d=5 p=0.003, 5 seeds x 6000 shots:  0.00080  [0.00054, 0.00119]   24/30000
+d=7 p=0.003, 5 seeds x 6000 shots:  0.00040  [0.00023, 0.00070]   12/30000
+                                                     monotone in d, as a code must be
+```
+
+Those three values previously read `0.00100 / 0.00033 / 0.00000`, which was wrong: one
+event in 6000 is 0.000167, so `0.00100` would be six events, and the measured counts were
+10, 4 and 2. The error survived because the wrong numbers formed a cleaner monotone
+sequence than the right ones. Guarded now by `core/uncertainty.py`, which reports the
+interval each sample size can support, and by the arithmetic check in
+`scripts/claim_audit.py`, which rejects any line whose stated rate is not an achievable
+count at its own sample size.
 
 threshold sweep, 20 000 shots per point, decoder alone:
   p=0.005  d=3 0.00565  d=5 0.00355  d=7 0.00230

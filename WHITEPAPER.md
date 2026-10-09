@@ -292,13 +292,28 @@ fidelity-optimal    F = 0.970398   3 hops
 The decoder computes an exact minimum-weight T-join on the merged detector graph. Two
 properties matter, and they are separate claims:
 
-**(a) It is accurate.** Logical error rate against distance, 6000 shots per point:
+**(a) It is accurate, and the numbers now carry their uncertainty.** Logical error rate
+against distance, pooled over five seeds at 6000 shots each — 30 000 shots per point:
 
 ```
-d=3 p=0.003:  0.00100
-d=5 p=0.003:  0.00033
-d=7 p=0.003:  0.00000        monotone in d
+d=3 p=0.003:  0.00220   [0.00173, 0.00280]    66/30000
+d=5 p=0.003:  0.00080   [0.00054, 0.00119]    24/30000
+d=7 p=0.003:  0.00040   [0.00023, 0.00070]    12/30000     monotone in d
 ```
+
+**This table previously read `0.00100 / 0.00033 / 0.00000`, and those values were
+wrong.** They were not achievable arithmetic at the stated 6000 shots: one event in 6000
+is 0.000167, so `0.00100` would be six events and `0.00033` two, while the measured
+counts were 10, 4 and 2. The error was silent because the three values looked like a
+clean monotone sequence, which is exactly the property they were demonstrating. Finding
+it required building the uncertainty layer and asking what interval the sample size can
+actually support; no amount of re-reading the prose would have exposed it.
+
+**The monotonicity in `d` is real but the per-seed samples are too thin to see it.** The
+per-seed counts at d=5 were 1, 5, 10, 5 and 3 out of 6000 — a tenfold spread. At these
+rates a single seed cannot distinguish the distances, and any one-seed table that appears
+to would be reporting luck. Pooling is what makes the ordering legible, which is the
+reason the interval is reported beside it rather than instead of it.
 
 Threshold sweep, 20 000 shots per point, decoder alone:
 

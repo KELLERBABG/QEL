@@ -49,6 +49,96 @@ PATTERNS: tuple[tuple[str, str], ...] = (
 #: Section markers the plan uses to separate verified from unverified statements.
 MARKERS: tuple[str, ...] = ("[measured]", "[verified]", "[unverified]", "[superseded]")
 
+#: A line stating a logical error rate, and the arithmetic check applied to it.
+#:
+#: This exists because a *wrong* p_L value cannot be caught by re-reading prose. The
+#: whitepaper reported ``d=3 p=0.003: 0.00100`` at 6000 shots; that is six events at a
+#: resolution of 1/6000, the measured count was ten, and the value survived because
+#: 0.00100 / 0.00033 / 0.00000 formed a tidier monotone sequence than the truth.
+#:
+#: Two shapes are worth flagging, and both are decided by **arithmetic rather than
+#: vocabulary**, which is the only reason they are checkable:
+#:
+#: 1. ``count/total`` and a decimal on the same line that disagree -- ``4/2000 = 0.00100``
+#:    is wrong by exactly a factor of two and requires no domain knowledge to reject.
+#: 2. A decimal whose value is **not an achievable count** at the stated sample size --
+#:    ``0.00100`` at 6000 shots is 6.0000 events, and no count gives it. That is the check
+#:    that would have caught the original error, and it needs only the shot count.
+#:
+#: A line without a shot count is left alone. Flagging every small decimal would also flag
+#: the noise parameter being fed *in* (``p = 0.003``), and a check that cries wolf on
+#: inputs is a check a reader learns to scroll past.
+COUNT_RATE = re.compile(r"\b(\d{1,7})\s*/\s*(\d{2,9})\s*=")
+DECIMAL_RATE = re.compile(r"(?<![\d.])(0\.\d{4,})(?![\d])")
+SHOTS = re.compile(r"\b(\d[\d,]{3,})\s*shots\b", re.IGNORECASE)
+#: A bracketed interval, whose bounds are *not* point estimates and must not be compared
+#: against a count/total ratio. ``66/30000 = 0.00220 [0.00173, 0.00280]`` is correct, and
+#: comparing the ratio against 0.00173 would report a false inconsistency.
+BRACKETED = re.compile(r"\[[^\]]*\]")
+
+
+def _is_length_ratio(count: int, total: int) -> bool:
+    """``40/80`` in a placement result is a distance in km, not a rate.
+
+    A count/total pair only reads as a rate when the quotient is plausibly one. A ratio
+    above 1 cannot be a probability, and neither can ``120/160`` when the line is about
+    span lengths -- so anything outside [0, 1] is skipped rather than reported.
+    """
+    if total == 0:
+        return True
+    ratio = count / total
+    return not (0.0 <= ratio <= 1.0)
+
+
+def inconsistent_rates(path: pathlib.Path) -> list[tuple[int, str]]:
+    """Lines where a stated rate disagrees with its own arithmetic.
+
+    Returns ``[(line number, explanation)]``. Checks performed:
+
+    * a decimal beside a ``count/total`` pair must equal that ratio
+    * a decimal on a line naming a shot count must be an achievable count at that size
+
+    Only these. The check is deliberately incapable of judging a rate on its own merits --
+    it knows nothing about whether a decoder is any good -- and can only say that two
+    numbers on the same line contradict each other. That is exactly the class of error it
+    is meant to catch.
+    """
+    problems: list[tuple[int, str]] = []
+    text = path.read_text(encoding="utf-8", errors="replace")
+    for number, line in enumerate(text.splitlines(), start=1):
+        # Interval bounds are not point estimates, so remove bracketed spans before
+        # looking for a decimal to compare against a ratio.
+        outside = BRACKETED.sub(" ", line)
+        decimals = [float(d) for d in DECIMAL_RATE.findall(outside)]
+
+        for count, total in COUNT_RATE.findall(line):
+            k, n = int(count), int(total)
+            if n == 0 or _is_length_ratio(k, n):
+                continue
+            ratio = k / n
+            for dec in decimals:
+                # Allow for the decimal being rounded to 5 places.
+                if abs(dec - ratio) > max(5e-5, 0.01 * ratio):
+                    problems.append(
+                        (number,
+                         f"{k}/{n} = {ratio:.5f} but the line states {dec:.5f}"))
+                    break
+
+        shot_match = SHOTS.search(line)
+        if shot_match and decimals:
+            n = int(shot_match.group(1).replace(",", ""))
+            if n > 0:
+                for dec in decimals:
+                    events = dec * n
+                    # An achievable rate is k/n for integer k. Tolerance is half an event.
+                    if abs(events - round(events)) > 0.5:
+                        problems.append(
+                            (number,
+                             f"{dec:.5f} at {n} shots is {events:.2f} events, "
+                             f"which no count produces"))
+                        break
+    return problems
+
 
 def _measure_tests() -> str:
     """The current test count, from the suite itself.
@@ -113,6 +203,11 @@ def marker_counts(path: pathlib.Path) -> dict[str, int]:
     return {marker: text.count(marker) for marker in MARKERS}
 
 
+def unsupported_rates(path: pathlib.Path) -> list[tuple[int, str]]:
+    """Kept as the public name for the arithmetic check; see :func:`inconsistent_rates`."""
+    return inconsistent_rates(path)
+
+
 def audit(paths: list[pathlib.Path]) -> int:
     measured = measure_repository()
     print("=" * 74)
@@ -143,6 +238,16 @@ def audit(paths: list[pathlib.Path]) -> int:
             print(f"\n  confidence markers: {present}")
             print("    (each is a claim about how well something was verified;")
             print("     an [unverified] marker that outlives its verification is a bug)")
+
+        bare = unsupported_rates(path)
+        if bare:
+            print(f"\n  INCONSISTENT ARITHMETIC ({len(bare)}):")
+            for number, text in bare:
+                print(f"    L{number:<5} {text}")
+            print("    (two numbers on one line contradict each other; this tool cannot")
+            print("     judge whether a rate is good, only whether it is self-consistent)")
+        else:
+            print("\n  no self-inconsistent rates found")
 
     print()
     print("=" * 74)
