@@ -1,6 +1,5 @@
 # Quantum Entanglement Link (QEL)
 
-[![tests](https://img.shields.io/badge/tests-1138%20passing-brightgreen)](#run-it)
 [![licence](https://img.shields.io/badge/licence-Apache--2.0-blue)](LICENSE)
 [![python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 [![more work](https://img.shields.io/badge/more_work-kellersystems.dev-16222c?labelColor=7a2e2e)](https://kellersystems.dev)
