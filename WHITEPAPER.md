@@ -546,12 +546,32 @@ for the candidate sets tried the constraint does not bind.
 **Detector recovery is a minimum slot spacing**, not a per-detector state machine. A full
 recovery trace would need the detector's internal curve, which this package does not have.
 
-**One degraded code path is known-suspect.** The `matcher="greedy"` fallback has a defect
-in its final-round boundary conditions: it replicates the single-round check graph into
-every layer, whereas the final round measures the data qubits directly. This does not
-affect the default path, which uses `stim`'s own detector error model. The fallback is
-retained only so the package runs without `stim`, and it is documented as suspect rather
-than silently trusted.
+**The legacy greedy decoder is an approximation with a measured gap, and it is not on any
+public path.** It replicates the single-round check graph into every layer, whereas the
+final round measures the data qubits directly, so the last layer is modelled as another
+ancilla comparison. Measured against the exact decoder on the same 542 syndromes at d=3,
+p=0.003: they disagree on **10.1%** of them, 60% of those differences involve the final
+round, and the practical cost is **104 logical errors against the exact decoder's 63** on
+4000 shots, about 65% more.
+
+Three consequences worth stating plainly.
+
+First, the `decoder="greedy"` parameter has always returned the in-package exact decoder, so
+the two names produced identical numbers; the branch is now removed and the name documented
+as an alias rather than pretending to be a choice.
+
+Second, the decoder is **unreachable through the public API**, so no reported figure in this
+document comes from it. `logical_error_rate` requires `stim` regardless of which decoder is
+asked for, which also means the "keeps the package running without stim" rationale never
+held: without `stim` the measurement raises before any decoder is chosen.
+
+Third, the functions remain, because they are tested and they are honest building blocks:
+`decode_space_time` provides the exact answer on instances both can handle, and
+`decode_space_time_greedy` is referenced by tests asserting properties it does satisfy (a
+measurement error costs one edge; a single data error costs one correction). They are
+approximations that say so, not silent failures. What was wrong was this document's
+*description* of the defect, which asserted a specific boundary bug that the measurement
+does not isolate.
 
 **Estimator scope.** The asymptotic decoy-state path is the standard
 asymptotic-plus-estimator analysis, not a composable-security proof. The finite-key path

@@ -343,8 +343,13 @@ def minimum_weight_decoder(distance: int, rounds: int, decoder: str = "auto"):
     ``"auto"`` returns ``None``, meaning **use the in-package decoder**
     (:mod:`quantumnet.core.tjoin_decoder`), which is the default and needs no
     third-party matcher.  ``"pymatching"`` returns the PyMatching matcher when it is
-    installed, for *comparison* only.  ``"greedy"`` forces the older space-time greedy
-    decoder, retained so the package still runs on numpy alone.
+    installed, for *comparison* only.
+
+    ``"greedy"`` is accepted as an alias for ``"auto"``. It does **not** select the legacy
+    space-time greedy decoder, which is an unreachable approximation with a known defect in
+    its final-round boundary conditions; see the limitations section of ``WHITEPAPER.md``.
+    The name is kept so existing callers do not break, but the two produce identical
+    results.
 
     Why the in-package decoder is now the default
     --------------------------------------------
@@ -359,10 +364,15 @@ def minimum_weight_decoder(distance: int, rounds: int, decoder: str = "auto"):
     recorded in :mod:`quantumnet.core.tjoin_decoder`.  The reference is now an
     optional oracle rather than a dependency.
     """
-    if decoder == "greedy":
-        return None
-    if decoder == "auto":
-        # The in-package path.  No third-party matcher required.
+    if decoder in ("auto", "greedy"):
+        # The in-package path. No third-party matcher required.
+        #
+        # ``"greedy"`` used to have its own branch here, selecting the legacy space-time
+        # greedy decoder that :mod:`quantumnet.core.surface_code` still provides. It
+        # returned ``None`` exactly as ``"auto"`` does, so the decoder parameter never
+        # changed which decoder ran: ``decoder="greedy"`` silently produced in-package
+        # results. The branch is gone and the name is documented as an alias rather than
+        # pretending to be a choice.
         return None
     if decoder == "pymatching":
         if not HAVE_PYMATCHING:
@@ -445,9 +455,11 @@ def logical_error_rate(distance: int, noise, *, rounds: int | None = None,
                             decode_failures=0, model=model,
                             decoder="pymatching")
 
-    if matcher in ("auto", "builtin"):
+    if matcher == "auto":
         # The default path: the in-package exact T-join decoder, whole space-time set at
         # once, no third-party matcher, so the threshold follows from stim and numpy.
+        # ``"builtin"`` used to be accepted here as well, but minimum_weight_decoder
+        # rejects it, so that half of the condition was unreachable.
         from .tjoin_decoder import decode_batch as _in_package_decode
 
         dem = circuit.detector_error_model(decompose_errors=True)

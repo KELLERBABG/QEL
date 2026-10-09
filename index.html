@@ -888,10 +888,15 @@ best: 4 sites at [40, 80, 120, 160] km
       A full recovery trace would need the detector's internal curve.
     </li>
     <li>
-      <b>One degraded code path is known-suspect.</b> The legacy greedy fallback has a
-      defect in its final-round boundary conditions and is documented as suspect rather than
-      silently trusted. It does not affect the default path, which uses
-      <span class="mono">stim</span>'s own detector error model.
+      <b>The legacy greedy decoder is an approximation with a measured gap, and it sits on
+      no public path.</b> Against the exact decoder on the same 542 syndromes at d = 3,
+      p = 0.003 they disagree on <b>10.1%</b>, and the practical cost is <b>104 logical
+      errors against 63</b> over 4000 shots. The
+      <span class="mono">decoder="greedy"</span> parameter has always returned the
+      in-package exact decoder, so the two names gave identical numbers; the branch is
+      removed and the name documented as an alias. Measuring any logical error rate also
+      requires <span class="mono">stim</span> whichever decoder is named, so no figure in
+      this document comes from the greedy path.
     </li>
     <li>
       <b>Estimator scope.</b> The asymptotic decoy-state path is the standard
