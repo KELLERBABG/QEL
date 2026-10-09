@@ -253,13 +253,39 @@ rather than hidden by choosing a kinder detector:
       0.800                 57 km
 ```
 
-**The two differences are not tuned away.** The 123.5 km decoy reach is the
-**finite-key** reach (LCWX bound) against a figure drawn asymptotically, and the package
-bounds the single-photon yield conservatively; a finite-key answer below an asymptotic
-one is the expected direction. The 179 km crossing is where the single-photon QBER
-reaches 1/4, which is model-dependent. The test suite asserts the shortfall *stays* a
-margin, so it fails if the number drifts in **either** direction, including if it began
-exceeding the published figure, which would mean a bound had been loosened.
+**The two statements that do not reproduce are treated as a result in their own right**, and
+are given §4.4 rather than a closing caveat here.
+
+---
+
+### 4.4 Two published statements that do not reproduce
+
+Four statements were transcribed from Lo, Ma and Chen and all four were measured; the table
+is in §4.3. **Two agree and two do not**, and the disagreement is the most informative part
+of this section, so it is stated at full strength.
+
+Neither difference is tuned away, and neither is blamed on an error without evidence.
+
+**The decoy reach.** 123.5 km measured against "over 140 km" published. The package reports
+the reach at which the **finite-key** secret length is positive, using the LCWX bound, and
+it bounds the single-photon yield conservatively; the source draws its figure asymptotically.
+A finite-key result falling below an asymptotic one is the expected direction, so the two
+numbers are probably answering slightly different questions. That is an explanation rather
+than a demonstration, and it is the specific thing a hardware measurement could settle.
+
+**The intercept-resend crossing.** 179 km measured against 208 km published. The crossing is
+where the single-photon QBER reaches 1/4, beyond which intercept-resend succeeds. The
+quantity is model-dependent, so it is reported as measured.
+
+**The test suite enforces the direction of both.** It asserts the shortfall *stays* a
+margin, and fails if either number drifts toward better agreement, because closing the gap
+by loosening a bound would make the model look more accurate while making it worse. A
+difference that can only move one way is a stronger claim than a number that happens to
+match.
+
+**Why this is reported rather than smoothed.** Two of four is what calibrating looks like
+when the disagreement is left visible. A model tuned until all four statements matched would
+have told the reader nothing about where it stops being trustworthy.
 
 ---
 

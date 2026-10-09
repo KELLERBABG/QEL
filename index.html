@@ -246,10 +246,10 @@ footer a:hover{color:var(--accent)}
       1.3% of the time on random graphs.
     </p>
     <p>
-      Of four statements transcribed from the decoy-state literature, <b>two reproduce</b> and
-      both differences are reported rather than tuned away. Nothing in this work has been
-      validated against physical hardware, and the measured values do not predict what
-      hardware would achieve.
+      Of four statements transcribed from the decoy-state literature, <b>two reproduce</b>.
+      Both differences are reported as results in their own right in §3.4 rather than tuned
+      away. Nothing in this work has been validated against physical hardware, and the
+      measured values do not predict what hardware would achieve.
     </p>
   </div>
 
@@ -472,10 +472,10 @@ footer a:hover{color:var(--accent)}
       </tbody>
     </table>
     <figcaption>
-      <b>Table 2.</b> Four transcribed statements, all four measured. The two differences
-      are explained in §5.6 and neither is tuned away; the test suite fails if the decoy
-      reach drifts toward <i>better</i> agreement, because that would mean a bound had been
-      loosened.
+      <b>Table 2.</b> Four transcribed statements, all four measured. The two that do not
+      reproduce are treated as a result in their own right in §3.4, and neither is tuned
+      away; the test suite fails if the decoy reach drifts toward <i>better</i> agreement,
+      because that would mean a bound had been loosened.
     </figcaption>
   </div>
 
@@ -521,6 +521,39 @@ footer a:hover{color:var(--accent)}
       corresponds to a ~20%-efficient detector, not to the GYS demo's own.
     </figcaption>
   </div>
+
+  <h3>3.4 Two published statements that do not reproduce</h3>
+  <p>
+    Two of the four statements in Table 2 agree with the source and two do not. The
+    disagreement is the most informative part of this section, so it is stated at full
+    strength.
+  </p>
+  <p>
+    <b>The decoy reach.</b> 123.5 km measured against "over 140 km" published. The package
+    reports the reach at which the <i>finite-key</i> secret length is positive, using the
+    LCWX bound, and it bounds the single-photon yield conservatively; the source draws its
+    figure asymptotically. A finite-key result falling below an asymptotic one is the
+    expected direction, so the two numbers are probably answering slightly different
+    questions. That is an explanation rather than a demonstration, and it is the specific
+    thing a hardware measurement could settle.
+  </p>
+  <p>
+    <b>The intercept-resend crossing.</b> 179 km measured against 208 km published. The
+    crossing is where the single-photon QBER reaches 1/4, beyond which intercept-resend
+    succeeds. The quantity is model-dependent, so it is reported as measured.
+  </p>
+  <p>
+    <b>The test suite enforces the direction of both.</b> It asserts the shortfall
+    <i>stays</i> a margin, and fails if either number drifts toward better agreement,
+    because closing the gap by loosening a bound would make the model look more accurate
+    while making it worse. A difference that can only move one way is a stronger claim than
+    a number that happens to match.
+  </p>
+  <p>
+    <b>Why this is reported rather than smoothed.</b> Two of four is what calibrating looks
+    like when the disagreement is left visible. A model tuned until all four statements
+    matched would have told the reader nothing about where it stops being trustworthy.
+  </p>
 </section>
 
 <!-- ── 4 novel ────────────────────────────────────────────────────────── -->
@@ -842,6 +875,11 @@ best: 4 sites at [40, 80, 120, 160] km
   </div>
 
   <h3>5.6 Why the two calibration statements differ</h3>
+  <p class="lede">
+    The differences themselves are reported as a result in §3.4. Repeated here in one
+    sentence each, because a reader checking the limitations should not have to go looking
+    for whether they were addressed.
+  </p>
   <ul class="tight">
     <li>
       <b>Decoy reach, 123.5 km against &gt;140 km.</b> The package reports the reach at
