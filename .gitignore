@@ -23,6 +23,12 @@ research/
 # copies of source files and notes. Promote from here into src/ deliberately.
 decoder_work/
 
+# Downloaded research material: papers, theses, dataset archives and any libraries
+# fetched to read proprietary formats. Never part of the package, and large enough to
+# break a push -- one such directory reached 203 MB across 4017 files before it was
+# caught. Downloaded material is not redistributed for the same reason as research/.
+snspd_data/
+
 # Scratch output and throwaway test harnesses from development. Listed by extension
 # rather than as `_*`, which would also have suppressed `__init__.py`.
 _*.js
