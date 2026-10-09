@@ -134,8 +134,7 @@ class NoiseModel:
 DEPOLARIZING_ONLY = NoiseModel(name="depolarizing-only")
 
 #: All four knobs at once: roughly five times the injected error rate at the same
-#: nominal ``p``, so a threshold quoted against it is not comparable with the
-#: gate-only model.
+#: nominal ``p``, so its threshold is not comparable with the gate-only model.
 ALL_MECHANISMS = NoiseModel(name="all-mechanisms")
 
 
@@ -436,9 +435,8 @@ def logical_error_rate(distance: int, noise, *, rounds: int | None = None,
     reference = minimum_weight_decoder(distance, rounds, matcher)
 
     if reference is not None:
-        # Explicit comparison against PyMatching (`matcher="pymatching"`): the reference
-        # matcher decodes the whole detector set at once, both check families, and
-        # returns the observable flips directly.
+        # Explicit PyMatching reference (`matcher="pymatching"`): it decodes the whole
+        # detector set at once, both check families, and returns the observable flips.
         predicted_obs = reference.decode_batch(detection)
         errors = int(np.sum(predicted_obs[:, 0].astype(bool)
                             != observables[:, 0].astype(bool)))
@@ -448,9 +446,8 @@ def logical_error_rate(distance: int, noise, *, rounds: int | None = None,
                             decoder="pymatching")
 
     if matcher in ("auto", "builtin"):
-        # The default path: the in-package exact T-join decoder. It decodes the whole
-        # space-time detector set at once and needs no third-party matcher, so the
-        # threshold is reproducible from `stim` and `numpy` alone.
+        # The default path: the in-package exact T-join decoder, whole space-time set at
+        # once, no third-party matcher, so the threshold follows from stim and numpy.
         from .tjoin_decoder import decode_batch as _in_package_decode
 
         dem = circuit.detector_error_model(decompose_errors=True)
@@ -468,10 +465,8 @@ def logical_error_rate(distance: int, noise, *, rounds: int | None = None,
     for shot in range(shots):
         fired = np.flatnonzero(detection[shot])
         try:
-            # Space-time decoding with the in-package matcher: every detection event
-            # becomes a ``(round, ancilla)`` node and the experiment is matched at once,
-            # so a measurement error is a one-edge vertical move rather than an isolated
-            # event matched across the code.
+            # Space-time decoding with the in-package matcher: each detection event is a
+            # ``(round, ancilla)`` node, and the experiment is matched all at once.
             by_round: dict[int, set[int]] = {}
             for index in fired:
                 kind, ancilla, round_index = table[int(index)]
@@ -607,21 +602,16 @@ def logical_key_rate(physical_fidelity: float, distance: int, noise: float,
                                 seed=seed)
     p_round = memory.per_round_error_rate
 
-    # A logical flip is a bit flip at one end of the pair, with per-round probability
-    # ``p_round``. Over ``rounds`` rounds the flip probability is
-    # ``1 - (1 - 2 p_round)**rounds`` because a bit flip has two outcomes, so the
-    # "no flip" survival factor is ``1 - 2p`` rather than ``1 - p``.
+    # A logical flip is a bit flip at one end of the pair, per-round ``p_round``; over
+    # ``rounds`` rounds the flip probability is ``1 - (1 - 2 p_round)**rounds``.
     flip_probability = 1.0 - (1.0 - 2.0 * p_round) ** rounds
 
     # The pair's fidelity after those rounds is its overlap with the Bell state,
-    # ``(1 + survival) / 2``: the Werner form, with the flip probability folded in as
-    # ``(1 - flip_probability/2)``.
+    # ``(1 + survival) / 2``: the Werner form, ``(1 - flip_probability/2)`` folded in.
     logical_fidelity = 1.0 - flip_probability / 2.0
 
-    # Compose the two error sources through the Werner product (see
-    # ``compose_pair_fidelity``); a weighted average would overstate the logical
-    # fidelity by 0.004 at this package's operating point and by up to 0.09 at lower
-    # physical fidelity.
+    # Both error sources compose through the Werner product (``compose_pair_fidelity``);
+    # a weighted average overstates it by 0.004 here and up to 0.09 at low fidelity.
     effective_fidelity = compose_pair_fidelity(
         physical_fidelity, logical_fidelity, flip_probability)
 

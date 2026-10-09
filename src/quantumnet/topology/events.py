@@ -104,9 +104,8 @@ def distribute_events(
 
     kernel = Scheduler()
 
-    # Live segment state: fidelity, birth time, and the path index of the segment's
-    # right endpoint (link i spans path[i] -> path[i+1], so that is i + 1). Fusing
-    # `lo` with `hi` merges their extents at the shared node, `lo`'s right endpoint.
+    # Segment state: fidelity, birth time, and the path index of the right endpoint
+    # (link i spans path[i] -> path[i+1], so i + 1); fusing lo with hi merges there.
     segments: list[dict] = [
         {"fidelity": float(f), "born": t_gen_s, "right": i + 1}
         for i, f in enumerate(route.link_fidelities)

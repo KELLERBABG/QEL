@@ -86,9 +86,8 @@ class PublishedDataset:
             raise ValueError(f"unknown dataset kind {self.kind!r}")
 
 
-#: The GYS parameter set, exactly as Ma et al. tabulate it (their Table I):
-#: ``alpha = 0.21 dB/km``, ``e_detector = 3.3%``, ``Y_0 = 1.7e-6``, ``eta_Bob = 0.045``,
-#: ``f(e) = 1.22``, 2 MHz repetition rate.
+#: The GYS parameter set as Ma et al. tabulate it (Table I): ``alpha = 0.21 dB/km``,
+#: ``e_detector = 3.3%``, ``Y_0 = 1.7e-6``, ``eta_Bob = 0.045``, ``f(e) = 1.22``, 2 MHz.
 GYS_PARAMETERS = {
     "alpha_db_km": 0.21,
     "detector_efficiency": 0.045,

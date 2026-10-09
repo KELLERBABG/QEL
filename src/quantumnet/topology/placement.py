@@ -59,9 +59,8 @@ from .routing import swapped_fidelity
 #: Default key-rate model.  ``practical-1550`` is the modern-SPAD preset.
 DEFAULT_RATE_PRESET = "practical-1550"
 
-#: Numeric slack for length comparisons, in km.  Two sites 100.0000001 km apart
-#: on a 100 km budget should count as reachable; exact float comparison would
-#: make placement depend on the last bit of a division.
+#: Numeric slack for length comparisons, in km. Two sites 100.0000001 km apart on a
+#: 100 km budget count as reachable; exact float comparison hinges on the last bit.
 _LENGTH_TOL_KM = 1e-9
 
 #: Default memory coherence times, matching ``graph.DEFAULT_T1_S/T2_S``.
@@ -109,25 +108,21 @@ class PlacementProblem:
     #: Storage time charged per segment before its swap. Microseconds, not milliseconds: a
     #: 1 ms hold destroys the short-coherence scenarios a robustness study is about.
     t_swap_s: float = 1e-6
-    #: ``"barrett-kok"`` (default) treats loss as costing rate, not fidelity,
-    #: which is correct for a heralded link.  ``"depolarizing"`` reproduces the
-    #: pessimistic single-photon reading used elsewhere in QEL.
+    #: ``"barrett-kok"`` (default) treats loss as costing rate, not fidelity (true for a
+    #: heralded link); ``"depolarizing"`` is the pessimistic single-photon reading.
     fidelity_model: str = "barrett-kok"
     coincidence_window_s: float = 1e-9
     mode_matching: float = 1.0
     #: Fidelity of the entanglement-swap operation itself.  An ideal swap is
     #: 1.0; real BSMs are not, and this is what makes hop count cost fidelity.
     swap_fidelity: float = 0.99
-    #: Classical control-plane delay model, or ``None`` to charge none. With it set, each
-    #: swap costs a round trip that the pair spends decaying in memory, so the optimum
-    #: differs from the one that ignores the control plane.
+    #: Classical control-plane delay model, or ``None`` to charge none. When set, each
+    #: swap costs a round trip spent decaying in memory, so the optimum changes.
     classical_link: object | None = None
     #: Additional processing delay per intermediate node, in seconds.
     classical_processing_s: float = 0.0
-    #: ``"whole-span"`` charges each swap a round trip across the entire chain; the
-    #: ``"segment-aware"`` alternative charges only the two segments it fuses. The
-    #: whole-span bound overstates by a chain-length-dependent factor (1.33x at two links,
-    #: 2.88x at seven), which biases comparisons between chain lengths.
+    #: ``"whole-span"`` charges each swap the round trip, ``"segment-aware"`` only the
+    #: two segments it fuses; it overstates by 1.33x at two links and 2.88x at seven.
     coordination_model: str = "whole-span"
     #: ``"sequential"`` fuses the leftmost pair repeatedly. A better order is known to
     #: exist but no efficient construction was found, so this is a reproducible reference.
@@ -160,9 +155,7 @@ class PlacementProblem:
         return abs(a.position_km - b.position_km)
 
 
-# ---------------------------------------------------------------------------
 # Link and chain physics
-# ---------------------------------------------------------------------------
 
 def elementary_link_fidelity(length_km: float, problem: PlacementProblem) -> float:
     """Fidelity of one elementary link.
@@ -277,9 +270,8 @@ def _chain_from_positions(ordered: list[float], problem: PlacementProblem,
             from .coordination import segment_aware_delay
 
             total = segment_aware_delay(list(ordered))["total_s"]
-            # ``segment_aware_delay`` uses the default fibre speed; rescale to the
-            # caller's link model so the two models differ only in *what distance*
-            # is charged, never in how delay per kilometre is computed.
+            # ``segment_aware_delay`` assumes the default fibre speed, so rescale to the
+            # caller's link model: the two differ only in what distance is charged.
             default_speed = 200_000.0
             total = total * (default_speed / link_model.c_fiber_km_per_s)
             coordination_s = total + (n_links - 1) * (
@@ -293,9 +285,8 @@ def _chain_from_positions(ordered: list[float], problem: PlacementProblem,
             )
     total_wait_s = wait_s + coordination_s
 
-    # Each factor is a Werner parameter, so the product is one and stays in [0, 1]. Each
-    # link contributes its heralded fidelity, memory decoherence over the wait before its
-    # swap, and once per swap the BSM's own fidelity, so hop count costs fidelity.
+    # Each factor is a Werner parameter, so the product stays in [0, 1]: per link the
+    # heralded fidelity, memory decoherence while waiting, and the swap's fidelity.
     survivor = 1.0
     for length in lengths:
         fidelity = elementary_link_fidelity(length, problem)
@@ -421,9 +412,7 @@ def fidelity_to_distance(fidelity: float, problem: PlacementProblem,
     return float(0.5 * (lo + hi_km))
 
 
-# ---------------------------------------------------------------------------
 # Placement: exact, by shortest path
-# ---------------------------------------------------------------------------
 
 @dataclass
 class Placement:
@@ -591,9 +580,7 @@ def max_link_for_fidelity(problem: PlacementProblem,
     return float(lo * span / n_links)
 
 
-# ---------------------------------------------------------------------------
 # Placement: maximise the delivered key rate
-# ---------------------------------------------------------------------------
 
 def best_placement(problem: PlacementProblem,
                    max_repeaters: int | None = None,
@@ -621,9 +608,8 @@ def best_placement(problem: PlacementProblem,
     """
     sites = sorted(problem.all_sites(), key=lambda s: s.position_km)
     n = len(sites)
-    # ``used`` counts intermediate repeaters exactly (the far endpoint is a
-    # terminus, not a repeater), so the budget compares against it directly.
-    # Carrying an extra +1 here let one repeater beyond the budget through.
+    # ``used`` counts intermediate repeaters (the far endpoint is a terminus, not a
+    # repeater), so the budget is compared against it directly.
     limit = n if max_repeaters is None else max_repeaters
 
     # state[i][k] = frontier of (rate, fidelity, path of site indices) reaching
@@ -641,9 +627,8 @@ def best_placement(problem: PlacementProblem,
                 for j in range(i + 1, n):
                     candidate_path = path + [j]
                     positions = [sites[p].position_km for p in candidate_path]
-                    # A partial chain is extended to the far endpoint before it
-                    # is scored, so every state is evaluated as the completed
-                    # route it would become -- not as a chain stopping mid-fibre.
+                    # A partial chain is extended to the far endpoint before scoring, so
+                    # every state is evaluated as the completed route it would become.
                     if j != n - 1:
                         positions = positions + [problem.end_b.position_km]
                     quality = _chain_from_positions(
@@ -689,9 +674,7 @@ def uniform_placement(problem: PlacementProblem,
     return _placement_from_sites(problem, sites, method="uniform")
 
 
-# ---------------------------------------------------------------------------
 # Robust placement
-# ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
 class Scenario:
@@ -750,9 +733,8 @@ def robust_placement(problem: PlacementProblem,
                 return False
         return True
 
-    # A cheap prefilter on single spans, in the worst scenario.  It only ever
-    # rejects an edge that cannot work even on its own, so it cannot remove a
-    # span that some completed chain would have needed.
+    # A cheap prefilter on single spans in the worst scenario: it only rejects an edge
+    # that cannot work on its own, so it never drops a span a completed chain needs.
     worst = min(scenarios, key=lambda s: s.t1_s * s.t2_s)
     viable: set[tuple[int, int]] = set()
     for i in range(n):
@@ -763,9 +745,8 @@ def robust_placement(problem: PlacementProblem,
             if quality.end_to_end_fidelity >= problem.required_fidelity:
                 viable.add((i, j))
 
-    # DP over the viable edges, with the same Pareto frontier as
-    # best_placement for the same reason: a single best rate per state is not
-    # enough when fidelity gates feasibility downstream.
+    # DP over the viable edges with a Pareto frontier, as in best_placement.
+    # Fidelity gates feasibility, so one best rate per state is not enough.
     limit = n if max_repeaters is None else max_repeaters
     state: list[dict[int, list[tuple[float, float, list[int]]]]] = [
         {} for _ in range(n)

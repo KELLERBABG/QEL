@@ -113,10 +113,8 @@ def _doc_to_topology(doc: dict, from_fp: str, to_fp: str) -> QuantumTopology:
                 )
             )
     else:
-        # Legacy exporter list / legacy test helper flattened the doc to a
-        # list of (id, x, y, t1, t2, is_repeater) tuples: interpret it as such.
-        # (This keeps the legacy unit tests working while the importer produces
-        # the canonical dict form for everything else.)
+        # Legacy exporter list / legacy test helper: a list of
+        # (id, x, y, t1, t2, is_repeater) tuples, interpreted as such.
         for nid in nodes:
             topology.add_node(
                 QuantumNode(

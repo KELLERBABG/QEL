@@ -236,9 +236,8 @@ class Sensitivity:
 
     @property
     def half_width(self) -> float:
-        # Cast to a Python float: these come out of numpy operations, and a numpy
-        # scalar propagating into a caller's formatting or comparison produces surprises
-        # that have nothing to do with the statistics.
+        # Cast to a Python float: a numpy scalar leaking into a caller's formatting or
+        # comparison can surprise in ways unrelated to the statistics.
         return float(self.high - self.low) / 2.0
 
     @property
@@ -277,9 +276,7 @@ def propagate(name: str, function: Callable[..., float],
     values = np.empty(n, dtype=float)
     for i in range(n):
         # A caller's function may raise at the edge of its domain (math.log(0.0),
-        # math.sqrt(-1)) rather than return a non-finite float; either way the range has
-        # left the domain and the interval is meaningless, so report this module's own
-        # error type.
+        # math.sqrt(-1)) or a non-finite float; either way report our own error.
         try:
             values[i] = function(**{p.name: float(p.draws[i]) for p in items})
         except (ValueError, ZeroDivisionError, OverflowError) as exc:

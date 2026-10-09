@@ -578,9 +578,7 @@ def verify_join(adjacency: dict, events: list[int], pairing: dict[int, int]) -> 
     return odd ^ set(int(e) for e in events)
 
 
-# ---------------------------------------------------------------------------
 # Fast compiled DEM graph for single-shot and batch decoding
-# ---------------------------------------------------------------------------
 
 @dataclass
 class CompiledDEMGraph:

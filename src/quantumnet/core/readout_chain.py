@@ -369,8 +369,7 @@ class ReadoutChainRecovery:
         p_detect = np.clip(nominal_efficiency * eff, 0.0, 1.0)
         p_afterpulse = self.afterpulse.at(delays)
         # Either route produces a click: a real photon detected with the recovered
-        # efficiency, or a spurious afterpulse. Exclusive at these small probabilities,
-        # with the joint term dropped rather than double counted.
+        # efficiency, or a spurious afterpulse; exclusive at these small probabilities.
         return np.clip(p_detect + p_afterpulse, 0.0, 1.0)
 
     @classmethod

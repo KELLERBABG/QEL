@@ -82,9 +82,8 @@ def distribute(topology: QuantumTopology, route: Route,
     t1 = topology.nodes[path[0]].t1_s
     t2 = topology.nodes[path[0]].t2_s
 
-    # Each segment carries its fidelity, birth time, and the path index of its
-    # right endpoint (raw links: i+1). Fusing adjacent segments lo, hi happens
-    # at the shared node = the right endpoint of segment lo.
+    # Each segment carries its fidelity, birth time, and the path index of its right
+    # endpoint (raw links: i+1); fusing lo and hi happens at lo's right endpoint.
     segments: list[dict] = [
         {"f": float(f), "born": t_gen, "right": i + 1}
         for i, f in enumerate(route.link_fidelities)

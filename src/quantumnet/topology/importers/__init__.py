@@ -31,9 +31,8 @@ _IMPORTERS: dict[str, type[TopologyImporter]] = {
     "sequence": SequencerImporter,
 }
 
-#: Accepted file extensions. Order matters: resolution is a suffix test, so a longer,
-#: more specific extension must appear before any shorter one it ends with
-#: (``.sequence.json`` before ``.json``-ish aliases).
+#: Accepted file extensions. Resolution is a suffix test, so a longer extension must
+#: come before any shorter one it ends with (``.sequence.json`` before ``.json``).
 _EXTENSIONS: dict[str, str] = {
     ".qel.json": "qel-json",
     ".qeljs": "qel-json",
@@ -66,9 +65,8 @@ def importer_for(path: str, schema_id: str | None = None) -> type[TopologyImport
         return importer
 
     suffix = path.lower()
-    # Longest suffix first: `.sequence.json` and `.qel.json` are more specific than the
-    # plain `.json` alias and must win, or a SeQUeNCe document routes to the wrong
-    # importer.
+    # Longest suffix first, so `.sequence.json` beats the plain `.json` alias.
+    # Otherwise a SeQUeNCe document routes to the wrong importer.
     for ext, schema in sorted(_EXTENSIONS.items(), key=lambda kv: -len(kv[0])):
         if suffix.endswith(ext):
             return _IMPORTERS[schema]

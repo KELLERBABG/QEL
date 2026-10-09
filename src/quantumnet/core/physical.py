@@ -13,9 +13,7 @@ References
 
 import numpy as np
 
-# ---------------------------------------------------------------------------
 # Common fibre parameters
-# ---------------------------------------------------------------------------
 FIBER_ATTENUATION_1550 = 0.2  # dB / km at 1550 nm
 FIBER_ATTENUATION_1310 = 0.35  # dB / km at 1310 nm
 FIBER_ATTENUATION_850 = 2.0  # dB / km at 850 nm
@@ -140,9 +138,7 @@ def snr_for_distance(length_km: float,
     return signal / max(noise, 1e-30)
 
 
-# ---------------------------------------------------------------------------
 # Channel parameter construction from hardware specs
-# ---------------------------------------------------------------------------
 def depolarizing_from_distance(length_km: float,
                                alpha_db_km: float = 0.2,
                                dark_count_rate_hz: float = 10.0,

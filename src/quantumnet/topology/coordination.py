@@ -86,9 +86,8 @@ def balanced_strategy(segments) -> int:
     middle = 0.5 * (lo + hi)
     best, best_distance = 0, None
     for i in range(len(segments) - 1):
-        # Distance from the midpoint *of the remaining span* to the gap between
-        # segments i and i+1.  Choosing the gap nearest the middle splits the
-        # remaining work as evenly as the current segmentation allows.
+        # Distance from the midpoint of the remaining span to the gap between segments
+        # i and i+1: the gap nearest the middle splits the remaining work most evenly.
         distance = abs(middle - segments[i][1])
         if best_distance is None or distance < best_distance:
             best, best_distance = i, distance

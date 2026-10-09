@@ -97,10 +97,9 @@ def run_bb84(num_bits: int = 256, noise: float = 0.0, rng: np.random.Generator |
 
 # Decoy-state BB84: the analytic key-rate calculation
 
-#: Hardware presets. The first three are the values the decoy-state papers use for a
-#: practical 1550 nm fibre link; ``sequencer_erlang`` mirrors the erbium/atom-cavity
-#: parameterisation SeQUeNCe publishes, so the two tools compare on the same footing.
-#: ``ideal`` is a loss-and-dark-count-free reference used by the analytic tests.
+#: Hardware presets: the first three are the decoy-state papers' 1550 nm fibre values,
+#: ``sequencer_erlang`` mirrors SeQUeNCe's erbium/atom-cavity parameterisation, and
+#: ``ideal`` is a loss-and-dark-count-free reference for the analytic tests.
 DECOY_PRESETS: dict[str, dict] = {
     "gobby-yuan-shields": {
         "description": "GYS 2004 122 km fibre demo (id Quantique id210-class)",
@@ -214,10 +213,8 @@ def decoy_single_photon_bounds(q_mu: float, q_nu: float, q_vac: float,
         y1_lower = mu / (mu * nu - nu ** 2) * (num - correction)
     y1_lower = float(max(0.0, min(1.0, y1_lower)))
 
-    # e1 upper bound. A valid upper bound needs the largest possible numerator, so the
-    # subtracted vacuum term uses the LOWER bound on Y0 (e0 * Y0^L, with e0 = 1/2). In
-    # the asymptotic limit Y0^L = Y0^U and the distinction is numerically empty, but it
-    # matters as soon as statistical fluctuations are added.
+    # e1 upper bound: a maximal numerator needs the LOWER bound on Y0, so the subtracted
+    # term is e0 * Y0^L with e0 = 1/2; it matters once fluctuations are added.
     if y1_lower <= 0.0:
         e1_upper = 0.5
     else:
@@ -309,11 +306,9 @@ def finite_key_secret_length(
     ln_term = np.log(21.0 / eps)          # natural log, inside the root
     block_secrecy_cost = 6.0 * np.log2(21.0 / eps) + np.log2(2.0 / eps_cor)
 
-    # --- LCWX statistical-fluctuation brackets (their Eq. 2) --------------
-    # Each bracket's variance is set by the total count of its OWN basis:
-    # ``sqrt(n_X/2 ln(21/eps))`` for X, ``sqrt(m_Z/2 ln(21/eps))`` for Z. Using the
-    # Z-basis width for X (or one intensity's count rather than the basis total) is the
-    # defect described in the docstring.
+    # LCWX Eq. 2: each fluctuation bracket uses the total count of its OWN basis,
+    # ``sqrt(n_X/2 ln(21/eps))`` for X and ``sqrt(m_Z/2 ln(21/eps))`` for Z. Using the
+    # Z-basis width for X is the defect described in the docstring.
     n_x_block = float(n_x_signal + n_x_decoy + n_x_vacuum)
     n_z_block = float(n_z_signal + n_z_decoy + n_z_vacuum)
 
@@ -361,9 +356,8 @@ def finite_key_secret_length(
     if m2 == m3:
         raise ValueError("mu_decoy must differ from the vacuum intensity")
 
-    # The Z-basis error counts feeding ``v_Z,1``, defaulting to the raw Z counts times
-    # the observed QBER. Supply them explicitly when a per-intensity breakdown exists,
-    # because the phase-error bound is sensitive to it.
+    # The Z-basis error counts feeding ``v_Z,1``: raw Z counts times the observed QBER
+    # by default; supply them explicitly when a per-intensity breakdown exists.
     if n_z_error_decoy is None:
         rate = (qber_z if qber_z is not None else
                 (n_z_errors / n_z_block if n_z_errors and n_z_block else 0.0))
@@ -374,10 +368,8 @@ def finite_key_secret_length(
     s_x_0, s_x_1_lower = single_photon_bounds(
         n_x_signal, n_x_decoy, n_x_vacuum, n_x_block)
 
-    # --- the Z basis, and the error/count distinction that matters ---------
-    # ``s_Z,1`` is a single-photon count from the raw Z detection counts; ``v_Z,1`` is
-    # a single-photon phase-error count, so its bracket uses the Z-basis error counts.
-    # Conflating them drives ``s_Z,1`` to zero and zeroes the key for every channel.
+    # ``s_Z,1`` is a single-photon count from the raw Z detection counts; ``v_Z,1`` is a
+    # single-photon phase-error count, so its bracket uses the Z-basis error counts.
     _, s_z_1_lower = single_photon_bounds(
         n_z_signal, n_z_decoy, n_z_vacuum, n_z_block)
     v_z_1_upper = max(0.0, tau_1 * (
@@ -385,11 +377,8 @@ def finite_key_secret_length(
         - bracket(n_z_error_vacuum, n_z_block, p3, m3, -1.0)
     ) / (m2 - m3))
 
-    # The phase-error RATE is ``v_Z1 / s_Z1``: a single-photon error count over a
-    # single-photon count, both in the Z basis, plus the Fung et al. correction.
-    # Dividing by ``s_X1`` instead mixes bases and compares two similar upper bounds,
-    # so the ratio sits just under 1, the Fung correction pushes it over the 0.5 cap,
-    # and the key is zero however good the channel is.
+    # The phase-error RATE is ``v_Z1 / s_Z1``, both single-photon counts in the Z basis,
+    # plus the Fung et al. correction; ``s_X1`` would mix bases.
     if s_x_1_lower <= 0.0 or s_z_1_lower <= 0.0 or v_z_1_upper <= 0.0:
         phi_x = 0.5
         gamma = 0.0
@@ -397,9 +386,8 @@ def finite_key_secret_length(
         ratio = min(1.0, v_z_1_upper / s_z_1_lower)
         c, dd = s_z_1_lower, v_z_1_upper
         if 0.0 < ratio < 1.0:
-            # Fung et al. random-sampling correction (the gamma term); only meaningful
-            # when there are single-photon events in both bases to sample from, which is
-            # what the reference conditions on.
+            # Fung et al. random-sampling correction (the gamma term), which needs
+            # single-photon events in both bases to sample from.
             inner = ((c + dd) / (c * dd)) * (21.0 ** 2 / eps ** 2)
             gamma = np.sqrt(
                 ((c + dd) * (1.0 - ratio) * ratio / (c * dd * np.log(2.0)))
@@ -413,10 +401,7 @@ def finite_key_secret_length(
             # this block size. Reported as a zero length with the phase error visible.
             phi_x = 0.5
 
-    # --- error correction and the key length -----------------------------
-    # The QBER is derived from the Z-basis counts by default, so a caller cannot
-    # inflate the key by asserting an optimistic one. ``qber_z`` overrides it with a
-    # measured value, as the validation path does, and takes precedence.
+    # Defaulted from the Z-basis counts, so an optimistic QBER cannot inflate the key.
     n_z_total = float(n_z_signal + n_z_decoy + n_z_vacuum)
     if qber_z is not None:
         qber_z_observed = float(qber_z)
@@ -542,11 +527,8 @@ def run_bb84_decoy(
     y1_lower = bounds["y1_lower"]
     e1_upper = bounds["e1_upper"]
     q1_lower = mu * np.exp(-mu) * y1_lower  # Q1 = mu * e^-mu * Y1
-    # --- GLLP / Shor-Preskill rate --------------------------------------
-    # R >= q * ( -Q_mu * f_EC * H2(E_mu) + Q1 * (1 - H2(e1)) ), with q = 1/2 for basis
-    # reconciliation: only matching-basis rounds contribute, however many decoy
-    # intensities were sent (Ma et al. Eq. 1: "q = 1/2 for standard BB84"; efficient
-    # BB84 takes q ~ 1).
+    # GLLP / Shor-Preskill rate: R >= q * (-Q_mu * f_EC * H2(E_mu) + Q1 * (1 - H2(e1))).
+    # q = 1/2 for basis reconciliation; Ma et al. Eq. 1, efficient BB84 takes q ~ 1.
     q_basis = 0.5
     gain_term = q_mu * error_correction_inefficiency * binary_entropy(e_mu)
     single_photon_term = q1_lower * (1.0 - binary_entropy(e1_upper))
@@ -555,11 +537,9 @@ def run_bb84_decoy(
     finite_key = None
     finite_key_penalty_per_pulse = 0.0
     if n_pulses is not None and n_pulses > 0:
-        # Finite-key accounting in the LCWX form: fluctuations go on the observed
-        # counts and are pushed through the decoy estimators, and the secrecy cost is an
-        # absolute block cost, not a per-pulse density (see finite_key_secret_length()).
-        # The signal gain splits 50/50 across the bases; the decoy and vacuum counts
-        # below are X-basis detection counts per intensity.
+        # LCWX finite-key accounting: fluctuations go on observed counts and are pushed
+        # through the decoy estimators; the secrecy cost is an absolute block cost, not
+        # a per-pulse density; the counts below are X-basis, the gain split 50/50.
         n_signal_x = _counts_for(q_mu, n_pulses) * q_basis
         n_decoy_x = _counts_for(q_nu, n_pulses) * q_basis
         n_vac_x = _counts_for(q_vac, n_pulses) * q_basis
@@ -581,9 +561,8 @@ def run_bb84_decoy(
             eps_sec=epsilon,
         )
         rate_per_pulse = finite_key["secret_key_length_bits"] / float(n_pulses)
-        # Report the asymptotic figure alongside, but do not treat the difference as a
-        # penalty: the two use different estimators and this one can legitimately be
-        # larger (see finite_key_secret_length()).
+        # The asymptotic figure is reported alongside; the difference is not a penalty,
+        # as the two estimators differ and this one can legitimately be larger.
         finite_key_penalty_per_pulse = 0.0
 
     secure = rate_per_pulse > 0.0

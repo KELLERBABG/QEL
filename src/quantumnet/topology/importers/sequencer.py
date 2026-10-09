@@ -62,9 +62,8 @@ _SCAFFOLDING_TYPES = frozenset({
     "BSMNode", "BSM", "Controller", "Barretter", "QuantumSwitch",
 })
 
-#: Speed of light in fibre, for deriving a classical delay when one is absent. 2.0e8 m/s
-#: is the community standard (QuISP writes ``distance / 200000km * 1s``); SeQUeNCe
-#: spans 2.0-2.05e8.
+#: Speed of light in fibre, for a classical delay when absent: 2.0e8 m/s, the community
+#: standard (QuISP: ``distance / 200000km * 1s``); SeQUeNCe spans 2.0-2.05e8.
 C_FIBER_KM_PER_S = 200_000.0
 
 #: Default fibre attenuation in dB/km when a config omits it (1550 nm).
@@ -128,7 +127,7 @@ class SequencerImporter(TopologyImporter):
             f"non-finite constant {value!r} in SeQUeNCe config JSON"
         )
 
-    # ---------------------------------------------------------------- parse
+    # parse
 
     def parse_document(self, data: dict) -> dict:
         if not isinstance(data, dict):

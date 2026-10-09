@@ -96,9 +96,7 @@ class Scheduler:
         self._handlers: dict[str, list[EventHandler]] = defaultdict(list)
         self.run_count = 0
 
-    # ------------------------------------------------------------------
     # Scheduling
-    # ------------------------------------------------------------------
     def schedule(self, time: float, kind: str, node_id: str,
                  payload: dict | None = None) -> None:
         """Insert an event into the queue.
@@ -130,9 +128,7 @@ class Scheduler:
         """Schedule an event at current_time + delta."""
         self.schedule(self._time + float(delta), kind, node_id, payload)
 
-    # ------------------------------------------------------------------
     # Registration
-    # ------------------------------------------------------------------
     def on(self, kind: str, handler: EventHandler):
         self._handlers[kind].append(handler)
 
@@ -142,9 +138,7 @@ class Scheduler:
         except ValueError:
             pass
 
-    # ------------------------------------------------------------------
     # Execution
-    # ------------------------------------------------------------------
     @property
     def current_time(self) -> float:
         return self._time

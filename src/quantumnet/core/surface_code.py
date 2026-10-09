@@ -64,13 +64,9 @@ NEIGHBOUR_OFFSETS: tuple[tuple[int, int], ...] = ((1, 1), (1, -1), (-1, 1), (-1,
 
 N_LAYERS = 4
 
-#: Verified ancilla placement, as ``{distance: ((x, y, kind), ...)}``. Taken from
-#: ``stim``'s generated ``rotated_memory_z`` layout rather than inferred, because every
-#: formula tried for the boundary rule gave a lattice whose qubit counts were right and
-#: whose sites were wrong. Data qubits are at ``(2j+1, 2i+1)``, so an ancilla at
-#: ``(x, y)`` has up to four data neighbours at offsets ``(±1, ±1)``; X ancillas are the
-#: CNOT controls. ``tests/test_core/test_surface_code_schedule.py`` re-derives these
-#: from ``stim`` and fails if they drift.
+#: Verified ancilla placement ``{distance: ((x, y, kind), ...)}``, pinned from stim's
+#: generated ``rotated_memory_z`` layout. Data at ``(2j+1, 2i+1)``; X ancillas are the
+#: CNOT controls. ``test_surface_code_schedule.py`` re-derives these and fails on drift.
 VERIFIED_SITES: dict[int, tuple[tuple[int, int, str], ...]] = {
     3: (
         (0, 4, "Z"), (2, 0, "X"), (2, 2, "Z"), (2, 4, "X"), (4, 2, "X"),
@@ -796,11 +792,9 @@ def dem_matching_graph(distance: int, kind: str, rounds: int | None = None):
     for inst in dem.flattened():
         if inst.type != "error":
             continue
-        # A DEM mechanism is a set of separated components, not a detector list: stim
-        # writes ``error(p) D1 D5 ^ D4`` and ``^`` separates them, each graphlike under
-        # ``decompose_errors=True`` (verified at d=3, 5 and 7, where 0 of 556, 3706 and
-        # 11830 components exceeded two detectors). Counting detectors across the whole
-        # mechanism instead discards 147 of 286 mechanisms at d=3.
+        # stim writes ``error(p) D1 D5 ^ D4``: ``^`` splits components, each graphlike
+        # under ``decompose_errors=True`` (0 of 556/3706/11830 exceeded two detectors at
+        # d=3/5/7); counting across a whole mechanism drops 147 of 286 at d=3.
         components = _dem_components(inst)
         for component in components:
             if len(component) == 2:
@@ -1014,9 +1008,8 @@ def matching_graph(code: RotatedSurfaceCode, kind: str) -> dict:
             a, b = sorted(ancillas)
             edges[(a, b)] = data
         elif len(ancillas) == 1:
-            # A data qubit monitored by one check of this type: an error there flips
-            # that check and is indistinguishable from one at the edge, so it must be
-            # matchable to a boundary node.
+            # A data qubit with one check of this type: an error there flips that check
+            # and looks like one at the edge, so it needs a boundary node.
             node = ancillas[0]
             boundary = next_boundary
             next_boundary -= 1
@@ -1137,13 +1130,8 @@ class MWPMDecoder:
             return DecodeResult(corrections=[], residual=orphaned,
                                 logical_flip=False)
 
-        # Matching runs on the detection events plus every boundary node: that, rather
-        # than deciding in advance which events go to the edge, is what makes the
-        # problem well posed, since any event may pair with any event or any boundary.
-        # Events plus boundaries must be even for a perfect matching to exist; when it
-        # is odd exactly one event must terminate on the boundary, which is physics,
-        # since a chain ending at the code edge leaves an odd number of events. So each
-        # event is tried in turn as the terminating one and the cheapest wins.
+        # Match detection events plus every boundary node: any event may pair with any
+        # other; with odd events each is tried as terminator and the cheapest wins.
         distances: dict[int, dict[int, tuple[int, list[int]]]] = {}
         for node in events + boundaries:
             distances[node] = shortest_paths(adj, node)
@@ -1237,9 +1225,8 @@ class ClusteredDecoder:
     """
 
     def __init__(self, boundary_penalty: float = 0.0):
-        #: Added to every boundary match. Zero reproduces plain greedy; a small positive
-        #: value biases toward pairing events with each other, the right prior when
-        #: boundaries are shared between many events.
+        #: Added to each boundary match: zero is plain greedy, a positive value biases
+        #: events toward each other, right when boundaries are widely shared.
         self.boundary_penalty = float(boundary_penalty)
 
     def decode(self, code: RotatedSurfaceCode, syndrome: set[int],

@@ -293,10 +293,9 @@ def _route_fidelity(route, dist):
 #: same key from the same `(fidelity, seed)` pair; production uses the QKD key ID.
 QKD_LABEL_SEED = 0x51EE
 
-#: The fidelity a route must reach before BB84 privacy amplification still extracts key
-#: material. Deliberately above the observed boundary, which sits just past 0.87 for the
-#: pinned seed (0.870 yields no key, 0.872 does), so a key is never marginal; the Rust
-#: quantum-mix step uses the same figure.
+#: The fidelity a route must reach for BB84 privacy amplification to still extract key
+#: material. Deliberately above the observed 0.87 boundary for the pinned seed (0.870
+#: yields no key, 0.872 does), so a key is never marginal; the Rust quantum-mix agrees.
 KEY_FIDELITY_CUTOFF = 0.88
 
 

@@ -230,17 +230,14 @@ class BarrettKok:
     mode_matching: float = 1.0
     #: Coincidence window; sets the dark-count exposure per attempt.
     coincidence_window_s: float = 1e-9
-    #: Fidelity when the herald was a dark coincidence: two independent dark counts
-    #: carry no entanglement, so the pair is maximally mixed, at 1/4 with any Bell
-    #: state.
+    #: Fidelity when a herald was a dark coincidence: two independent dark counts carry
+    #: no entanglement, so the pair is maximally mixed at 1/4 with any Bell state.
     dark_coincidence_fidelity: float = 0.25
     #: Multi-photon emission probability per pulse (source imperfection).
     multiphoton_probability: float = 0.0
-    #: How much of the intended Bell state survives a multi-pair herald. 1.0 would mean
-    #: a two-pair pulse is as clean as a one-pair pulse, false because which pair
-    #: supplied each photon is unrecorded; 0.0 would mean no better than dark counts,
-    #: also false because real photons arrived. The default 0.5 is the conservative
-    #: reading: the uncorrelated pair contributes maximally-mixed weight.
+    #: How much of the intended Bell state survives a multi-pair herald. 1.0 is unphysical,
+    #: since which pair supplied each photon is unrecorded; 0.5 is the conservative reading,
+    #: the uncorrelated pair contributing maximally-mixed weight.
     multipair_visibility: float = 0.5
 
     def __post_init__(self):
@@ -388,13 +385,11 @@ class BarrettKok:
             return 0.0
         f_signal = 1.0 - (1.0 - self.mode_matching) / 2.0
         # Interpolate between the signal fidelity and the maximally-mixed value: at
-        # visibility 1 a multi-pair herald is as good as a signal one, at 0 no better
-        # than dark counts.
+        # visibility 1 a multi-pair herald matches a signal one, at 0 a dark count.
         v = float(np.clip(self.multipair_visibility, 0.0, 1.0))
         f_multi = f_signal * v + self.dark_coincidence_fidelity * (1.0 - v)
         # An afterpulse herald is a real photon on one arm and a spurious click on the
-        # other, so it is uncorrelated and carries the maximally-mixed value: the same
-        # verdict as a dark coincidence, by a different route.
+        # other, so it is uncorrelated and carries the maximally-mixed value too.
         return float((p_signal * f_signal
                       + p_multi * f_multi
                       + (p_dark + p_ap) * self.dark_coincidence_fidelity) / total)
