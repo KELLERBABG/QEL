@@ -1,8 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Quantum Entanglement Link">
-  <rect width="64" height="64" fill="#060810"/>
-  <rect x="1.5" y="1.5" width="61" height="61" fill="none" stroke="#1d2745" stroke-width="3"/>
-  <path d="M16 36 a16 16 0 0 1 32 0" fill="none" stroke="#4de2ff" stroke-width="2.5"/>
-  <path d="M16 36 a16 16 0 0 0 32 0" fill="none" stroke="#6a5cff" stroke-width="2.5"/>
-  <circle cx="16" cy="36" r="5" fill="#4de2ff"/>
-  <circle cx="48" cy="36" r="5" fill="#6a5cff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="QEL - Keller Systems">
+  <!-- Subtle warm squircle base -->
+  <rect width="128" height="128" rx="28" fill="#fbfaf7" stroke="#d9d5ca" stroke-width="2"/>
+  
+  <!-- Modular Monolith Geometry: Solid Pillar Anchor -->
+  <rect x="28" y="24" width="20" height="80" rx="4" fill="#1a1a18"/>
+  
+  <!-- Precision 45-degree Upper Chevron -->
+  <path d="M58 62 L88 24 H104 L70 66 Z" fill="#7a2e2e"/>
+  
+  <!-- Precision 45-degree Lower Chevron -->
+  <path d="M70 62 L104 104 H88 L58 66 Z" fill="#1a1a18"/>
 </svg>

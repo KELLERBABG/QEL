@@ -177,102 +177,81 @@ footer a:hover{color:var(--accent)}
   figure,table{break-inside:avoid}
 }
 
-/* --- Uniform Brand Top Navigation --- */
-.top-nav {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  background: rgba(8, 10, 16, 0.88);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  width: 100%;
-}
-.nav-inner {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 0 clamp(16px, 4vw, 44px);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 56px;
-}
-.brand-link {
+
+/* Keller Systems Brand Lockup in Rail */
+.rail-brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  text-decoration: none;
+  text-decoration: none !important;
+  border-bottom: none !important;
+  margin-bottom: 0.6rem;
+  padding: 2px 0;
 }
-.brand-icon-img {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  display: block;
+.rail-brand-icon {
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
+  display: block;
 }
-.brand-titles {
+.rail-brand-titles {
   display: flex;
   flex-direction: column;
   line-height: 1.15;
 }
-.brand-product-title {
-  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 16px;
-  font-weight: 700;
-  color: #ffffff;
+.rail-brand-name {
+  font-family: var(--sans);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--ink);
   letter-spacing: -0.01em;
 }
-.brand-company-sub {
-  font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
-  font-size: 9.5px;
-  font-weight: 600;
-  color: #7d859b;
+.rail-brand-parent {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: var(--ink-3);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   margin-top: 2px;
 }
-.nav-links-group {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+.rail-brand:hover .rail-brand-name {
+  color: var(--accent);
 }
-.nav-portal-link {
-  font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
-  font-size: 11.5px;
-  color: #8e95ac;
-  text-decoration: none;
-  transition: color 0.15s;
+.rail-brand:hover .rail-brand-parent {
+  color: var(--ink);
 }
-.nav-portal-link:hover {
-  color: #ffffff;
+.rail-sub {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 0.4rem;
 }
 
 </style>
 </head>
 <body>
-<header class="top-nav">
-  <div class="nav-inner">
-    <a href="index.html" class="brand-link">
-      <img class="brand-icon-img" src="assets/icon.svg" alt="QEL Icon" width="32" height="32">
-      <div class="brand-titles">
-        <div class="brand-product-title">QEL</div>
-        <div class="brand-company-sub">KELLER SYSTEMS</div>
-      </div>
-    </a>
-    <div class="nav-links-group">
-      <a href="https://kellersystems.dev" class="nav-portal-link">kellersystems.dev &rarr;</a>
-      <a href="https://github.com/KELLERBABG/QEL" target="_blank" rel="noopener noreferrer" class="nav-portal-link">Source &#8599;</a>
-    </div>
-  </div>
-</header>
+
 
 
 <div class="shell">
 
 <!-- ── marginal navigation ────────────────────────────────────────────── -->
 <aside class="rail">
-  <div class="brand"><b>QEL</b> · v0.1.0</div>
-  <div class="brand">Quantum Entanglement Link</div>
+  <a href="https://kellersystems.dev" class="rail-brand" title="Keller Systems Portal">
+    <svg class="rail-brand-icon" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true">
+      <rect x="18" y="14" width="18" height="72" rx="3" fill="var(--ink)"/>
+      <path d="M46 50 L72 16 H90 L60 54 Z" fill="var(--accent)"/>
+      <path d="M60 46 L90 84 H72 L46 50 Z" fill="var(--ink-2)"/>
+    </svg>
+    <div class="rail-brand-titles">
+      <div class="rail-brand-name">QEL</div>
+      <div class="rail-brand-parent">KELLER SYSTEMS</div>
+    </div>
+  </a>
+  <div class="rail-sub">v0.1.0 · Quantum Entanglement Link</div>
   <nav aria-label="Sections">
     <ol>
       <li><a href="#abstract">Abstract</a></li>
@@ -287,6 +266,7 @@ footer a:hover{color:var(--accent)}
     </ol>
   </nav>
   <div class="meta">
+    <div>Hub <a href="https://kellersystems.dev">kellersystems.dev &rarr;</a></div>
     <div>Licence <a href="https://github.com/KELLERBABG/QEL/blob/main/LICENSE">Apache-2.0</a></div>
     <div>Source <a href="https://github.com/KELLERBABG/QEL">GitHub</a></div>
     <div>Cite <a href="https://github.com/KELLERBABG/QEL/blob/main/CITATION.cff">CITATION.cff</a></div>
