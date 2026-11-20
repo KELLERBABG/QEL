@@ -155,6 +155,7 @@ def test_the_bell_pair_carries_no_pauli_frame():
 def test_the_bell_pair_stabilisers_are_the_two_patch_products():
     pair = prepare_logical_bell_pair()
     assert pair["stabilisers"] == (("X", "A", "X", "B"), ("Z", "A", "Z", "B"))
+    assert pair["preparation"] == "|0>_L|0>_L -> H_A -> CNOT_{A->B}"
 
 
 @pytest.mark.parametrize("distance", [3, 5, 7])
@@ -209,6 +210,7 @@ def test_an_invalid_outcome_is_rejected():
 def test_the_correction_table_covers_all_four_outcomes():
     assert set(BELL_OUTCOME_CORRECTIONS) == {(0, 0), (0, 1), (1, 0), (1, 1)}
     assert all(len(v) == 2 for v in BELL_OUTCOME_CORRECTIONS.values())
+    assert BELL_OUTCOME_CORRECTIONS[(1, 1)] == PAULI_Y
 
 
 # ---------------------------------------------------------------------------

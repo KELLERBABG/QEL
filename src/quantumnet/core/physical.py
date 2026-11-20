@@ -112,6 +112,40 @@ def bell_pair_fidelity_after_dt(f0: float, delta_t: float,
     return (1.0 + 3.0 * w0 * survival) / 4.0
 
 
+def bell_pair_fidelity_non_markovian(
+    f0: float,
+    delta_t: float,
+    t1: float,
+    t2_hahn: float,
+    *,
+    beta: float = 1.0,
+    n_dd_pulses: int = 1,
+    dd_scaling_exponent: float = 2.0 / 3.0,
+    previous_age_s: float = 0.0,
+) -> float:
+    """Non-Markovian stretched/power-law dephasing memory model (07 §2.1-2.3).
+
+    - beta = 1.0: Markovian white noise exp(-t/T2)
+    - beta = 2.0: 1/f or quasi-static Gaussian noise exp(-(t/T2)^2)
+    - beta = 3.0: Ornstein-Uhlenbeck spin bath (e.g. NV- center in 13C bath) exp(-(t/T2(N))^3)
+    - T2(N) = t2_hahn * (n_dd_pulses ** dd_scaling_exponent)
+    - If no DD reset occurred at a swap, previous_age_s > 0 accumulates (t_prev + dt)^beta - t_prev^beta.
+    """
+    f0 = float(np.clip(f0, 0.0, 1.0))
+    w0 = (4.0 * f0 - 1.0) / 3.0
+    if w0 <= 0.0 or delta_t <= 0.0:
+        return max(0.25, f0)
+    survival = 1.0
+    if t1 > 0.0:
+        survival *= float(np.exp(-delta_t / t1))
+    if t2_hahn > 0.0:
+        t2_eff = float(t2_hahn) * (max(1, int(n_dd_pulses)) ** float(dd_scaling_exponent))
+        t_start = max(0.0, float(previous_age_s))
+        chi = ((t_start + delta_t) / t2_eff) ** float(beta) - (t_start / t2_eff) ** float(beta)
+        survival *= float(np.exp(-max(0.0, chi)))
+    return float((1.0 + 3.0 * w0 * survival) / 4.0)
+
+
 def entanglement_generation_rate(pulse_rate_hz: float,
                                  fiber_length_km: float,
                                  alpha_db_km: float = 0.2,

@@ -528,3 +528,77 @@ def test_chain_quality_describe_reports_the_key_numbers():
     text = quality.describe()
     for token in ("links=", "longest=", "F=", "rate="):
         assert token in text
+
+
+# ---------------------------------------------------------------------------
+# Exact Werner BBM92 and six-state key fractions
+# ---------------------------------------------------------------------------
+
+def test_werner_and_six_state_key_fraction_thresholds():
+    from decimal import Decimal, getcontext
+
+    from quantumnet.topology.placement import (
+        key_fraction,
+        six_state_key_fraction,
+        werner_bbm92_key_fraction,
+    )
+
+    # Known-Good gates, at the plan's own 1e-5.  The two literals below are the exact
+    # values of the plan's expressions; the plan's 0.293326 / 0.427167 are transcription
+    # slips, since its own source (own-research/topics/08 §3.3) states 0.2933 and 0.4272
+    # for the same two quantities.  The 50-digit evaluation at the end of this test is
+    # the proof: the specified expression is 4.47e-5 / 3.91e-5 away from those literals,
+    # which is 4x the tolerance, so no implementation of the formula can reach them.
+    assert werner_bbm92_key_fraction(1.0) == pytest.approx(1.0)
+    assert werner_bbm92_key_fraction(0.90) == pytest.approx(0.293281, abs=1e-5)
+    assert key_fraction(0.90, qber_model="bitflip") == pytest.approx(0.427206, abs=1e-5)
+    # Six-state exploits Y correlation and survives between 0.81071 and 0.83496
+    assert six_state_key_fraction(0.825) > 0.03
+    # Ceiling / Known-Bad gates: must be strictly 0 below threshold
+    assert werner_bbm92_key_fraction(0.8349) == 0.0
+    assert werner_bbm92_key_fraction(0.80) == 0.0
+    assert six_state_key_fraction(0.810) == 0.0
+
+    # Numeric proof, at 50 digits, that the plan's two literals cannot both come from the
+    # argument the test passes (F = 0.90).  Each literal implies a *different* input
+    # fidelity -- 0.9000088 for 1 - 2 H2(2(1-F)/3), 0.8999908 for 1 - 2 H2((1-F)/2) --
+    # so the pair is internally inconsistent rather than a second faithful reading of
+    # the same formula.  The implementation reproduces the high-precision value.
+    getcontext().prec = 50
+
+    def _h2(x: Decimal) -> Decimal:
+        return (-(x * x.ln()) - (1 - x) * (1 - x).ln()) / Decimal(2).ln()
+
+    def _werner_at(f: Decimal) -> Decimal:
+        return 1 - 2 * _h2(Decimal(2) * (1 - f) / 3)
+
+    def _bitflip_at(f: Decimal) -> Decimal:
+        return 1 - 2 * _h2((1 - f) / 2)
+
+    def _implied_fidelity(fn, target: Decimal) -> Decimal:
+        lo, hi = Decimal("0.5"), Decimal("1.0")   # both expressions increase with F
+        for _ in range(200):
+            mid = (lo + hi) / 2
+            if fn(mid) < target:
+                lo = mid
+            else:
+                hi = mid
+        return (lo + hi) / 2
+
+    exact_werner = _werner_at(Decimal("0.9"))
+    exact_bitflip = _bitflip_at(Decimal("0.9"))
+
+    assert abs(exact_werner - Decimal("0.293326")) > Decimal("1e-5")
+    assert abs(exact_bitflip - Decimal("0.427167")) > Decimal("1e-5")
+    assert abs(_implied_fidelity(_werner_at, Decimal("0.293326"))
+               - _implied_fidelity(_bitflip_at, Decimal("0.427167"))) > Decimal("1e-5")
+
+    # No common rescaling of H2 can produce both literals either: changing the entropy's
+    # base (or units) multiplies H2 at both arguments by one constant, so the ratio
+    # H2(2/30) / H2(1/20) would have to equal the ratio the two literals demand.
+    h_w, h_b = _h2(Decimal(2) / 30), _h2(Decimal(1) / 20)
+    h_w_wanted = (1 - Decimal("0.293326")) / 2
+    h_b_wanted = (1 - Decimal("0.427167")) / 2
+    assert abs(h_w / h_b - h_w_wanted / h_b_wanted) > Decimal("1e-4")
+    assert abs(exact_werner - Decimal(repr(werner_bbm92_key_fraction(0.90)))) < Decimal("1e-15")
+    assert abs(exact_bitflip - Decimal(repr(key_fraction(0.90, qber_model="bitflip")))) < Decimal("1e-15")

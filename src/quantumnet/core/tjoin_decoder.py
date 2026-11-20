@@ -845,6 +845,183 @@ def _get_compiled(dem) -> CompiledDEMGraph:
     return compiled
 
 
+def _compile_from_edges(num_detectors: int, num_observables: int, edges: list[GraphEdge]) -> CompiledDEMGraph:
+    """Compile a fresh, uncached CompiledDEMGraph from an explicit list of GraphEdges."""
+    edge_by_pair: dict[tuple[int, int], GraphEdge] = {}
+    det_adj: dict[int, list[tuple[int, float, int]]] = {}
+    full_adj: dict[int, list[tuple[int, float, int]]] = {}
+
+    for edge in edges:
+        key = (min(edge.a, edge.b), max(edge.a, edge.b))
+        edge_by_pair[key] = edge
+        full_adj.setdefault(edge.a, []).append((edge.b, edge.weight, edge.index))
+        full_adj.setdefault(edge.b, []).append((edge.a, edge.weight, edge.index))
+        if edge.a != BOUNDARY and edge.b != BOUNDARY:
+            det_adj.setdefault(edge.a, []).append((edge.b, edge.weight, edge.index))
+            det_adj.setdefault(edge.b, []).append((edge.a, edge.weight, edge.index))
+        else:
+            det = edge.b if edge.a == BOUNDARY else edge.a
+            det_adj.setdefault(det, [])
+
+    bnd_dist: dict[int, float] = {BOUNDARY: 0.0}
+    bnd_parent: dict[int, tuple[int, int]] = {}
+    heap: list[tuple[float, int]] = [(0.0, BOUNDARY)]
+    while heap:
+        cost, u = heapq.heappop(heap)
+        if cost > bnd_dist.get(u, float("inf")):
+            continue
+        for v, w, edge_idx in full_adj.get(u, []):
+            if v == BOUNDARY:
+                continue
+            new_cost = cost + w
+            if new_cost < bnd_dist.get(v, float("inf")) - 1e-12:
+                bnd_dist[v] = new_cost
+                bnd_parent[v] = (u, edge_idx)
+                heapq.heappush(heap, (new_cost, v))
+
+    finite_bnds = [d for u, d in bnd_dist.items() if u != BOUNDARY and np.isfinite(d)]
+    max_bnd_dist = max(finite_bnds) if finite_bnds else 0.0
+
+    bnd_paths: dict[int, tuple[int, ...]] = {}
+    for u in bnd_parent:
+        path_edges: list[int] = []
+        cur = u
+        while cur != BOUNDARY:
+            parent, edge_idx = bnd_parent[cur]
+            path_edges.append(edge_idx)
+            cur = parent
+        bnd_paths[u] = tuple(path_edges)
+
+    return CompiledDEMGraph(
+        num_detectors=num_detectors,
+        num_observables=num_observables,
+        edges=edges,
+        edge_by_pair=edge_by_pair,
+        det_adj=det_adj,
+        bnd_dist=bnd_dist,
+        bnd_parent=bnd_parent,
+        max_bnd_dist=max_bnd_dist,
+        bnd_paths=bnd_paths,
+    )
+
+
+def parse_dem_correlations(dem) -> dict[tuple[int, int], list[tuple[tuple[int, int], float]]]:
+    """Extract pairwise `^`-linked component correlations from a decomposed Stim DEM.
+
+    Returns `{edge_key_1: [(edge_key_2, p_joint), ...]}` for all multi-component instructions.
+    """
+    corr: dict[tuple[int, int], dict[tuple[int, int], float]] = {}
+    for inst in dem.flattened():
+        if inst.type != "error":
+            continue
+        p = float(inst.args_copy()[0])
+        if p <= 0.0:
+            continue
+        comp_keys: list[tuple[int, int]] = []
+        for dets, _obs in parse_dem_components(inst):
+            if len(dets) == 2 and dets[0] != dets[1]:
+                comp_keys.append((min(dets[0], dets[1]), max(dets[0], dets[1])))
+            elif len(dets) == 1:
+                comp_keys.append((BOUNDARY, dets[0]))
+        if len(comp_keys) < 2:
+            continue
+        for i, k1 in enumerate(comp_keys):
+            for j, k2 in enumerate(comp_keys):
+                if i == j or k1 == k2:
+                    continue
+                bucket = corr.setdefault(k1, {})
+                p_old = bucket.get(k2, 0.0)
+                bucket[k2] = p_old * (1.0 - p) + (1.0 - p_old) * p
+    return {k1: list(partners.items()) for k1, partners in corr.items()}
+
+
+def decode_correlated(
+    dem,
+    detection_events: Iterable[int],
+    *,
+    erasure_edges: Iterable[tuple[int, int]] | None = None,
+) -> tuple[set[tuple[int, int]], frozenset[int]]:
+    """Two-pass correlated T-join decoder with optional heralded erasure edges (weight = 0).
+
+    1. Applies zero weight (p = 0.5) to any edge in `erasure_edges` (09 §8: d -> 2d scaling).
+    2. Runs Pass 1 exact T-join matching.
+    3. Reweights `^`-correlated partner edges of Pass-1 matched edges via conditional probability
+       p'_2 = clip(p_2 + p_joint / max(p_1, 1e-12), 1e-12, 0.5) and runs Pass 2 on a fresh graph.
+
+    The cached `CompiledDEMGraph` is never mutated: the reweighted passes are compiled
+    fresh from an explicit edge list, so `_get_compiled(dem)` keeps returning the same
+    object and its `det_dijkstra_cache` / `bnd_dist` are untouched.
+    """
+    base = _get_compiled(dem)
+    erased_set = {
+        (min(int(a), int(b)), max(int(a), int(b)))
+        for a, b in (erasure_edges or ())
+    }
+
+    if erased_set:
+        pass1_edges = [
+            GraphEdge(
+                a=e.a,
+                b=e.b,
+                weight=0.0 if (min(e.a, e.b), max(e.a, e.b)) in erased_set else e.weight,
+                observables=e.observables,
+                probability=0.5 if (min(e.a, e.b), max(e.a, e.b)) in erased_set else e.probability,
+                index=e.index,
+            )
+            for e in base.edges
+        ]
+        pass1_graph = _compile_from_edges(base.num_detectors, base.num_observables, pass1_edges)
+    else:
+        pass1_graph = base
+
+    matched_1, obs_1 = decode_compiled(pass1_graph, detection_events)
+    if not matched_1:
+        return matched_1, obs_1
+
+    corr_map = parse_dem_correlations(dem)
+    reweighted_probs: dict[tuple[int, int], float] = {}
+    for e_key in matched_1:
+        canon = (min(e_key[0], e_key[1]), max(e_key[0], e_key[1]))
+        e1_obj = pass1_graph.edge_by_pair.get(canon)
+        if e1_obj is None:
+            continue
+        p1 = max(e1_obj.probability, 1e-12)
+        for partner_key, p_joint in corr_map.get(canon, ()):
+            e2_obj = pass1_graph.edge_by_pair.get(partner_key)
+            if e2_obj is None:
+                continue
+            p_cond = min(0.5, p_joint / p1)
+            p_base = reweighted_probs.get(partner_key, e2_obj.probability)
+            reweighted_probs[partner_key] = p_base * (1.0 - p_cond) + (1.0 - p_base) * p_cond
+
+    if not reweighted_probs:
+        return matched_1, obs_1
+
+    pass2_edges: list[GraphEdge] = []
+    for e in pass1_graph.edges:
+        canon = (min(e.a, e.b), max(e.a, e.b))
+        if canon in erased_set:
+            p_new, w_new = 0.5, 0.0
+        elif canon in reweighted_probs:
+            p_new = float(np.clip(reweighted_probs[canon], 1e-300, 0.5))
+            w_new = float(np.log((1.0 - p_new) / p_new))
+        else:
+            p_new, w_new = e.probability, e.weight
+        pass2_edges.append(
+            GraphEdge(
+                a=e.a,
+                b=e.b,
+                weight=w_new,
+                observables=e.observables,
+                probability=p_new,
+                index=e.index,
+            )
+        )
+
+    pass2_graph = _compile_from_edges(base.num_detectors, base.num_observables, pass2_edges)
+    return decode_compiled(pass2_graph, detection_events)
+
+
 def decode_edges_and_observables(
     dem,
     detection_events: Iterable[int],

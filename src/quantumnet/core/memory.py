@@ -277,7 +277,8 @@ class MemoryArray:
     # -- allocation --------------------------------------------------------
 
     def reserve(self, count: int, reservation_id: int | None = None,
-                until: float | None = None) -> list[Memory]:
+                until: float | None = None, *, policy: str = "index",
+                at: float = 0.0) -> list[Memory]:
         """Occupy ``count`` available memories, or nothing at all.
 
         **All-or-nothing deliberately.**  A partial allocation would leave the
@@ -285,10 +286,34 @@ class MemoryArray:
         will not release promptly.  Failing cleanly means the caller is refused
         and the memories stay available for a request that can be satisfied,
         which is the behaviour contention tests depend on.
+
+        ``policy`` selects which available memories are taken first:
+        ``"index"`` (the default, index order), ``"newest-first"`` (highest usable
+        fidelity at ``at``), or ``"oldest-first"`` (earliest ``created_at``).
         """
         if count < 0:
             raise MemoryError("cannot reserve a negative count")
-        chosen = self.available()[:count]
+        if policy == "index":
+            pool = self.available()
+        elif policy == "newest-first":
+            pool = sorted(
+                self.available(),
+                key=lambda m: (m.current_fidelity(at)
+                               if m.entanglement is not None else -float("inf")),
+                reverse=True,
+            )
+        elif policy == "oldest-first":
+            pool = sorted(
+                self.available(),
+                key=lambda m: (m.entanglement.created_at
+                               if m.entanglement is not None else float("inf")),
+            )
+        else:
+            raise MemoryError(
+                f"unknown reserve policy {policy!r}; use 'index', "
+                f"'newest-first' or 'oldest-first'"
+            )
+        chosen = pool[:count]
         if len(chosen) < count:
             return []
         for memory in chosen:
@@ -326,6 +351,40 @@ class MemoryArray:
                 memory.release()
             memory.clear()
         return expired
+
+    def classify_entanglement_tiers(
+        self,
+        at: float,
+        *,
+        f_qkd: float = 0.834958,
+        f_chsh: float = 0.780330,
+        f_distill: float = 0.5,
+    ) -> dict[str, list[Memory]]:
+        """Partition entangled memories into the Three-Class Circular Economy (denker-1 Kette 3):
+        - tier1_qkd: F > f_qkd (BBM92 secret key extraction)
+        - tier2_chsh_beacon: f_chsh < F <= f_qkd (0 secret key, but violates CHSH S > 2 -> Public Randomness Beacon)
+        - tier3_distill_compost: f_distill < F <= f_chsh (Bell-local but entangled -> background DEJMPS distillation)
+        - expired: F <= f_distill (separable -> release)
+        """
+        tiers: dict[str, list[Memory]] = {
+            "tier1_qkd": [],
+            "tier2_chsh_beacon": [],
+            "tier3_distill_compost": [],
+            "expired": [],
+        }
+        for m in self.memories:
+            if m.entanglement is None:
+                continue
+            f = m.current_fidelity(at)
+            if f > f_qkd:
+                tiers["tier1_qkd"].append(m)
+            elif f > f_chsh:
+                tiers["tier2_chsh_beacon"].append(m)
+            elif f > f_distill:
+                tiers["tier3_distill_compost"].append(m)
+            else:
+                tiers["expired"].append(m)
+        return tiers
 
     def summary(self) -> dict:
         return {

@@ -11,6 +11,7 @@ from .noise import (
     depolarizing_channel_2,
 )
 from .stabilizer import StabilizerState
+from .xstate import XState
 from .latency import (
     DEFAULT_C_FIBER_KM_PER_S,
     ZERO_LATENCY,
@@ -80,6 +81,7 @@ __all__ = [
     "dephasing_channel", "depolarizing_channel_2",
     # Phase 3
     "StabilizerState",
+    "XState",
     "DEFAULT_C_FIBER_KM_PER_S", "ZERO_LATENCY", "ClassicalLink",
     "swap_coordination_delay_s", "total_coordination_delay_s",
     "Check", "DecodeResult", "MWPMDecoder", "RotatedSurfaceCode",

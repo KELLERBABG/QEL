@@ -18,16 +18,21 @@ import numpy as np
 from ..core import QubitState, H, CNOT, apply, measure
 
 
-def _bilateral_cnot_pair(pair1: QubitState, pair2: QubitState, rng):
+def _bilateral_cnot_pair(pair1: QubitState, pair2: QubitState, rng,
+                         basis_h: bool = False):
     """Shared bilateral-CNOT circuit of BBPSSW/Deutsch/DEJMPS.
 
     Encodes both pairs' four qubits into one register, applies the two
-    bilateral CNOTs, measures the target pair, and returns
+    bilateral CNOTs, optionally rotates the target pair into the X basis
+    when ``basis_h=True``, measures the target pair, and returns
     (outcomes, post-measurement 4-qubit state).
     """
     combined = QubitState(np.kron(pair1.rho, pair2.rho), dims=[2, 2, 2, 2])
     combined = apply(CNOT, combined, targets=[0, 2])
     combined = apply(CNOT, combined, targets=[1, 3])
+    if basis_h:
+        combined = apply(H, combined, targets=[2])
+        combined = apply(H, combined, targets=[3])
     return measure(combined, qubit_indices=[2, 3], rng=rng)
 
 
@@ -38,10 +43,7 @@ def _distill_result(pair1: QubitState, pair2: QubitState, rng,
     ``basis_h`` selects the Deutsch/DEJMPS Hadamard insertion before the
     target-pair measurement (X-basis outcome) versus plain BBPSSW (Z basis).
     """
-    outcomes, combined = _bilateral_cnot_pair(pair1, pair2, rng)
-    if basis_h:
-        combined = apply(H, combined, targets=[2])
-        combined = apply(H, combined, targets=[3])
+    outcomes, combined = _bilateral_cnot_pair(pair1, pair2, rng, basis_h=basis_h)
     success = outcomes[2] == outcomes[3]
     if success:
         kept = combined.partial_trace(2, dims=[2, 2, 2, 2])
@@ -83,7 +85,7 @@ def prepare_noisy_bell_pairs(n, fidelity, rng=None):
     if rng is None:
         rng = np.random.default_rng()
     ideal = QubitState.bell_phi_plus()
-    p = 1 - fidelity
+    p = min(1.0, max(0.0, (4.0 / 3.0) * (1.0 - fidelity)))
     pairs = []
     for _ in range(n):
         if p <= 0:
@@ -123,9 +125,9 @@ def run_distillation_round(pairs, protocol="bbssw", rng=None):
         if result["success"]:
             ideal = QubitState.bell_phi_plus()
             f = result["distilled_fidelity"]
-            p_err = 1 - f
+            p_err = min(1.0, max(0.0, (4.0 / 3.0) * (1.0 - f)))
             from ..core.noise import depolarizing_channel_2
-            chan = depolarizing_channel_2(min(p_err, 1.0))
+            chan = depolarizing_channel_2(p_err)
             new_pairs.append(chan.apply(ideal))
             successes += 1
     yield_fraction = successes / max(n_in // 2, 1)

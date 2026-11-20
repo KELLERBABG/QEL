@@ -157,6 +157,82 @@ def binary_entropy(x: float) -> float:
     return float(-x * np.log2(x) - (1.0 - x) * np.log2(1.0 - x))
 
 
+def plob_capacity_per_use(eta: float) -> float:
+    """Pirandola-Laurenza-Ottaviani-Banchi (2017) repeaterless capacity -log2(1 - eta)."""
+    e = float(np.clip(eta, 0.0, 1.0))
+    if e <= 0.0:
+        return 0.0
+    if e >= 1.0:
+        return float("inf")
+    return float(-np.log2(1.0 - e))
+
+
+def repeater_capacity_per_use(eta: float, segments_k: int = 2) -> float:
+    """Pirandola (2019) k-segment (k-1 equal-spaced repeaters) capacity -log2(1 - eta^(1/k))."""
+    if segments_k < 1:
+        raise ValueError("segments_k must be >= 1")
+    e = float(np.clip(eta, 0.0, 1.0))
+    if e <= 0.0:
+        return 0.0
+    if e >= 1.0:
+        return float("inf")
+    return float(-np.log2(1.0 - (e ** (1.0 / segments_k))))
+
+
+def mode_pairing_qkd_rate(
+    distance_km: float,
+    *,
+    mu: float = 0.4,
+    alpha_db_km: float = FIBER_ATTENUATION_1550,
+    detector_efficiency: float = 0.8,
+    dark_count_hz: float = 10.0,
+    pulse_rate_hz: float = 1e9,
+    l_max: int = 20_000,
+    laser_linewidth_hz: float = 2000.0,
+    e_misalignment: float = 0.015,
+    error_correction_inefficiency: float = 1.16,
+) -> dict:
+    """Asynchronous Mode-Pairing QKD (Zeng et al. Nat. Commun. 2022; Zhu et al. PRL 2023).
+
+    Pairs single clicks across up to l_max time bins to achieve O(sqrt(eta)) scaling
+    without global phase locking or quantum memories.
+    """
+    eta_half = fiber_transmissivity(distance_km / 2.0, alpha_db_km) * detector_efficiency
+    eta_full = fiber_transmissivity(distance_km, alpha_db_km) * detector_efficiency
+    p_d = 1.0 - np.exp(-dark_count_hz / pulse_rate_hz)
+
+    # Single-click probability at central untrusted relay Charlie scales as O(sqrt(eta))
+    p_click = float(1.0 - ((1.0 - p_d) ** 2) * np.exp(-2.0 * mu * eta_half))
+    # Pairing efficiency across window l_max (mean inter-click gap ~ 1/p_click)
+    p_pair = float(0.5 * p_click * (1.0 - (1.0 - p_click) ** max(1, int(l_max))))
+
+    # Single-photon paired fraction and phase drift over average separation E[|j-i|]
+    q1_fraction = float((2.0 * mu * eta_half * np.exp(-2.0 * mu * eta_half)) / max(p_click, 1e-30))
+    q1_fraction = float(np.clip(q1_fraction ** 2, 0.0, 1.0))
+    mean_gap_pulses = min(float(l_max) / 3.0, 1.0 / max(p_click, 1e-15))
+    sigma_phase = 2.0 * np.pi * laser_linewidth_hz * (mean_gap_pulses / pulse_rate_hz)
+    e_phase_drift = 0.5 * (1.0 - np.exp(-(sigma_phase ** 2) / 2.0))
+
+    e_z = float(np.clip((p_d + e_misalignment * mu * eta_half) / max(p_click, 1e-30), 0.0, 0.5))
+    e_1_ph = float(np.clip(e_misalignment + e_phase_drift + p_d / max(mu * eta_half, 1e-30), 0.0, 0.5))
+
+    sift = 0.25  # basis and post-selection factor
+    r_pulse = sift * p_pair * (q1_fraction * (1.0 - binary_entropy(e_1_ph)) - error_correction_inefficiency * binary_entropy(e_z))
+    r_pulse = float(max(0.0, r_pulse))
+
+    return {
+        "distance_km": float(distance_km),
+        "key_rate_per_pulse": r_pulse,
+        "key_rate_hz": float(r_pulse * pulse_rate_hz),
+        "plob_bound_per_use": plob_capacity_per_use(eta_full),
+        "k2_repeater_bound_per_use": repeater_capacity_per_use(eta_full, segments_k=2),
+        "beats_plob": bool(r_pulse > plob_capacity_per_use(eta_full)),
+        "p_click": p_click,
+        "p_pair": p_pair,
+        "e_1_ph": e_1_ph,
+    }
+
+
 def gain_and_qber(mu: float, eta: float, y0: float,
                   e_detector: float = 0.0) -> tuple[float, float]:
     """Observed gain ``Q_mu`` and QBER ``E_mu`` for a Poissonian source.

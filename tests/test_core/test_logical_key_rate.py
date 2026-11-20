@@ -189,3 +189,14 @@ def test_the_dataset_is_well_formed():
     assert rate.rounds == 3
     assert rate.distance == 3
     assert 0.0 <= rate.logical_error_per_pair <= 1.0
+
+
+def test_coupled_key_rate_matches_werner_composition():
+    """coupled_key_rate uses compose_pair_fidelity identically to logical_key_rate."""
+    from quantumnet.core.coupled import coupled_key_rate
+
+    coupled = coupled_key_rate(0.95, 3, 0.003, shots=2000, seed=1)
+    logical = logical_key_rate(0.95, 3, 0.003, shots=2000, seed=1)
+    assert coupled.logical_fidelity == pytest.approx(logical.logical_fidelity)
+    assert coupled.logical_key_fraction == pytest.approx(logical.key_fraction)
+    assert coupled.logical_fidelity <= 0.95 + 1e-12

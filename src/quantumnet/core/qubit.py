@@ -144,10 +144,10 @@ class QubitState:
         """
         if self.num_qubits != 2:
             raise ValueError("Concurrence is only defined for 2-qubit states")
-        pauli = np.array([[0, 0, 0, -1j],
-                          [0, 0, 1j, 0],
-                          [0, 1j, 0, 0],
-                          [-1j, 0, 0, 0]])
+        pauli = np.array([[0, 0, 0, -1],
+                          [0, 0, 1, 0],
+                          [0, 1, 0, 0],
+                          [-1, 0, 0, 0]], dtype=complex)
         rho_tilde = pauli @ self._rho.conj() @ pauli
-        lam = np.sort(np.abs(np.linalg.eigvals(self._rho @ rho_tilde)))
+        lam = np.sqrt(np.maximum(0.0, np.sort(np.real(np.linalg.eigvals(self._rho @ rho_tilde)))))
         return max(0.0, float(np.real(lam[-1] - lam[-2] - lam[-3] - lam[-4])))

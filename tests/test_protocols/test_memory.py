@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from quantumnet.core import QubitState
 from quantumnet.protocols import apply_t1_t2_noise, memory_fidelity_over_time, memory_cutoff_time, QuantumMemoryBuffer
 
@@ -40,3 +41,17 @@ def test_buffer_cutoff():
     buf.store("q1", QubitState.one(), current_time=0.0)
     retrieved = buf.retrieve("q1", current_time=100.0)
     assert retrieved is None
+
+
+def test_two_qubit_state_decays_under_t1_t2_noise():
+    bell = QubitState.bell_phi_plus()
+    decayed = apply_t1_t2_noise(bell, t=1.0, t1=2.0, t2=2.0)
+    assert decayed.num_qubits == 2
+    assert decayed.purity() < 1.0 - 1e-3
+    assert decayed.fidelity(bell) < 1.0 - 1e-3
+
+
+def test_two_qubit_dephasing_does_not_rebound_at_large_t():
+    bell = QubitState.bell_phi_plus()
+    decayed = apply_t1_t2_noise(bell, t=500.0, t1=0.0, t2=50.0)
+    assert decayed.fidelity(bell) == pytest.approx(0.5, abs=1e-3)

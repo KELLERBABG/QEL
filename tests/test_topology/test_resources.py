@@ -325,3 +325,42 @@ def test_zero_memory_reservation_is_granted_trivially():
     r = Reservation("A", "B", 0.0, 10.0, 0, 0.9, identity=1, arrival_seq=1)
     assert mgr.request(r) is True
     assert managers["A"].memory_array.available_count() == 4
+
+
+# ---------------------------------------------------------------------------
+# Three-Class Circular Economy (denker-1 Kette 3) and reserve policies
+# ---------------------------------------------------------------------------
+
+def test_entanglement_tiers_partition_by_qkd_chsh_and_distillation_thresholds():
+    from quantumnet.core.memory import MemoryArray
+
+    array = MemoryArray("A", 4, t1_s=1e6, t2_s=1e6)
+    for index, fidelity in enumerate((0.90, 0.80, 0.60, 0.40)):
+        array[index].entangle("B", index, fidelity, at=0.0)
+
+    tiers = array.classify_entanglement_tiers(0.0)
+    assert [m.index for m in tiers["tier1_qkd"]] == [0]
+    assert [m.index for m in tiers["tier2_chsh_beacon"]] == [1]
+    assert [m.index for m in tiers["tier3_distill_compost"]] == [2]
+    assert [m.index for m in tiers["expired"]] == [3]
+
+
+def test_reserve_policy_selects_the_requested_pair_by_fidelity():
+    from quantumnet.core.memory import MemoryArray
+
+    array = MemoryArray("A", 3, t1_s=1e6, t2_s=1e6)
+    for index, fidelity in enumerate((0.70, 0.99, 0.85)):
+        array[index].entangle("B", index, fidelity, at=0.0)
+
+    newest = MemoryArray("A", 3, t1_s=1e6, t2_s=1e6)
+    for index, fidelity in enumerate((0.70, 0.99, 0.85)):
+        newest[index].entangle("B", index, fidelity, at=0.0)
+
+    chosen = newest.reserve(1, policy="newest-first", at=0.0)
+    assert [m.index for m in chosen] == [1]
+
+    oldest = MemoryArray("A", 3, t1_s=1e6, t2_s=1e6)
+    for index, fidelity in enumerate((0.70, 0.99, 0.85)):
+        oldest[index].entangle("B", index, fidelity, at=float(index))
+    assert [m.index for m in oldest.reserve(1, policy="oldest-first")] == [0]
+    assert [m.index for m in array.reserve(1)] == [0]

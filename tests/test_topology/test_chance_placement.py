@@ -101,25 +101,43 @@ def test_a_tighter_reliability_target_uses_a_more_demanding_scenario():
     p = prior()
     gentle, _ = p.to_scenarios(0.5)
     strict, _ = p.to_scenarios(0.01)
-    assert min(s.t1_s for s in strict) > min(s.t1_s for s in gentle)
-    assert min(s.t2_s for s in strict) > min(s.t2_s for s in gentle)
+    assert min(s.t1_s for s in strict) < min(s.t1_s for s in gentle)
+    assert min(s.t2_s for s in strict) < min(s.t2_s for s in gentle)
 
 
 def test_the_scenarios_bracket_the_probability_level():
     """The report must not claim more than the scenarios enforce.
 
-    The end-to-end probability is at least ``1 - eps`` only if the checked scenario is at
-    least the ``1 - eps`` quantile. Both constructed scenarios are at or beyond it, which
-    is what makes the reduction conservative rather than merely plausible.
+    The end-to-end probability is at least ``1 - eps`` only if the checked scenario sits
+    at or below the lower ``eps``-quantile (fidelity increases in T1 and T2). Both
+    constructed scenarios sit at or below it, which is what makes the reduction
+    conservative rather than merely plausible.
     """
     eps = 0.1
     scenarios, _method = prior().to_scenarios(eps)
     assert len(scenarios) == 2
     for scenario in scenarios:
-        # Every scenario sits at a quantile at or above 1 - eps.
-        quantile_needed = 1.0 - eps
-        implied = float(np.mean(prior().t1_samples_s <= scenario.t1_s))
-        assert implied >= quantile_needed - 0.02
+        # Every scenario sits at a lower-tail quantile at or below eps,
+        # so at least 1 - eps of draws have T1 >= scenario.t1_s.
+        prob_needed = 1.0 - eps
+        implied = float(np.mean(prior().t1_samples_s >= scenario.t1_s))
+        assert implied >= prob_needed - 0.02
+
+
+@pytest.mark.parametrize("correlated", [True, False])
+def test_monte_carlo_empirical_reliability_meets_target(correlated):
+    """Across prior draws, the returned placement achieves F >= F_req with prob >= 1 - eps."""
+    eps = 0.1
+    p = problem(required_fidelity=0.95)
+    pr = prior(correlated=correlated)
+    report = chance_constrained_placement(p, pr, eps, max_repeaters=5)
+    assert report.placement is not None
+    feasible = [
+        chain_quality(report.placement.positions_km, p,
+                      t1_s=float(t1), t2_s=float(t2)).end_to_end_fidelity >= p.required_fidelity
+        for t1, t2 in zip(pr.t1_samples_s, pr.t2_samples_s)
+    ]
+    assert float(np.mean(feasible)) >= 1.0 - eps
 
 
 def test_a_correlated_prior_pairs_its_samples():
@@ -261,3 +279,23 @@ def test_a_single_scenario_case_reduces_to_the_deterministic_optimum():
                                    t2_s=scenario.t2_s)
     assert robust is not None and deterministic is not None
     assert robust.positions_km == deterministic.positions_km
+
+
+# ---------------------------------------------------------------------------
+# The exact 1D Gamma_eff = 1/T1 + 1/T2 reduction
+# ---------------------------------------------------------------------------
+
+def test_exact_1d_gamma_reduction_eliminates_margin_overconservatism():
+    p_ind = prior(correlated=False)
+    eps = 0.05
+    sc_exact = p_ind.exact_1d_scenario(eps)
+    sc_list, _ = p_ind.to_scenarios(eps, exact_1d=False)
+    gamma_exact = 1.0 / sc_exact.t1_s + 1.0 / sc_exact.t2_s
+    gamma_margin = max(1.0 / s.t1_s + 1.0 / s.t2_s for s in sc_list)
+
+    # Exact 1D quantile is strictly less conservative (smaller decay rate) than margin split
+    assert gamma_exact < gamma_margin
+    # Empirical coverage across product distribution is within 1.5% of 1 - eps = 0.95
+    gammas = p_ind.effective_decay_rates()
+    empirical_cov = float(np.mean(gammas <= gamma_exact))
+    assert empirical_cov == pytest.approx(1.0 - eps, abs=0.015)

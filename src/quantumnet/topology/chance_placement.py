@@ -116,20 +116,54 @@ class CoherencePrior:
             t2 = float(np.quantile(self.t2_samples_s, alpha))
         return t1, t2
 
-    def to_scenarios(self, eps: float) -> tuple[list[Scenario], str]:
+    def effective_decay_rates(self, *, max_pairs: int = 50_000, seed: int = 0) -> np.ndarray:
+        """1D effective decay rate samples Gamma_eff = 1/T1 + 1/T2 (in s^-1).
+
+        For correlated priors, pairs (T1_i, T2_i) elementwise (no comonotonic sorting
+        assumption). For independent priors, forms the exact outer sum if N1*N2 <= max_pairs,
+        or draws max_pairs deterministic product-measure samples otherwise.
+        """
+        if self.correlated:
+            return 1.0 / self.t1_samples_s + 1.0 / self.t2_samples_s
+        if self.t1_samples_s.size * self.t2_samples_s.size <= max_pairs:
+            return np.add.outer(1.0 / self.t1_samples_s, 1.0 / self.t2_samples_s).ravel()
+        rng = np.random.default_rng(seed)
+        idx1 = rng.integers(0, self.t1_samples_s.size, size=max_pairs)
+        idx2 = rng.integers(0, self.t2_samples_s.size, size=max_pairs)
+        return 1.0 / self.t1_samples_s[idx1] + 1.0 / self.t2_samples_s[idx2]
+
+    def exact_1d_scenario(self, eps: float) -> Scenario:
+        """Single exact scenario matching the (1 - eps) upper quantile of Gamma_eff = 1/T1 + 1/T2."""
+        if not 0.0 < eps < 1.0:
+            raise ChanceConstraintError(f"eps must be in (0, 1), got {eps}")
+        gammas = self.effective_decay_rates()
+        gamma_star = float(np.quantile(gammas, 1.0 - eps))
+        t_equiv = 2.0 / gamma_star
+        return Scenario(name=f"{self.name}:exact-1d", t1_s=t_equiv, t2_s=t_equiv)
+
+    def to_scenarios(self, eps: float,
+                     *, exact_1d: bool = False) -> tuple[list[Scenario], str]:
         """Materialise the quantile scenarios and name the method used.
 
         Returns the scenarios at the quantile that satisfies the chance constraint under
         each assumption.  The **conservative** one is used: the scenarios are built at
         the more demanding quantile, so a layout accepted here is accepted under the
         weaker assumption too.
+
+        With ``exact_1d=True`` the reduction is *exact* rather than conservative: every
+        candidate chain depends on ``(T1, t2)`` solely through the scalar
+        ``Gamma_eff = 1/T1 + 1/t2``, so the chance constraint is satisfied at the
+        ``(1 - eps)`` quantile of that one variable.
         """
         if not 0.0 < eps < 1.0:
             raise ChanceConstraintError(f"eps must be in (0, 1), got {eps}")
+        if exact_1d:
+            return ([self.exact_1d_scenario(eps)],
+                    "exact-1d -> 1D Gamma_eff isoquantile")
         # Two-parameter margin: split the risk budget between the two parameters.
-        alpha_margin = 1.0 - eps / 2.0
+        alpha_margin = eps / 2.0
         # Single common cause: no split, because there is only one source of risk.
-        alpha_common = 1.0 - eps
+        alpha_common = eps
         scenarios = []
         for label, alpha in (("margin", alpha_margin), ("common", alpha_common)):
             t1, t2 = self.quantiles(alpha)
@@ -166,7 +200,7 @@ class ChanceReport:
 
 def chance_constrained_placement(problem: PlacementProblem, prior: CoherencePrior,
                                  eps: float, max_repeaters: int | None = None,
-                                 ) -> ChanceReport:
+                                 *, exact_1d: bool = False) -> ChanceReport:
     """The best layout meeting the fidelity requirement with probability ``>= 1-eps``.
 
     ``problem.required_fidelity`` is the requirement.  The prior supplies the uncertainty
@@ -178,7 +212,7 @@ def chance_constrained_placement(problem: PlacementProblem, prior: CoherencePrio
     "the target is not reachable with this hardware prior" -- and is reported as such
     rather than by relaxing the requirement.
     """
-    scenarios, method = prior.to_scenarios(eps)
+    scenarios, method = prior.to_scenarios(eps, exact_1d=exact_1d)
 
     # Feasibility is required under every quantile scenario, so the accepted set is the
     # intersection and is therefore conservative.
@@ -221,7 +255,7 @@ def robust_feasible_best(problem: PlacementProblem, scenarios: list[Scenario],
     """
     if not scenarios:
         raise ChanceConstraintError("at least one scenario is required")
-    worst = min(scenarios, key=lambda s: s.t1_s * s.t2_s)
+    worst = min(scenarios, key=lambda s: 1.0 / (1.0 / s.t1_s + 1.0 / s.t2_s))
 
     candidate = best_placement(problem, max_repeaters=max_repeaters,
                                t1_s=worst.t1_s, t2_s=worst.t2_s)

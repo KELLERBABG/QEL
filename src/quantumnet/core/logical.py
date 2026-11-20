@@ -545,9 +545,32 @@ class LogicalKeyRate:
                 f"{self.physical_qubits_per_logical} qubits per logical")
 
 
-def pair_key_fraction(fidelity: float) -> float:
-    """``max(0, 1 - 2 h((1-F)/2))``: the Werner-pair rate used elsewhere in QEL."""
+def pair_key_fraction(fidelity: float, *, qber_model: str = "bitflip") -> float:
+    """``max(0, 1 - 2 h((1-F)/2))``: the Werner-pair rate used elsewhere in QEL.
+
+    ``qber_model`` selects the error-rate law.  ``"bitflip"`` is the legacy
+    ``qber = (1 - F) / 2``; ``"werner"`` is the exact Werner BBM92 rate
+    ``qber = 2 (1 - F) / 3`` (the legacy form undercounts QBER by 25% and moves the
+    zero-key threshold from ``F* = 0.834958 `` to ``0.779944``); ``"six-state"`` is
+    the Bell-diagonal hashing bound ``1 - H(lambda_1..4)``.
+    """
     from ..protocols.bb84 import binary_entropy
+
+    if qber_model == "werner":
+        g = float(np.clip(fidelity, 0.25, 1.0))
+        qber = 2.0 * (1.0 - g) / 3.0
+        if qber >= 0.5:
+            return 0.0
+        return float(max(0.0, min(1.0, 1.0 - 2.0 * binary_entropy(qber))))
+    if qber_model == "six-state":
+        g = float(np.clip(fidelity, 0.25, 1.0))
+        probs = [g, (1.0 - g) / 3.0, (1.0 - g) / 3.0, (1.0 - g) / 3.0]
+        shannon = -sum(p * np.log2(p) for p in probs if p > 0.0)
+        return float(max(0.0, min(1.0, 1.0 - shannon)))
+    if qber_model != "bitflip":
+        raise ValueError(
+            f"qber_model must be 'bitflip', 'werner' or 'six-state', got {qber_model!r}"
+        )
 
     f = float(np.clip(fidelity, 0.0, 1.0))
     return float(max(0.0, 1.0 - 2.0 * binary_entropy((1.0 - f) / 2.0)))

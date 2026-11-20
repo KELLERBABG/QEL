@@ -15,6 +15,7 @@ requires no change to the caller.
 from __future__ import annotations
 
 import itertools
+import math
 
 import pytest
 
@@ -430,3 +431,132 @@ def test_single_hop_path_has_no_swaps():
     assert route.hops == 1
     assert route.swap_order == []
     assert route.e2e_fidelity == pytest.approx(0.9)
+
+
+# ---------------------------------------------------------------------------
+# SKR-optimal routing inverts fidelity-optimal when the BSM tax dominates
+# ---------------------------------------------------------------------------
+
+def _link_at_fidelity(a: str, b: str, target_fidelity: float, rate_hz: float,
+                      dark_hz: float):
+    """A span whose ``QuantumLink.fidelity()`` equals ``target_fidelity``.
+
+    Solved by bisection because the pulse rate feeds back into the dark-count
+    probability and therefore into fidelity, so length has no closed form here.
+    ``detector_eff`` is at its ceiling (1.0): with loss in the depolarising channel a
+    detector efficiency below unity caps link fidelity at ``1 - 0.75 (1 - eta_det)``,
+    which puts the topic 08 operating point (F = 0.92 / 0.985) out of reach entirely.
+    """
+    from quantumnet.topology.graph import QuantumLink
+
+    def build(length: float) -> "QuantumLink":
+        eta = 10.0 ** (-0.2 * length / 10.0)
+        return QuantumLink(a, b, length_km=length, dark_count_hz=dark_hz,
+                           detector_eff=1.0, pulse_rate_hz=rate_hz / (eta ** 2))
+
+    lo, hi = 1e-7, 100.0
+    for _ in range(200):
+        mid = 0.5 * (lo + hi)
+        if build(mid).fidelity() > target_fidelity:
+            lo = mid
+        else:
+            hi = mid
+    return build(0.5 * (lo + hi))
+
+
+def test_skr_optimal_routing_inverts_fidelity_optimal_when_bsm_tax_dominates():
+    """The worked inversion of own-research/topics/08 §3.3 on QEL's own link model.
+
+    Path A: 1 hop,  F_A = 0.9200, R_A = 5.0e4 Hz.
+    Path B: 3 hops, F = 0.9850 each, R = 4.0e5 Hz  ->  F_B = 0.9372 with
+    W_swap = (4 * 0.99 - 1) / 3, and R_B = (4e5 / 3) * 0.5^2 = 3.333e4 Hz.
+
+    ``-log W`` prefers Path B; the secret-key rate prefers Path A by ~20%, which is
+    the inversion.  Spans are solved so ``QuantumLink.fidelity()`` attains the stated
+    fidelities -- see the numeric proof at the end of this test for why the plan's
+    literal 35 km / 12.5 km geometry cannot carry this gate.
+    """
+    from quantumnet.topology.graph import QuantumNode, QuantumTopology
+    from quantumnet.topology.strategies import make_strategy, path_secret_key_rate
+
+    topo = QuantumTopology()
+    for nid in ("S", "R1", "R2", "T"):
+        topo.add_node(QuantumNode(nid))
+    topo.add_link(_link_at_fidelity("S", "T", 0.9200, 5.0e4, 50.0))
+    for a, b in (("S", "R1"), ("R1", "R2"), ("R2", "T")):
+        topo.add_link(_link_at_fidelity(a, b, 0.9850, 4.0e5, 10.0))
+
+    r_fid = make_strategy("fidelity-optimal").select(topo, "S", "T")
+    r_skr = make_strategy("skr-optimal", p_bsm=0.5, swap_fidelity=0.99).select(topo, "S", "T")
+
+    assert r_fid.path == ["S", "R1", "R2", "T"]
+    assert r_skr.path == ["S", "T"]
+
+    skr_1hop = path_secret_key_rate(topo, r_skr.path, p_bsm=0.5, swap_fidelity=0.99)
+    skr_3hop = path_secret_key_rate(topo, r_fid.path, p_bsm=0.5, swap_fidelity=0.99)
+    assert skr_3hop["e2e_fidelity"] == pytest.approx(0.9372, abs=1e-3)
+    assert r_fid.e2e_fidelity > r_skr.e2e_fidelity
+    assert skr_1hop["skr_hz"] > skr_3hop["skr_hz"] > 0.0
+    assert skr_1hop["skr_hz"] / skr_3hop["skr_hz"] == pytest.approx(1.20, abs=0.02)
+
+    # Numeric proof: the plan's literal 35 km / 12.5 km geometry cannot pass this gate.
+    # QuantumLink's depolarising fidelity is F = 1 - 3p/4 with
+    # p = p_loss + p_dc - p_loss p_dc, p_loss = 1 - 10^(-0.2 L / 10) * eta_det (alpha =
+    # 0.2 dB/km, eta_det = 0.8 by default), so F = 0.3697 at 35 km and 0.5874 at 12.5 km;
+    # the 3-hop Werner product is then 0.3183, *below* the one-hop route, i.e. the two
+    # paths come out in the wrong order, and both lie under the Werner zero-key
+    # threshold F* = 0.834958, so both secret-key rates are exactly zero.  No span can
+    # rescue the gate: the model's best possible fidelity at any length is
+    # 1 - 3/4 (1 - eta_det) = 0.85, while a 3-hop chain with 2 swaps at 0.99 needs
+    # F >= 0.9466 per link to reach F*.
+    from quantumnet.topology.graph import QuantumLink
+
+    literal = QuantumTopology()
+    for nid in ("S", "R1", "R2", "T"):
+        literal.add_node(QuantumNode(nid))
+    literal.add_link(QuantumLink("S", "T", length_km=35.0, pulse_rate_hz=2e7, dark_count_hz=50.0))
+    for a, b in (("S", "R1"), ("R1", "R2"), ("R2", "T")):
+        literal.add_link(QuantumLink(a, b, length_km=12.5, pulse_rate_hz=2.5e6, dark_count_hz=10.0))
+
+    f_one_hop = literal.link("S", "T").fidelity()
+    f_hop = literal.link("S", "R1").fidelity()
+    w_hop = (4.0 * f_hop - 1.0) / 3.0
+    assert f_one_hop == pytest.approx(0.3697, abs=1e-4)
+    assert f_hop == pytest.approx(0.5874, abs=1e-4)
+    assert (1.0 + 3.0 * w_hop ** 3) / 4.0 == pytest.approx(0.3183, abs=1e-4)
+    assert (1.0 + 3.0 * w_hop ** 3) / 4.0 < f_one_hop
+    assert path_secret_key_rate(literal, ["S", "T"], p_bsm=0.5,
+                                swap_fidelity=0.99)["skr_hz"] == 0.0
+    assert path_secret_key_rate(literal, ["S", "R1", "R2", "T"], p_bsm=0.5,
+                                swap_fidelity=0.99)["skr_hz"] == 0.0
+
+    # The measured curves above must be the model's own closed form, not a coincidence.
+    eta_35 = 10.0 ** (-0.2 * 35.0 / 10.0)
+    p_loss = 1.0 - eta_35 * 0.8
+    p_dc = 1.0 - math.exp(-50.0 / 2e7)
+    assert 1.0 - 0.75 * (p_loss + p_dc - p_loss * p_dc) == pytest.approx(f_one_hop, abs=1e-12)
+
+    w_zero_key = (4.0 * 0.834958 - 1.0) / 3.0
+    w_swap = (4.0 * 0.99 - 1.0) / 3.0
+    f_link_required = (1.0 + 3.0 * (w_zero_key / w_swap ** 2) ** (1.0 / 3.0)) / 4.0
+    f_max_possible = 1.0 - 0.75 * (1.0 - 0.8)
+    assert f_link_required == pytest.approx(0.9466, abs=1e-3)
+    assert f_max_possible == pytest.approx(0.85, abs=1e-12)
+    assert f_max_possible < f_link_required
+
+    # And the substituted scenario is topic 08 §3.3's own arithmetic, closed form at the
+    # plan's stated rates: SKR_A = 5e4 * kf(0.92) = 19,961 bps and
+    # SKR_B = (4e5/3) * 0.5^2 * kf(0.9372) = 3.333e4 * 0.4984 = 16,613 bps.
+    from quantumnet.topology.placement import werner_bbm92_key_fraction as _kf
+
+    w_b = ((4.0 * 0.985 - 1.0) / 3.0) ** 3 * w_swap ** 2
+    f_b = (1.0 + 3.0 * w_b) / 4.0
+    assert f_b == pytest.approx(0.9372, abs=1e-4)
+    assert _kf(0.92) == pytest.approx(0.3992, abs=1e-4)
+    assert _kf(f_b) == pytest.approx(0.4984, abs=1e-4)
+    assert 5.0e4 * _kf(0.92) == pytest.approx(19961.0, abs=2.0)
+    assert (4.0e5 / 3.0) * 0.25 * _kf(f_b) == pytest.approx(16613.0, abs=2.0)
+    # The link-object measurement sits within 1% of that (the solved spans' herald
+    # probability is what carries the loss).
+    assert skr_1hop["skr_hz"] == pytest.approx(19961.0, rel=0.01)
+    assert skr_3hop["skr_hz"] == pytest.approx(16613.0, rel=0.01)

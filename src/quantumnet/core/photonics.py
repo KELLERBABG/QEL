@@ -344,6 +344,38 @@ class BarrettKok:
                      * self.arm_b.photon_arrival_probability()
                      * self.arm_b.detector.efficiency)
 
+    # -- exact two-round trajectory -----------------------------------------
+
+    def exact_fidelity(self) -> float:
+        """Exact two-round Barrett-Kok fidelity including O((eta_A + eta_B) * p_d) false heralds."""
+        ea = self.arm_a.total_efficiency()
+        eb = self.arm_b.total_efficiency()
+        p_da = self.arm_a.detector.dark_count_probability(self.coincidence_window_s)
+        p_db = self.arm_b.detector.dark_count_probability(self.coincidence_window_s)
+        pd = 0.5 * (p_da + p_db)
+        return barrett_kok_exact_trajectory(
+            ea, eb, pd,
+            visibility=self.mode_matching,
+            p_double_excitation=self.multiphoton_probability,
+        )["exact_fidelity"]
+
+    def smiling_dos_report(self, attacked_dark_count_hz: float) -> dict:
+        """The exact trajectory at a flooded dark-count rate, beside the honest one.
+
+        Returns :func:`barrett_kok_exact_trajectory` for the attacked dark-count
+        probability, with ``honest_fidelity`` from :meth:`exact_fidelity` for contrast.
+        """
+        ea = self.arm_a.total_efficiency()
+        eb = self.arm_b.total_efficiency()
+        p_attack = float(1.0 - np.exp(-float(attacked_dark_count_hz)
+                                     * self.coincidence_window_s))
+        report = barrett_kok_exact_trajectory(
+            ea, eb, p_attack, visibility=self.mode_matching,
+            p_double_excitation=self.multiphoton_probability)
+        report["honest_fidelity"] = self.exact_fidelity()
+        report["attacked_dark_count_hz"] = float(attacked_dark_count_hz)
+        return report
+
     # -- fidelity ----------------------------------------------------------
 
     def raw_fidelity(self) -> float:
@@ -435,6 +467,97 @@ class BarrettKok:
         if not dead_times:
             return nominal
         return float(min(nominal, 1.0 / max(dead_times)))
+
+
+def barrett_kok_exact_trajectory(
+    eta_a: float,
+    eta_b: float,
+    p_d: float,
+    *,
+    visibility: float = 1.0,
+    p_double_excitation: float = 0.0,
+) -> dict:
+    """Exact 4-basis-state two-round Barrett-Kok herald probability and Bell fidelity.
+
+    Accounts for:
+    - True two-photon interference signal: P_sig = 0.5 * eta_a * eta_b * (1 - p_d)^2 * (1 - p_de)^2
+      with fidelity (1 + V) / 2.
+    - Double-excitation signal inside {|01>, |10>}: mixes in incoherent |01><01| + |10><10|
+      carrying fidelity 1/2 (not 1/4).
+    - First-order photon + dark-count false heralds O((eta_a + eta_b) * p_d) from |11>, |01>, |10|.
+    - Second-order pure dark-count false heralds O(p_d^2) from all 4 initial states.
+    """
+    ea = float(np.clip(eta_a, 0.0, 1.0))
+    eb = float(np.clip(eta_b, 0.0, 1.0))
+    pd = float(np.clip(p_d, 0.0, 1.0))
+    v = float(np.clip(visibility, 0.0, 1.0))
+    pde = float(np.clip(p_double_excitation, 0.0, 1.0))
+
+    q_d = 1.0 - pd
+    # Probability of exactly one detector clicking given:
+    # - 0 photons arriving: 2 * pd * (1 - pd)
+    p1_zero = 2.0 * pd * q_d
+
+    # Single-emitter single-click probability in one round (with double-excitation pde)
+    def p1_single_arm(eta: float) -> tuple[float, float]:
+        # Coherent single-photon arrival (no double excitation)
+        p_coh = (1.0 - pde) * eta * (q_d ** 2)
+        # Incoherent / dark-assisted or double-excited single click
+        p_inc_1 = (1.0 - pde) * (1.0 - eta) * p1_zero
+        p_de_click = pde * (
+            2.0 * eta * (1.0 - eta) * (q_d ** 2)
+            + 0.5 * (eta ** 2) * (q_d ** 2)
+            + ((1.0 - eta) ** 2) * p1_zero
+        )
+        return p_coh, p_inc_1 + p_de_click
+
+    p_coh_a, p_inc_a = p1_single_arm(ea)
+    p_coh_b, p_inc_b = p1_single_arm(eb)
+    p_tot_a = p_coh_a + p_inc_a
+    p_tot_b = p_coh_b + p_inc_b
+
+    # |00> -> X_A X_B -> |11>: Round 1 has 0 photons; Round 2 has both A and B emitting
+    p_r1_00 = p1_zero
+    p_r2_11 = (
+        0.5 * ea * eb * (q_d ** 2)
+        + ea * (1.0 - eb) * (q_d ** 2)
+        + (1.0 - ea) * eb * (q_d ** 2)
+        + (1.0 - ea) * (1.0 - eb) * p1_zero
+    )
+    w_00 = 0.25 * p_r1_00 * p_r2_11
+    w_11 = w_00  # symmetric under Round 1 <-> Round 2
+
+    # |01> -> |10> and |10> -> |01>: weighted 0.25 each
+    w_01 = 0.25 * p_tot_b * p_tot_a
+    w_10 = 0.25 * p_tot_a * p_tot_b
+
+    p_success = w_00 + w_11 + w_01 + w_10
+    if p_success <= 0.0:
+        return {
+            "success_probability": 0.0,
+            "exact_fidelity": 0.0,
+            "p_signal_coherent": 0.0,
+            "p_false_photon_dark": 0.0,
+            "p_false_dark_dark": 0.0,
+        }
+
+    # Coherent interference term comes only when both rounds had a real un-double-excited photon
+    p_sig_coh = 0.5 * p_coh_a * p_coh_b
+    # Every event in the {|01>, |10>} subspace contributes 1/2 diagonal overlap with |Psi+/->,
+    # plus V/2 from the coherent cross-term:
+    num_fidelity = 0.5 * (w_01 + w_10) + 0.5 * v * p_sig_coh
+    exact_fid = float(np.clip(num_fidelity / p_success, 0.0, 1.0))
+
+    p_dark_dark = float(p1_zero ** 2)
+    p_photon_dark = float(max(0.0, p_success - p_sig_coh - p_dark_dark))
+
+    return {
+        "success_probability": float(p_success),
+        "exact_fidelity": exact_fid,
+        "p_signal_coherent": float(p_sig_coh),
+        "p_false_photon_dark": p_photon_dark,
+        "p_false_dark_dark": p_dark_dark,
+    }
 
 
 def multiplexed_success(single_attempt_probability: float,

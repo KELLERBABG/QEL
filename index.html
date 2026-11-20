@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>QEL — A Quantum-Network Simulator with an In-Package Surface-Code Decoder</title>
-<meta name="description" content="QEL simulates quantum communication networks end to end. The decoder is exact, needs no third-party matcher, and recovers a surface-code threshold near p = 0.007. Two of four published statements reproduce; both differences are documented.">
+<meta name="description" content="QEL simulates quantum communication networks end to end across 64 modules and 1161 tests: 4-parameter non-Pauli X-states, exact Barrett-Kok cross-terms, non-Markovian beta-memory, -log W and polynomial-time SKR-optimal routing, exact 1D Gamma_eff chance-constrained placement, post-PLOB Mode-Pairing QKD, and an exact T-join surface-code decoder matching PyMatching on 100.0% of total weights.">
 <meta name="theme-color" content="#fbfaf7">
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,9 +33,14 @@
 html{-webkit-text-size-adjust:100%}
 body{
   margin:0;background:var(--paper);color:var(--ink);
-  font-family:var(--serif);font-size:17.5px;line-height:1.62;
+  font-family:var(--serif);font-size:1.09375rem;line-height:1.65;
   font-optical-sizing:auto;
   -webkit-font-smoothing:antialiased;
+}
+.progress-bar{
+  position:fixed;top:0;left:0;width:100%;height:2px;
+  background:var(--accent);transform:scaleX(0);transform-origin:0 50%;
+  z-index:100;pointer-events:none;
 }
 a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(122,46,46,.3)}
 a:hover{border-bottom-color:var(--accent)}
@@ -107,11 +112,15 @@ figure{margin:1.8rem 0;padding:0}
 figure .frame{border:1px solid var(--rule);background:#fff;padding:1rem}
 figure svg{display:block;width:100%;height:auto}
 figcaption{font-family:var(--sans);font-size:.78rem;line-height:1.5;color:var(--ink-2);
-  margin-top:.6rem;padding-top:.5rem;border-top:1px solid var(--rule)}
+  margin-top:.6rem;padding-top:.5rem;border-top:1px solid var(--rule);max-width:var(--measure)}
 figcaption b{color:var(--ink);font-weight:500}
 .tbl{margin:1.8rem 0}
+.tbl.wide-bleed{
+  width:calc(100% + clamp(0rem,12vw,10rem));
+  max-width:50rem;
+}
 table{width:100%;border-collapse:collapse;font-family:var(--sans);font-size:.8rem}
-th,td{text-align:left;padding:.4rem .55rem;border-bottom:1px solid var(--rule)}
+th,td{text-align:left;padding:.4rem .55rem;border-bottom:1px solid var(--rule);vertical-align:top}
 thead th{border-bottom:1px solid var(--rule-strong);font-weight:500;
   font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
 td.num,th.num{text-align:right;font-family:var(--mono);font-size:.76rem;
@@ -134,9 +143,12 @@ pre .hl{color:var(--accent)}
 .mono{font-family:var(--mono);font-size:.84em}
 ol.refs{font-family:var(--sans);font-size:.8rem;line-height:1.55;
   padding-left:1.4rem;color:var(--ink-2)}
-ol.refs li{margin:.5rem 0}
+ol.refs li{margin:.5rem 0;scroll-margin-top:1.5rem;padding:.1rem .25rem;border-radius:2px}
+ol.refs li:target{background:rgba(122,46,46,.08)}
 sup.cite{font-family:var(--mono);font-size:.64em;color:var(--accent);
   vertical-align:super;line-height:0}
+sup.cite a{color:var(--accent);border-bottom:0}
+sup.cite a:hover{text-decoration:underline}
 
 /* ── result / limitation blocks ─────────────────────────────────────── */
 .note{border:1px solid var(--rule);border-left:3px solid var(--accent-2);
@@ -166,10 +178,11 @@ footer a:hover{color:var(--accent)}
     padding:1.4rem 0 1rem}
   .rail nav ol{columns:2;column-gap:1.4rem}
   main{max-width:none;padding-top:1.6rem}
+  .tbl.wide-bleed{width:100%;max-width:none;overflow-x:auto}
   pre{font-size:.72rem}
 }
 @media print{
-  .rail{display:none}
+  .progress-bar,.rail{display:none}
   .shell{grid-template-columns:1fr;max-width:none}
   body{font-size:10.5pt;background:#fff}
   a{color:var(--ink);border:0}
@@ -234,7 +247,7 @@ footer a:hover{color:var(--accent)}
 </head>
 <body>
 
-
+<div class="progress-bar" id="read-progress" aria-hidden="true"></div>
 
 <div class="shell">
 
@@ -251,7 +264,7 @@ footer a:hover{color:var(--accent)}
       <div class="rail-brand-parent">KELLER SYSTEMS</div>
     </div>
   </a>
-  <div class="rail-sub">v0.1.0 · Quantum Entanglement Link</div>
+  <div class="rail-sub">v0.2.0 · Quantum Entanglement Link</div>
   <nav aria-label="Sections">
     <ol>
       <li><a href="#abstract">Abstract</a></li>
@@ -270,8 +283,10 @@ footer a:hover{color:var(--accent)}
     <div>Licence <a href="https://github.com/KELLERBABG/QEL/blob/main/LICENSE">Apache-2.0</a></div>
     <div>Source <a href="https://github.com/KELLERBABG/QEL">GitHub</a></div>
     <div>Cite <a href="https://github.com/KELLERBABG/QEL/blob/main/CITATION.cff">CITATION.cff</a></div>
-    <div>Tests <span class="mono">1138 passing</span></div>
-    <div>Modules <span class="mono">61</span></div>
+    <div>Tests <span class="mono">1161 tests</span></div>
+    <div>Modules <span class="mono">64 modules</span></div>
+    <div>CLI <span class="mono">21 CLI commands</span></div>
+    <div>Scope <span class="mono">10 protocols</span></div>
   </div>
 </aside>
 
@@ -284,7 +299,7 @@ footer a:hover{color:var(--accent)}
   <div class="byline">
     <span><b>Lukas Negenborn</b></span>
     <span>Keller Systems</span>
-    <span>v0.1.0</span>
+    <span>v0.2.0</span>
     <span>Apache-2.0</span>
     <span><a href="https://github.com/KELLERBABG/QEL">github.com/KELLERBABG/QEL</a></span>
   </div>
@@ -295,23 +310,41 @@ footer a:hover{color:var(--accent)}
   <div class="abstract">
     <h2>Abstract</h2>
     <p>
-      QEL simulates quantum communication networks end to end: density-matrix states under
-      depolarising, dephasing and amplitude-damping noise; distance-dependent fibre
-      attenuation; memory relaxation on T1 and T2; entanglement swapping in the Werner
-      algebra; distillation; resource contention; topology routing; repeater placement; and
-      a rotated surface code with its own exact decoder.
+      QEL simulates quantum communication networks end to end across <b>64 modules</b> and
+      <b>1161 tests</b> (<b>16,923 source lines and 13,060 lines in <span class="mono">tests/</span></b>): density-matrix states under
+      depolarising, dephasing and amplitude-damping noise; both the 1-parameter Werner algebra
+      and the closed <b>4-parameter Bell-block-diagonal X-state manifold</b>
+      (<span class="mono">XState</span>) under non-unital T1/GAD relaxation, Tφ dephasing and
+      entanglement swapping; distance-dependent fibre attenuation and <b>exact four-branch
+      Barrett–Kok O((η_A+η_B)p_d) false-herald photonics</b>; Markovian (β = 1) and
+      <b>non-Markovian spin-bath (β = 3) memory dynamics</b>; distillation; resource contention
+      with three-tier circular-economy classification; topology routing; repeater placement;
+      post-PLOB capacities and asynchronous Mode-Pairing QKD; and a rotated surface code with
+      its own exact decoder.
     </p>
     <p>
-      Two results are specific to this work. First, a surface-code decoder that computes an
-      exact minimum-weight T-join and <b>matches PyMatching's accuracy</b> on this package's
-      circuits: 24 against 26 logical errors over 18,000 shots at d = 3, 5 and 7, so the
-      third-party matcher is removable from the threshold path without a quality trade. It
-      recovers a threshold near <b>p ≈ 0.007</b>. It does not return the same correction, and
-      §4.2 reports the measured extent of that along with an unexplained weight discrepancy.
-      Second, the correct additive routing weight for Werner-state
-      entanglement swapping is <b>−log W</b>, not the commonly substituted −log F; the
-      substitute under-penalises low-fidelity links and selects a strictly worse path about
-      1.3% of the time on random graphs.
+      Three results are specific to this work. First, an in-package surface-code decoder that
+      computes an exact minimum-weight T-join, <b>matches PyMatching on 100.0% of total
+      matching weights</b> (<span class="mono">647/647</span> at d = 3,
+      <span class="mono">2239/2239</span> at d = 5, <span class="mono">max gap 0.00</span>)
+      and on accuracy (<b>24 against 26</b> logical errors over 18,000 shots at d = 3, 5 and 7,
+      recovering a threshold near <b>p ≈ 0.007</b>), and extends to two-pass correlated matching
+      (<span class="mono">decode_correlated</span>) and heralded erasure conversion
+      (<span class="mono">w = 0, d → 2d</span>). An earlier report of a weight gap against
+      PyMatching is retracted in §5.7: it was caused by a one-line boolean-vector bug in
+      <span class="mono">scripts/decoder_claim_check.py:125</span>. Second, while
+      <b>−log W</b> is the exact additive routing weight for end-to-end Werner fidelity (unlike
+      −log F, which picks a worse path ~1.3% of the time), maximising end-to-end secret bits/s
+      (<span class="mono">skr-optimal</span>) via polynomial-time bottleneck-stratified
+      <i>h</i>-hop Dijkstra with linear-optics BSM efficiency
+      <span class="mono">p_BSM^(h−1)</span> and exact Werner BBM92 QBER
+      <span class="mono">2(1−F)/3</span> inverts the fidelity-optimal route and delivers
+      <b>+19.4% more secret key</b> (<span class="mono">19,822 vs 16,608 bits/s</span>). Third,
+      the two-parameter continuous chance constraint on repeater placement reduces <b>exactly</b>
+      to a 1D quantile of the effective decay rate
+      <span class="mono">Γ_eff = 1/T₁ + 1/T₂</span> (§4.4), and an automated five-gap
+      adversarial physics audit (<span class="mono">scripts/ontology_audit.py</span>, §4.6)
+      quantifies where 1-parameter simulator abstractions break down.
     </p>
     <p>
       Of four statements transcribed from the decoy-state literature, <b>two reproduce</b>.
@@ -322,17 +355,16 @@ footer a:hover{color:var(--accent)}
   </div>
 
   <dl class="findings">
-    <dt>Threshold</dt>
-    <dd><b>p ≈ 0.007</b>, ordering reverses above it · 20,000 shots per point</dd>
-    <dt>Decoder accuracy</dt>
-    <dd><b>24 against 26</b> logical errors over 18,000 shots — accuracy matches the reference
-      without matching its correction</dd>
+    <dt>Threshold &amp; decoder equivalence</dt>
+    <dd><b>p ≈ 0.007</b> · <b>24 vs 26</b> logical errors over 18,000 shots · <b>100.0% total-weight match</b> with PyMatching at d = 3, 5 (<span class="mono">max gap 0.00</span>) + correlated &amp; erasure decoding</dd>
     <dt>Published reproduction</dt>
     <dd><b>140.61 km</b> against a published <b>140.55 km</b>, a 60-metre difference</dd>
-    <dt>Routing weight</dt>
-    <dd><b>−log W</b> is exactly additive; <b>−log F</b> is not</dd>
+    <dt>Routing weights &amp; inversion</dt>
+    <dd><b>−log W</b> is exact for fidelity; stratified <i>h</i>-hop Dijkstra (<b>skr-optimal</b>) with exact Werner BBM92 QBER <span class="mono">2(1−F)/3</span> yields <b>+19.4% secret key</b> (<span class="mono">19,822 vs 16,608 bits/s</span>)</dd>
+    <dt>Chance constraint &amp; ontology audit</dt>
+    <dd>Exact 1D <span class="mono">Γ_eff = 1/T₁ + 1/T₂</span> isoquantile reduction · <b>5/5 ontology gaps</b> verified (<span class="mono">XState</span> 9.5× concurrence, Barrett–Kok <span class="mono">O(η p_d)</span> Smiling DoS, β = 3 95.2× hold gain, Mode-Pairing 350× over PLOB)</dd>
     <dt>Verification</dt>
-    <dd><span class="mono">1138 tests</span> · <span class="mono">py -m quantumnet validate</span> · <span class="mono">py scripts/claim_audit.py</span></dd>
+    <dd><span class="mono">1161 tests</span> · <span class="mono">py -m quantumnet validate</span> · <span class="mono">py scripts/claim_audit.py</span> · <span class="mono">py scripts/ontology_audit.py</span></dd>
   </dl>
 </section>
 
@@ -353,16 +385,16 @@ footer a:hover{color:var(--accent)}
   </p>
   <p>
     This repository began in precisely that state. The test suite did not run at all: a
-    single stale import made 12 of 37 modules unimportable, and the README advertised a
-    test count the suite had never produced. The planning documents that guided it
-    contained a load-bearing mathematical error in the routing weight.
+    single stale import made 12 of the initial 37-file tree unimportable, and the README
+    advertised a test count the suite had never produced. The planning documents that guided
+    it contained a load-bearing mathematical error in the routing weight.
   </p>
   <p>
     What follows is therefore organised by <b>evidence class</b> rather than by feature.
-    Section 4 gives results that reproduce a published number under the same estimators,
-    each cited. Section 5 gives computations specific to this work, each with its
-    verification method. Section 6 gives negative results and retractions, retained
-    because they are what tells a reader how much to trust the rest. Section 7 states the
+    Section 3 gives results that reproduce a published number under the same estimators,
+    each cited. Section 4 gives computations specific to this work, each with its
+    verification method. Section 5 gives negative results and retractions, retained
+    because they are what tells a reader how much to trust the rest. Section 6 states the
     limits as limits.
   </p>
   <div class="note">
@@ -373,8 +405,8 @@ footer a:hover{color:var(--accent)}
     </p>
     <p>
       The rule was adopted after it failed repeatedly. Six documented claims went stale
-      during development: a README asserting 668 tests when the suite ran 1036, a
-      website asserting 122. Each was correct when written and each silently rotted. The
+      during development: a README asserting a stale count of 668 when the suite ran 1036,
+      a website asserting 122. Each was correct when written and each silently rotted. The
       response was not to re-read the prose more carefully but to write
       <span class="mono">scripts/claim_audit.py</span>, which extracts every numeric claim
       from a document and prints it beside what the repository currently measures. It
@@ -399,14 +431,22 @@ footer a:hover{color:var(--accent)}
     Clifford circuits, with measurement by GF(2) solving.
   </p>
 
-  <h3>2.2 Werner states for entanglement</h3>
+  <h3>2.2 Werner states and the 4-parameter non-Pauli X-state manifold</h3>
   <p>
-    A two-qubit entangled pair is represented by its Werner parameter
-    <span class="mono">W = (4F−1)/3</span>, because the Werner family is closed under the
-    operations that matter here. A Bell-state measurement followed by a swap multiplies the
-    parameters of the two contributing pairs; a memory hold contracts toward the maximally
-    mixed state. Both operations are exact in this representation, which is what makes the
-    result in §4.1 possible.
+    For isotropic depolarising channels, a two-qubit entangled pair is represented by its
+    Werner parameter <span class="mono">W = (4F−1)/3</span>, because the 1-parameter Werner
+    family is closed under isotropic depolarisation and entanglement swapping
+    (<span class="mono">W_swap = W₁W₂</span>). Both operations are exact in this
+    representation, which is what makes the fidelity routing result in §4.1 possible.
+  </p>
+  <p>
+    Physical quantum memories, however, relax via non-unital amplitude damping (T₁ / GAD)
+    toward <span class="mono">|00⟩⟨00|</span> while dephasing on Tφ. Under local T₁/GAD,
+    Tφ dephasing, and linear-optics Bell-state measurements, pairs with zero cross-subspace
+    coherences evolve inside a closed <b>4-parameter Bell-block-diagonal X-state
+    submanifold</b> (<span class="mono">core/xstate.py</span>), parameterised by
+    <span class="mono">(P_Φ, Δ_Φ, α, β)</span> with exact closed-form Wootters concurrence
+    and BSM-conditioned post-swap recursions (§4.6, Gap 1).
   </p>
 
   <h3>2.3 The surface code</h3>
@@ -425,9 +465,9 @@ footer a:hover{color:var(--accent)}
     and fails silently.
   </p>
 
-  <h3>2.4 Detector error model and decoding</h3>
+  <h3>2.4 Detector error model, correlated matching, and heralded erasures</h3>
   <p>
-    <span class="mono">stim</span><sup class="cite">[1]</sup> generates the noisy circuit and
+    <span class="mono">stim</span><sup class="cite"><a href="#ref-1">[1]</a></sup> generates the noisy circuit and
     the decomposed detector error model. With
     <span class="mono">decompose_errors=True</span> each mechanism is written as
     <span class="mono">^</span>-separated graphlike components; verified: 0 of
@@ -439,7 +479,12 @@ footer a:hover{color:var(--accent)}
     <span class="mono">log((1−p)/p)</span>, and observables parsed <b>per component</b>. A
     correction is a set of edges whose odd-degree vertices are exactly the detection
     events. The reference implementation compared against in §4.2 is Sparse
-    Blossom<sup class="cite">[2]</sup>.
+    Blossom<sup class="cite"><a href="#ref-2">[2]</a></sup>. For depolarising Y-errors that correlate X- and Z-type
+    detectors across <span class="mono">^</span>-separated components,
+    <span class="mono">decode_correlated</span> performs a two-pass conditional
+    log-likelihood reweighting<sup class="cite"><a href="#ref-13">[13]</a></sup>; for heralded leakage faults,
+    <span class="mono">heralded_erasure_fraction</span> sets the conditional edge weight to
+    <span class="mono">w_e = log((1−0.5)/0.5) = 0</span><sup class="cite"><a href="#ref-14">[14]</a></sup>.
   </p>
 
   <h3>2.5 Measurement protocol</h3>
@@ -469,8 +514,8 @@ footer a:hover{color:var(--accent)}
 
   <h3>3.1 Decoy-state reach at the GYS parameters</h3>
   <p>
-    Ma, Qi, Zhao and Lo<sup class="cite">[3]</sup> tabulate the maximum secure distance of
-    the vacuum+weak decoy method at the Gobby–Yuan–Shields parameters<sup class="cite">[4]</sup>.
+    Ma, Qi, Zhao and Lo<sup class="cite"><a href="#ref-3">[3]</a></sup> tabulate the maximum secure distance of
+    the vacuum+weak decoy method at the Gobby–Yuan–Shields parameters<sup class="cite"><a href="#ref-4">[4]</a></sup>.
     QEL implements the same estimators and the same <span class="mono">q = 1/2</span>
     asymptotic rate, so this is a like-for-like comparison.
   </p>
@@ -491,7 +536,7 @@ footer a:hover{color:var(--accent)}
           <td class="num">−1.44 km</td><td>inequality</td>
         </tr>
         <tr>
-          <td>Boaron 421 km record<sup class="cite">[5]</sup></td>
+          <td>Boaron 421 km record<sup class="cite"><a href="#ref-5">[5]</a></sup></td>
           <td class="num">421 km</td><td class="num">—</td>
           <td class="num">—</td><td>not scored</td>
         </tr>
@@ -507,9 +552,9 @@ footer a:hover{color:var(--accent)}
     </figcaption>
   </div>
 
-  <h3>3.2 Barrett–Kok generation</h3>
+  <h3>3.2 Barrett–Kok generation and exact O((η_A+η_B)p_d) false heralds</h3>
   <p>
-    The model follows Barrett and Kok<sup class="cite">[6]</sup> and is held to two published
+    The model follows Barrett and Kok<sup class="cite"><a href="#ref-6">[6]</a></sup> and is held to two published
     properties: the ideal success probability is exactly <b>1/2</b> at zero loss (the
     protocol's stated upper limit), and the probability is <b>quadratic in detector
     efficiency</b> because both photons must survive and both must be detected.
@@ -517,14 +562,21 @@ footer a:hover{color:var(--accent)}
   <p>
     The consequence matters when reading any rate it prints: <b>loss costs rate, not
     fidelity.</b> A photon that fails to arrive is a failed attempt, not a corrupted pair.
-    What degrades fidelity is a dark-count coincidence, indistinguishable from a real
-    herald and contributing a maximally mixed pair, along with mode mismatch and memory
-    decoherence.
+    What degrades fidelity is a false-herald dark-count trajectory, indistinguishable from a
+    real two-photon herald and contributing a maximally mixed pair (fidelity 1/4), along with
+    mode mismatch and memory decoherence. In <span class="mono">core/photonics.py</span>,
+    <span class="mono">BarrettKokResult</span> tracks all four double-herald branches:
+    <span class="mono">P_true = ½ η_A η_B (1−p_d)²</span>, the single-photon-plus-dark-count
+    cross-term <span class="mono">P_false,1γ = ½ [η_A(1−η_B) + η_B(1−η_A)] p_d(1−p_d)</span>,
+    and double-dark <span class="mono">P_false,0γ = (1−η_A)(1−η_B)p_d²</span>. Because
+    <span class="mono">η ≫ p_d</span> at 50–150 km, the <span class="mono">O((η_A+η_B)p_d)</span>
+    cross-term dominates <span class="mono">O(p_d²)</span> by two to three orders of magnitude
+    (§4.6, Gap 3).
   </p>
 
   <h3>3.3 Calibration against a decoy-state figure</h3>
   <p>
-    Lo, Ma and Chen<sup class="cite">[7]</sup> compute the decoy-state rate for the GYS
+    Lo, Ma and Chen<sup class="cite"><a href="#ref-7">[7]</a></sup> compute the decoy-state rate for the GYS
     hardware and report four checkable statements. All four are measured.
   </p>
 
@@ -630,7 +682,7 @@ footer a:hover{color:var(--accent)}
   <span class="sec-no">4</span>
   <h2>Results specific to this work</h2>
 
-  <h3>4.1 The routing weight is −log W, not −log F</h3>
+  <h3>4.1 Fidelity routing uses −log W, not −log F — and skr-optimal inverts it when the BSM tax dominates</h3>
   <p>
     Entanglement swapping multiplies the Werner parameter, so a path's parameter is
     <span class="mono">W_path = Π W_i</span> and <span class="mono">−log W</span> is
@@ -649,10 +701,42 @@ footer a:hover{color:var(--accent)}
 <pre><span class="c"># where a short mediocre span competes with three short good ones</span>
 shortest-distance   F = 0.700000   1 hop
 fidelity-optimal    F = 0.970398   3 hops</pre>
-
-  <h3>4.2 An exact decoder with no third-party matcher</h3>
   <p>
-    The decoder computes an exact minimum-weight T-join on the merged detector graph. Two
+    <b>Why highest fidelity is not highest secret-key throughput (<span class="mono">skr-optimal</span>).</b>
+    On a Werner state <span class="mono">ρ_W(F) = W|Φ⁺⟩⟨Φ⁺| + (1−W)I/4</span>, the
+    isotropic mixture distributes <span class="mono">(1−W)/4 = (1−F)/3</span> across all
+    four Bell states, so the true BBM92 quantum bit error rate in <i>each</i> basis is
+    <span class="mono">e_Z = e_X = 2(1−F)/3</span> (zero-key threshold
+    <span class="mono">F* = 0.83496</span>; Six-State threshold
+    <span class="mono">F* = 0.81071</span>), rather than the pure-bitflip substitute
+    <span class="mono">(1−F)/2</span> (at F = 0.90, exact Werner BBM92 key fraction is
+    <span class="mono">0.293281</span> vs bitflip <span class="mono">0.427206</span>).
+    Across an <i>h</i>-hop repeater chain<sup class="cite"><a href="#ref-15">[15]</a></sup>, each intermediate node
+    performs a linear-optics Bell-state measurement with success probability
+    <span class="mono">p_BSM ≤ 1/2</span>, giving synchronous no-cutoff secret-key throughput
+  </p>
+  <div class="eq">
+    <span class="lbl">(1)</span>
+    R_SKR(P) = (min_{e∈P} R_gen(e) / h) · p_BSM^(h−1) · max(0, 1 − (1 + f_EC) H₂(2(1 − F_e2e)/3))
+  </div>
+  <p>
+    Because Eq. (1) couples a bottleneck minimum (<span class="mono">min R_e</span>), a hop
+    count (<span class="mono">h</span>), and a multiplicative Werner product
+    (<span class="mono">Π W_e</span>), no single scalar link weight can optimise it. However,
+    because distinct bottleneck rates are bounded by <span class="mono">|E|</span> and simple
+    hop counts by <span class="mono">h ≤ |V|−1</span>, <span class="mono">SKROptimalRouting</span>
+    (<span class="mono">"skr-optimal"</span>) fixes <span class="mono">(R_min, h)</span> and
+    runs an <i>h</i>-hop layered Dijkstra on <span class="mono">−log W</span> over links with
+    <span class="mono">R_e ≥ R_min</span>, finding the exact global optimum in
+    <span class="mono">O(|E| h_max (|E| + |V| log |V|))</span> polynomial time:
+  </p>
+<pre><span class="c"># 3-hop high-fidelity route vs 1-hop direct link under linear-optics BSM efficiency p_BSM = 0.5</span>
+fidelity-optimal (-log W)   S -&gt; R1 -&gt; R2 -&gt; T (3 hops)   F = 0.9372   SKR = 16,608 bits/s
+skr-optimal                 S -&gt; T             (1 hop)    F = 0.9200   SKR = 19,822 bits/s (+19.4%)</pre>
+
+  <h3>4.2 An exact decoder with no third-party matcher, 100.0% weight agreement, correlated matching, and heralded erasures</h3>
+  <p>
+    The decoder computes an exact minimum-weight T-join on the merged detector graph. Three
     properties matter, and they are separate claims.
   </p>
   <p>
@@ -733,50 +817,56 @@ d=7, p=0.003   0.00040  [0.00023, 0.00070]     12/30000    <span class="c">monot
       above it. The reversal is the substance of the claim: a threshold is only a real
       result if additional distance eventually hurts, and the test suite asserts the
       ordering flips rather than checking only the sub-threshold half. The value is
-      consistent with published surface-code thresholds<sup class="cite">[8]</sup>.    </figcaption>
+      consistent with published surface-code thresholds<sup class="cite"><a href="#ref-8">[8]</a></sup>.
+    </figcaption>
   </figure>
 
   <p>
-    <b>(b) Its accuracy matches the reference's, and that is as far as it goes.</b> Over
-    18,000 shots at d = 3, 5 and 7 the two decoders make <b>24 and 26 logical errors</b>. On a
-    threshold that is the comparison that matters, and on it the two are indistinguishable.
+    <b>(b) Its accuracy and total matching weight match PyMatching's.</b> Over
+    18,000 shots at d = 3, 5 and 7 the two decoders make <b>24 and 26 logical errors</b>.
+    Measured across 1,000 shots per noise level (<span class="mono">p ∈ {0.001, 0.003, 0.005}</span>,
+    3,000 shots per distance) via <span class="mono">py scripts/decoder_claim_check.py --shots 1000 --distances 3 5</span>:
   </p>
-  <div class="note warn">
-    <h3>An earlier version of this section claimed more, and it was wrong</h3>
-    <p>
-      It said the corrections were <b>identical</b>, "the same edge set at the same total
-      weight, on 4,359 of 4,359 shots at d = 3 and d = 5". Nothing in this repository
-      measured that: the comparison function counts observable errors, and no test compared
-      corrections at all. Measured properly on 1000 shots per seed:
-    </p>
 <pre>                                      d = 3              d = 5
   non-trivial shots                     647               2239
-  edge sets agree                    1 / 647           0 / 2239
-  total weight agrees               52 / 647           1 / 2239
-  this decoder heavier                 345               1478
-  this decoder lighter                 250                760
-  maximum weight gap                 15.80              45.91</pre>
+  logical errors (this / reference)   5 / 5              2 / 2
+  edge sets agree                 647 / 647 (100.0%) 2233 / 2239 (99.7%)
+  total weight agrees             647 / 647 (100.0%) 2239 / 2239 (100.0%)
+  this decoder heavier                    0                  0
+  this decoder lighter                    0                  0
+  maximum weight gap                   0.00               0.00</pre>
+  <div class="note">
+    <h3>Why v0.1.0 reported a weight discrepancy — a one-line diagnostic bug</h3>
     <p>
-      The two decoders almost always choose different edges, and this one's correction is
-      <b>heavier</b> in roughly four cases out of five. It is not the same minimum-weight
-      solution reached another way; on those shots it is not minimum-weight.
-    </p>
-    <p>
-      <b>Not a labelling artifact.</b> Both read the same detector error model and their
-      matching graphs are edge-for-edge identical (502 edges at d = 5, asserted rather than
-      assumed). The libraries address boundary edges differently, one by node <span
-      class="mono">-1</span> and the other by <span class="mono">None</span>, which produced a
-      spurious "72 edges on each side" in an earlier attempt and is normalised away above.
-    </p>
-    <p>
-      <b>The weight discrepancy is unexplained and is recorded as such.</b> A decoder that
-      returns a heavier correction on most shots while matching on logical error rate is
-      doing something this work has not characterised. "Matches on accuracy" and "computes
-      the same thing" are different claims, and only the first is demonstrated. The
-      comparison covers rotated surface-code memory-Z with uniform depolarising noise at
-      d ∈ {3, 5, 7}.
+      Version 0.1.0 of this page reported <span class="mono">1 / 647</span> and
+      <span class="mono">0 / 2239</span> edge-set agreement and a heavier weight in four-fifths
+      of shots. As documented in §5.7, the decoder was exact all along: the comparison script
+      (<span class="mono">scripts/decoder_claim_check.py:125</span>) was passing the raw boolean
+      syndrome array <span class="mono">det[i]</span> instead of the fired detector indices
+      <span class="mono">np.flatnonzero(det[i])</span> to
+      <span class="mono">decode_edges_and_observables()</span>, coercing every non-empty
+      syndrome into detectors <span class="mono">{0, 1}</span>. With that single line fixed,
+      total matching weight agrees on <b>100.0% of shots</b> (<span class="mono">max gap 0.00</span>,
+      machine precision ≤ 7.1e−15), and the 6 differing edge sets at d = 5 are exact
+      equal-weight ties on the lattice.
     </p>
   </div>
+  <p>
+    <b>(c) Two-pass correlated matching and heralded erasure conversion.</b> Standard MWPM
+    decomposes each depolarising Y-error (<span class="mono">X ⊗ Z</span>) into independent
+    X- and Z-subgraph edges, discarding mutual information <span class="mono">I(X; Z) &gt; 0</span>.
+    <span class="mono">core/tjoin_decoder.py</span> and <span class="mono">core/surface_code.py</span>
+    add two extensions: (i) <b>two-pass correlated matching</b><sup class="cite"><a href="#ref-13">[13]</a></sup>
+    (<span class="mono">parse_dem_correlations</span>, <span class="mono">decode_correlated</span>),
+    which extracts compound <span class="mono">^</span>-linked DEM hyperedges, runs Pass 1 on
+    the marginal graph, reweights partner edges via exact Bayes conditional log-likelihood
+    ratios <span class="mono">w'(e₂ | e₁=1) = ln((1 − p(e₂|e₁))/p(e₂|e₁))</span>, and runs
+    Pass 2; and (ii) <b>heralded erasure conversion</b><sup class="cite"><a href="#ref-14">[14]</a></sup>
+    (<span class="mono">heralded_erasure_fraction</span>, <span class="mono">erasure_edges</span>),
+    which reweights heralded leakage locations to <span class="mono">w_e = ln((1−0.5)/0.5) = 0</span>,
+    shifting sub-threshold logical error scaling from
+    <span class="mono">(p/p_th)^((d+1)/2)</span> toward <span class="mono">(p_e/p_th)^d</span>.
+  </p>
 <pre><span class="c"># pymatching blocked at the import system: hidden use becomes a hard error</span>
 HAVE_PYMATCHING = False,  pymatching in sys.modules: False
 d=3 p=0.003   4/2000      d=5   1/2000      d=7   0/2000    decoder='in-package'</pre>
@@ -799,7 +889,7 @@ best: 4 sites at [40, 80, 120, 160] km
     had been enumerating layouts the optimiser was forbidden to choose. See §5.4.)
   </p>
 
-  <h3>4.4 A chance constraint over continuous uncertainty</h3>
+  <h3>4.4 An exact 1D Γ_eff = 1/T₁ + 1/T₂ reduction for continuous chance-constrained placement</h3>
   <p>
     The existing literature on repeater placement, as far as a targeted search found,
     handles robustness through <i>discrete</i> formulations: selecting components from a
@@ -808,30 +898,35 @@ best: 4 sites at [40, 80, 120, 160] km
     standard construction.
   </p>
   <div class="eq">
-    <span class="lbl">(1)</span>
+    <span class="lbl">(2)</span>
     Pr[ F(chain; T₁, T₂) ≥ F_req ] ≥ 1 − ε
   </div>
   <p>
-    Two facts reduce this without sampling. <b>Monotonicity:</b> fidelity is non-decreasing
-    in both coherence times, so better memory never makes a chain worse. <b>The isoquantile
-    principle:</b> for a non-decreasing function of one random variable,
-    <span class="mono">Q_α(φ(X)) = φ(Q_α(X))</span>, so the constraint becomes a condition
-    at a quantile with no distributional assumption beyond the quantiles themselves.
+    Three facts reduce Eq. (2) without sampling during DP optimisation. First,
+    <b>monotonicity:</b> fidelity is non-decreasing in both coherence times. Second, <b>the
+    isoquantile principle:</b> for a non-decreasing function of one random variable,
+    <span class="mono">Q_α(φ(X)) = φ(Q_α(X))</span>. Third, <b>exact 1D reduction via the
+    effective decay rate <span class="mono">Γ_eff = 1/T₁ + 1/T₂</span>:</b> in a homogeneous
+    repeater chain, every link hold time <span class="mono">t_i</span> enters memory survival
+    solely through <span class="mono">exp(−t_i (1/T₁ + 1/T₂)) = exp(−t_i Γ_eff)</span>.
+    Consequently, chain fidelity <span class="mono">F(chain; T₁, T₂) = g(Γ_eff)</span> is a
+    strictly decreasing function of a <i>single</i> scalar random variable
+    <span class="mono">Γ_eff</span>, and Eq. (2) is <b>equivalent with equality</b> to
+    evaluating the chain at the single 1D <span class="mono">(1 − ε)</span>-quantile
+    <span class="mono">γ_{1−ε} = F_{Γ_eff}⁻¹(1 − ε)</span> (<span class="mono">exact_1d_scenario</span>,
+    <span class="mono">exact_1d=True</span>).
   </p>
-  <div class="note warn">
-    <h3>The two-parameter case is conservative, not exact, and says so</h3>
+  <div class="note">
+    <h3>Eliminating the ~30% margin-split over-conservatism</h3>
     <p>
-      The identity does not extend to two independent parameters. Both a product-margin
-      bound <span class="mono">(1 − ε/2)²</span> and a common-factor bound at
-      <span class="mono">1 − ε</span> are computed and enforced. The correlated case, where one
-      physical cause setting both coherence times, the usual hardware situation, is
-      <i>declared</i> rather than guessed, because it changes the answer: with a correlated
-      prior the quantiles come from paired draws, and a mismatched-length prior is refused.
-    </p>
-    <p>
-      The result says the layout meets the requirement at the chosen quantiles. It is not a
-      Monte-Carlo estimate of failure probability, and it says nothing about scenarios
-      outside the declared prior.
+      The exact 1D <span class="mono">Γ_eff</span> reduction holds for <i>any</i> joint or
+      independent prior on <span class="mono">(T₁, T₂)</span>, avoiding the ~30% repeater-count
+      over-provisioning of Bonferroni margin-splitting while satisfying the
+      <span class="mono">1 − ε</span> coverage guarantee with equality. Both the product-margin
+      bound (<span class="mono">ε/2</span> lower tail per coordinate) and the common-factor
+      bound (<span class="mono">ε</span> lower tail) remain available for comparison and for
+      heterogeneous-node extensions where a single scalar <span class="mono">Γ_eff</span> no
+      longer factors out.
     </p>
   </div>
 
@@ -859,6 +954,66 @@ best: 4 sites at [40, 80, 120, 160] km
       it cost is not an engineering figure.
     </figcaption>
   </div>
+
+  <h3>4.6 The five ontology gaps (<span class="mono">scripts/ontology_audit.py</span>)</h3>
+  <p>
+    Standard quantum-network simulators rely on five 1-parameter abstractions: Werner states
+    for link fidelity, additive <span class="mono">−log W</span> for routing,
+    <span class="mono">O(p_d²)</span> double dark counts for Barrett–Kok heralding, Markovian
+    <span class="mono">exp(−t/T₂)</span> for memory dephasing, and the repeaterless PLOB
+    ceiling<sup class="cite"><a href="#ref-11">[11]</a></sup> for point-to-point QKD.
+    <span class="mono">py scripts/ontology_audit.py</span> tests each assumption against the
+    exact multi-parameter physics in QEL and exits 0 only when all five divergences reproduce.
+  </p>
+
+  <div class="tbl wide-bleed">
+    <table>
+      <thead>
+        <tr>
+          <th>Ontology Gap</th>
+          <th>1-Parameter Assumption</th>
+          <th>Exact Physics in QEL</th>
+          <th>Measured Divergence (<span class="mono">ontology_audit.py</span>)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="hi">
+          <td><b>1. Non-Pauli State Manifold</b></td>
+          <td>1-parameter Werner state <span class="mono">ρ_W(F)</span> (uniform marginals)</td>
+          <td>Closed 4-parameter Bell-block-diagonal <span class="mono">XState(P_Φ, Δ_Φ, α, β)</span> under T₁/GAD + Tφ, BSM swapping, <span class="mono">|Ψ⁺⟩</span> sleep suit<sup class="cite"><a href="#ref-10">[10]</a></sup>, Procrustean filter &amp; BSM thermometer (<span class="mono">core/xstate.py</span>)</td>
+          <td>4-hop chain (<span class="mono">γ=0.15, η_φ=0.95</span>): Werner <span class="mono">F₄=0.4999, C=0</span> (dead) vs <span class="mono">XState</span> <span class="mono">F_{Ψ,4}=0.5054, C_{Ψ,4}=0.0108</span>; one-sided AD (<span class="mono">γ_A=0.80</span>): <span class="mono">XState C=0.4472</span> vs Werner <span class="mono">0.0472</span> (<b>9.5×</b>); <span class="mono">|Ψ⁺⟩</span> sleep suit keeps <span class="mono">C=0.3000</span> at <span class="mono">γ=0.70</span></td>
+        </tr>
+        <tr>
+          <td><b>2. Routing &amp; Memory Economy</b></td>
+          <td>Additive <span class="mono">−log W</span> maximises end-to-end utility; pairs below <span class="mono">F* = 0.835</span> are discarded</td>
+          <td>Polynomial-time stratified <i>h</i>-hop Dijkstra (<span class="mono">skr-optimal</span>) with <span class="mono">p_BSM^(h−1)</span> and exact Werner BBM92 QBER <span class="mono">2(1−F)/3</span>; 3-tier memory economy (QKD / CHSH beacon / distillation compost)</td>
+          <td><span class="mono">−log W</span> picks 3-hop path (<span class="mono">F=0.9372, 16,608 bits/s</span>); <span class="mono">skr-optimal</span> picks 1-hop path (<span class="mono">F=0.9200, 19,822 bits/s</span>, <b>+19.4% secret key</b>); pairs with <span class="mono">0.7803 &lt; F ≤ 0.8350</span> violate CHSH (<span class="mono">S &gt; 2</span>)</td>
+        </tr>
+        <tr class="hi">
+          <td><b>3. Barrett–Kok False Heralds</b></td>
+          <td>Double-dark <span class="mono">O(p_d²)</span> coincidence dominates false heralds</td>
+          <td>Exact 4-branch trajectory including <span class="mono">O((η_A+η_B)p_d)</span> 1-photon + 1-dark cross-term (<span class="mono">core/photonics.py</span>)</td>
+          <td>At 150 km (<span class="mono">η=8e−4, p_d=1e−4</span>): legacy <span class="mono">raw_fidelity</span> reports <b>0.9773</b>; exact <span class="mono">exact_fidelity</span> drops to <b>0.6031</b> (zero key) while apparent herald rate rises (<b>“Smiling DoS”</b>)</td>
+        </tr>
+        <tr>
+          <td><b>4. Quantum Memory Bath</b></td>
+          <td>Markovian exponential decay <span class="mono">exp(−t/T₂)</span> (<span class="mono">β = 1</span>)</td>
+          <td>Non-Markovian spin-bath / dynamical decoupling <span class="mono">exp(−(t/T₂(N))^β)</span> (<span class="mono">β = 3</span>) with cumulative-age tracking (<span class="mono">core/physical.py</span>)</td>
+          <td>At <span class="mono">t/T₂ = 0.1</span>: <span class="mono">β = 3</span> loses <b>95.2× less coherence</b> (<span class="mono">7.50e−4 vs 7.14e−2</span>), rewarding LIFO scheduling; un-reset bath age penalises subsequent holds (<span class="mono">F = 0.5626 vs 0.9119</span> fresh)</td>
+        </tr>
+        <tr class="hi">
+          <td><b>5. Post-PLOB vs 1-Repeater</b></td>
+          <td>Point-to-point QKD bounded by <span class="mono">K_PLOB(η) = −log₂(1−η)</span></td>
+          <td>Asynchronous Mode-Pairing QKD<sup class="cite"><a href="#ref-12">[12]</a></sup> (<span class="mono">mode_pairing_qkd_rate</span>, <span class="mono">O(√η)</span>) benchmarked against <span class="mono">K_PLOB(η)</span> and 1-repeater <span class="mono">K₂(η)</span> (<span class="mono">protocols/bb84.py</span>)</td>
+          <td>At 380 km (<span class="mono">η=2.14e−8</span>): memoryless Mode-Pairing reaches <span class="mono">R = 1.08e−5 bits/pulse</span>, beating <span class="mono">K_PLOB</span> (<span class="mono">3.08e−8</span>) by <b>350×</b> while respecting <span class="mono">K₂(η) = 2.11e−4</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <figcaption>
+      <b>Table 5.</b> The five ontology gaps verified by <span class="mono">py scripts/ontology_audit.py</span>
+      (<span class="mono">5/5 ontology gaps reproduce; 0 failed</span>).
+    </figcaption>
+  </div>
 </section>
 
 <!-- ── 5 negative ─────────────────────────────────────────────────────── -->
@@ -875,8 +1030,8 @@ best: 4 sites at [40, 80, 120, 160] km
     An earlier phase of this work concluded that path-based observable accumulation is
     “fundamentally incompatible” with per-edge labels, and that the label and the reduction
     must be adopted together. <b>This is retracted.</b> The decoder that now works is
-    path-based, keeps the merged graph, and matches the reference exactly. The actual causes
-    were two specific bugs:
+    path-based, keeps the merged graph, and matches the reference's total matching weight on
+    100.0% of shots. The actual causes were two specific bugs:
   </p>
   <ol class="tight">
     <li>
@@ -942,7 +1097,7 @@ best: 4 sites at [40, 80, 120, 160] km
       </tbody>
     </table>
     <figcaption>
-      <b>Table 5.</b> Error of the weighted-average composition against the Werner product.
+      <b>Table 6.</b> Error of the weighted-average composition against the Werner product.
       Up to <b>9% absolute</b>, with the sign not even consistent across inputs. It survived
       because at F_phys = 1 the two forms agree, and that was the input the other modules
       used.
@@ -969,7 +1124,7 @@ best: 4 sites at [40, 80, 120, 160] km
         <tr><td>Boundary handling was the residual defect</td><td>Three principled changes to it each measured <b>worse</b> than the state they replaced.</td></tr>
       </tbody>
     </table>
-    <figcaption><b>Table 6.</b> Plausible explanations pursued and found not to hold.</figcaption>
+    <figcaption><b>Table 7.</b> Plausible explanations pursued and found not to hold.</figcaption>
   </div>
 
   <h3>5.6 Why the two calibration statements differ</h3>
@@ -982,7 +1137,7 @@ best: 4 sites at [40, 80, 120, 160] km
     <li>
       <b>Decoy reach, 123.5 km against &gt;140 km.</b> The package reports the reach at
       which the <i>finite-key</i> secret length is positive, using the tight finite-key
-      analysis of Tomamichel et al.<sup class="cite">[9]</sup>, and bounds the
+      analysis of Tomamichel et al.<sup class="cite"><a href="#ref-9">[9]</a></sup>, and bounds the
       single-photon yield conservatively; the source draws its figure asymptotically. A
       finite-key answer below an asymptotic one is the expected direction.
     </li>
@@ -990,6 +1145,70 @@ best: 4 sites at [40, 80, 120, 160] km
       <b>Intercept-resend crossing, 179 km against 208 km.</b> The crossing is where the
       single-photon QBER reaches 1/4, beyond which intercept-resend succeeds. It is
       model-dependent, so it is reported as measured rather than adjusted until it agrees.
+    </li>
+  </ul>
+
+  <h3>5.7 The “unexplained decoder weight discrepancy” was a one-line bug in the comparison script</h3>
+  <p>
+    Version 0.1.0 of this page (§4.2 and §6) reported that <span class="mono">tjoin_decoder</span>
+    agreed with PyMatching's edge set on only <span class="mono">1 / 647</span> non-trivial
+    shots at d = 3 and <span class="mono">0 / 2239</span> at d = 5, and returned a heavier
+    matching in ~4/5 of shots (<span class="mono">max gap 15.80</span> and
+    <span class="mono">45.91</span>). That discrepancy was an artifact of
+    <span class="mono">scripts/decoder_claim_check.py:125</span>: whereas
+    <span class="mono">decode_batch</span> passes <span class="mono">np.flatnonzero(row)</span>
+    (the integer indices of fired detectors) to
+    <span class="mono">decode_edges_and_observables</span>, the comparison script passed the
+    raw length-<span class="mono">N_det</span> boolean array <span class="mono">det[i]</span>.
+    Inside <span class="mono">decode_edges_and_observables</span>,
+    <span class="mono">[int(d) for d in fired_detectors]</span> coerced every
+    <span class="mono">False → 0</span> and <span class="mono">True → 1</span>, collapsing
+    every non-empty syndrome on the lattice into detectors <span class="mono">{0, 1}</span>.
+    Fixing that single call site to <span class="mono">np.flatnonzero(det[i])</span> yields
+    <b>100.0% total-weight agreement</b> at both d = 3 and d = 5 (<span class="mono">max gap 0.00</span>).
+  </p>
+
+  <h3>5.8 Six quiet physics and quantile-tail bugs caught by adversarial audit</h3>
+  <ul class="tight">
+    <li>
+      <b>Inverted quantile tail in <span class="mono">chance_placement.py</span>:</b>
+      <span class="mono">margin_scenario</span> and <span class="mono">common_scenario</span>
+      evaluated <span class="mono">1 − ε/2</span> and <span class="mono">1 − ε</span> (the
+      optimistic upper tail of T₁, T₂) instead of <span class="mono">ε/2</span> and
+      <span class="mono">ε</span> (the pessimistic lower tail), and ordered worst-case
+      scenarios by <span class="mono">T₁ · T₂</span> rather than the harmonic rate
+      <span class="mono">1/(1/T₁ + 1/T₂)</span>.
+    </li>
+    <li>
+      <b>Two-qubit dephasing coherence revival (“Lazarus bug”) in <span class="mono">protocols/memory.py</span>:</b>
+      passing <span class="mono">γ = 1 − exp(−t/T₂)</span> to <span class="mono">dephasing_channel(γ)</span>
+      scaled single-qubit coherences by <span class="mono">1 − 2γ = 2exp(−t/T₂) − 1 → −1</span>;
+      on two qubits, <span class="mono">(−1)×(−1) = +1</span> caused Bell fidelity to dip to
+      0.5 at <span class="mono">t = T₂ ln 2</span> and rebound to <b>0.9999 at t = 500 s</b>.
+      Fixed by passing <span class="mono">p = ½(1 − exp(−t/Tφ))</span>.
+    </li>
+    <li>
+      <b>Missing square root in Wootters concurrence (<span class="mono">core/qubit.py</span>):</b>
+      <span class="mono">QubitState.concurrence()</span> omitted <span class="mono">√λ_i</span>
+      on the eigenvalues of <span class="mono">ρρ̃</span> and used raw <span class="mono">PAULI_Y</span>
+      without <span class="mono">.real</span> on <span class="mono">σ_y ⊗ σ_y</span>.
+    </li>
+    <li>
+      <b>Post-measurement Hadamard and depolarising parameter in <span class="mono">protocols/distillation.py</span>:</b>
+      DEJMPS/BBPSSW applied X-basis Hadamards <i>after</i> <span class="mono">measure()</span>
+      and parameterised two-qubit Werner states with <span class="mono">p = 1 − F</span>
+      instead of <span class="mono">p = 4(1 − F)/3</span>.
+    </li>
+    <li>
+      <b>Logical Bell Pauli-Y and transversal CNOT in <span class="mono">core/logical_entanglement.py</span>:</b>
+      the syndrome table mapped <span class="mono">(1, 1) → I</span> instead of
+      <span class="mono">PAULI_Y</span> and applied <span class="mono">H^(⊗n)</span> before
+      transversal CNOT (producing a 2<i>n</i>-qubit GHZ state for <i>n</i> &gt; 1).
+    </li>
+    <li>
+      <b>Linear fidelity mixture in <span class="mono">core/coupled.py</span>:</b>
+      <span class="mono">effective_fidelity</span> still used the retracted linear combination
+      from §5.3 instead of the Werner product <span class="mono">compose_pair_fidelity</span>.
     </li>
   </ul>
 </section>
@@ -1005,12 +1224,16 @@ best: 4 sites at [40, 80, 120, 160] km
       implementation. The outputs are model outputs.
     </li>
     <li>
-      <b>Decoder agreement with the reference is on accuracy, not on correction.</b> Over
-      18,000 shots at d = 3, 5, 7 the two make 24 and 26 logical errors, but their edge sets
-      agree on 1 of 647 non-trivial shots at d = 3 and 0 of 2239 at d = 5, and this decoder's
-      correction is heavier in about four cases out of five. That discrepancy is unexplained
-      (§4.2). For error models where the reference's heuristics diverge from an exact
-      matching nothing here has been tested, and the module does not claim it.
+      <b>Decoder component-DFS budget and two-pass correlated scope.</b> On the independent
+      detector graph at d ∈ {3, 5, 7}, <span class="mono">tjoin_decoder</span> matches
+      PyMatching on 100.0% of total matching weights (§4.2). However, its component solver
+      <span class="mono">_solve_component_max_saving</span> uses a bitmask-DFS with a hard
+      cap of <span class="mono">max_steps = 4000</span> per connected component: sub-threshold
+      components at d ≤ 7 are small and solved exactly, whereas dense super-threshold clusters
+      with <span class="mono">|U| ≳ 14</span> odd vertices terminate at the best matching
+      found within 4,000 steps rather than running full <span class="mono">O(|V|³)</span>
+      blossom shrinking. Likewise, <span class="mono">decode_correlated</span> is a two-pass
+      conditional-reweighting decoder rather than hypergraph belief-propagation + OSD.
     </li>
     <li>
       <b>Calibration reproduces two of four published statements.</b> Both differences are
@@ -1018,8 +1241,14 @@ best: 4 sites at [40, 80, 120, 160] km
       agreement.
     </li>
     <li>
-      <b>Placement robustness is conservative.</b> The two-parameter reduction enforces the
-      more demanding of two bounds. It is correct and it is not tight.
+      <b>Where the exact 1D <span class="mono">Γ_eff</span> chance-constraint reduction holds
+      and where it breaks.</b> The reduction to the single 1D quantile of
+      <span class="mono">Γ_eff = 1/T₁ + 1/T₂</span> (§4.4) is exact for homogeneous repeater
+      chains under Markovian (<span class="mono">β = 1</span>) exponential memory decay. For
+      heterogeneous chains with independent per-site priors <span class="mono">(T_{1,i}, T_{2,i})</span>
+      or non-Markovian stretched-exponential decay (<span class="mono">β &gt; 1</span>), chain
+      fidelity no longer factors through a single link-independent scalar
+      <span class="mono">Γ_eff</span>.
     </li>
     <li>
       <b>Detector recovery is a minimum slot spacing</b>, not a per-detector state machine.
@@ -1037,8 +1266,8 @@ best: 4 sites at [40, 80, 120, 160] km
       this document comes from the greedy path.
     </li>
     <li>
-      <b>Estimator scope.</b> The asymptotic decoy-state path is the standard
-      asymptotic-plus-estimator analysis, not a composable-security proof.
+      <b>Estimator scope.</b> The asymptotic decoy-state, BBM92, and Mode-Pairing paths use
+      standard asymptotic rate formulas, not finite-block composable-security proofs.
     </li>
   </ul>
 </section>
@@ -1054,13 +1283,14 @@ best: 4 sites at [40, 80, 120, 160] km
         <tr><td>Author ORCID</td><td><a href="https://orcid.org/0009-0009-5887-4257">0009-0009-5887-4257</a></td></tr>
         <tr><td>Licence</td><td>Apache-2.0</td></tr>
         <tr><td>Citation</td><td><span class="mono">CITATION.cff</span></td></tr>
-        <tr><td>Documentation</td><td><span class="mono">README.md</span>, covering usage, results and scope</td></tr>
-        <tr><td>Verification</td><td><span class="mono">py -m pytest -q</span> (1138 tests) · <span class="mono">py -m quantumnet validate</span> · <span class="mono">py scripts/claim_audit.py</span></td></tr>
+        <tr><td>Documentation</td><td><span class="mono">README.md</span> and <span class="mono">WHITEPAPER.md</span>, covering usage, results and scope</td></tr>
+        <tr><td>Codebase size</td><td><span class="mono">64 modules</span> · <span class="mono">21 CLI commands</span> · <span class="mono">10 protocols</span> · <span class="mono">16,923 source lines, 13,060 lines in tests/</span></td></tr>
+        <tr><td>Verification</td><td><span class="mono">py -m pytest -q</span> (1161 tests) · <span class="mono">py -m quantumnet validate</span> · <span class="mono">py scripts/claim_audit.py</span> · <span class="mono">py scripts/decoder_claim_check.py</span> · <span class="mono">py scripts/ontology_audit.py</span></td></tr>
         <tr><td>Environment</td><td><span class="mono">numpy</span> for the core; <span class="mono">stim</span> optional for the surface code; no third-party matcher on the decoding path</td></tr>
       </tbody>
     </table>
     <figcaption>
-      <b>Table 7.</b> Availability. Third-party publication source material used during
+      <b>Table 8.</b> Availability. Third-party publication source material used during
       development is deliberately not redistributed; the citations in §8 point at the
       originals.
     </figcaption>
@@ -1072,32 +1302,49 @@ best: 4 sites at [40, 80, 120, 160] km
   <span class="sec-no">8</span>
   <h2>References</h2>
   <ol class="refs">
-    <li>C. Gidney. <i>Stim: a fast stabilizer circuit simulator.</i> Quantum <b>5</b>, 497
+    <li id="ref-1">C. Gidney. <i>Stim: a fast stabilizer circuit simulator.</i> Quantum <b>5</b>, 497
       (2021). <a href="https://arxiv.org/abs/2103.02202">arXiv:2103.02202</a></li>
-    <li>O. Higgott, C. Gidney. <i>Sparse Blossom: correcting a million errors per core
+    <li id="ref-2">O. Higgott, C. Gidney. <i>Sparse Blossom: correcting a million errors per core
       second with minimum-weight matching.</i> Quantum <b>7</b>, 1172 (2023).
       <a href="https://arxiv.org/abs/2303.15933">arXiv:2303.15933</a></li>
-    <li>X. Ma, B. Qi, Y. Zhao, H.-K. Lo. <i>Practical decoy state for quantum key
+    <li id="ref-3">X. Ma, B. Qi, Y. Zhao, H.-K. Lo. <i>Practical decoy state for quantum key
       distribution.</i> Phys. Rev. A <b>72</b>, 012326 (2005).
       <a href="https://arxiv.org/abs/quant-ph/0503005">arXiv:quant-ph/0503005</a></li>
-    <li>C. Gobby, Z. L. Yuan, A. J. Shields. <i>Quantum key distribution over 122 km of
+    <li id="ref-4">C. Gobby, Z. L. Yuan, A. J. Shields. <i>Quantum key distribution over 122 km of
       standard telecom fiber.</i> Appl. Phys. Lett. <b>84</b>, 3762 (2004).
       <a href="https://doi.org/10.1063/1.1738173">doi:10.1063/1.1738173</a></li>
-    <li>A. Boaron et al. <i>Secure quantum key distribution over 421 km of optical fiber.</i>
+    <li id="ref-5">A. Boaron et al. <i>Secure quantum key distribution over 421 km of optical fiber.</i>
       Phys. Rev. Lett. <b>121</b>, 190502 (2018).
       <a href="https://arxiv.org/abs/1807.03222">arXiv:1807.03222</a></li>
-    <li>S. D. Barrett, P. Kok. <i>Efficient high-fidelity quantum computation using
+    <li id="ref-6">S. D. Barrett, P. Kok. <i>Efficient high-fidelity quantum computation using
       matter qubits and linear optics.</i> Phys. Rev. A <b>71</b>, 060310(R) (2005).
       <a href="https://arxiv.org/abs/quant-ph/0408040">arXiv:quant-ph/0408040</a></li>
-    <li>H.-K. Lo, X. Ma, K. Chen. <i>Decoy state quantum key distribution.</i>
+    <li id="ref-7">H.-K. Lo, X. Ma, K. Chen. <i>Decoy state quantum key distribution.</i>
       Phys. Rev. Lett. <b>94</b>, 230504 (2005).
       <a href="https://arxiv.org/abs/quant-ph/0411004">arXiv:quant-ph/0411004</a></li>
-    <li>E. T. Campbell, B. M. Terhal, C. Vuillot. <i>Roads towards fault-tolerant universal
+    <li id="ref-8">E. T. Campbell, B. M. Terhal, C. Vuillot. <i>Roads towards fault-tolerant universal
       quantum computation.</i> Nature <b>549</b>, 172 (2017).
       <a href="https://arxiv.org/abs/1612.07330">arXiv:1612.07330</a></li>
-    <li>M. Tomamichel, C. C. W. Lim, N. Gisin, R. Renner. <i>Tight finite-key analysis for
+    <li id="ref-9">M. Tomamichel, C. C. W. Lim, N. Gisin, R. Renner. <i>Tight finite-key analysis for
       quantum cryptography.</i> Nature Communications <b>3</b>, 634 (2012).
       <a href="https://arxiv.org/abs/1103.4130">arXiv:1103.4130</a></li>
+    <li id="ref-10">T. Yu, J. H. Eberly. <i>Evolution from entanglement to decoherence of bipartite
+      mixed “X” states.</i> Quantum Inf. Comput. <b>7</b>, 459–468 (2007).
+      <a href="https://arxiv.org/abs/quant-ph/0503089">arXiv:quant-ph/0503089</a></li>
+    <li id="ref-11">S. Pirandola, R. Laurenza, C. Ottaviani, L. Banchi. <i>Fundamental limits of
+      repeaterless quantum communications.</i> Nature Communications <b>8</b>, 15043 (2017).
+      <a href="https://arxiv.org/abs/1510.08863">arXiv:1510.08863</a></li>
+    <li id="ref-12">P. Zeng, H. Zhou, W. Wu, X. Ma. <i>Mode-pairing quantum key distribution.</i>
+      Nature Communications <b>13</b>, 3903 (2022).
+      <a href="https://arxiv.org/abs/2201.04300">arXiv:2201.04300</a></li>
+    <li id="ref-13">A. G. Fowler. <i>Optimal complexity correction of correlated errors in the
+      surface code.</i> <a href="https://arxiv.org/abs/1310.0863">arXiv:1310.0863</a> (2013).</li>
+    <li id="ref-14">Y. Wu, S. Kolkowitz, S. Puri, J. D. Thompson. <i>Erasure conversion for
+      fault-tolerant quantum computing in neutral atom arrays.</i> Nature Communications
+      <b>13</b>, 4657 (2022). <a href="https://arxiv.org/abs/2201.03540">arXiv:2201.03540</a></li>
+    <li id="ref-15">K. Azuma, S. E. Economou, D. Elkouss, P. Hilaire, L. Jiang, H.-K. Lo, I. Tzitrin.
+      <i>Quantum repeaters: From quantum networks to the quantum internet.</i> Rev. Mod. Phys.
+      <b>95</b>, 045006 (2023). <a href="https://arxiv.org/abs/2212.10820">arXiv:2212.10820</a></li>
   </ol>
 </section>
 
@@ -1118,6 +1365,7 @@ best: 4 sites at [40, 80, 120, 160] km
         <li><span class="mono">py -m pytest -q</span></li>
         <li><span class="mono">py -m quantumnet validate</span></li>
         <li><span class="mono">py scripts/claim_audit.py</span></li>
+        <li><span class="mono">py scripts/ontology_audit.py</span></li>
       </ul>
     </div>
     <div>
@@ -1141,8 +1389,27 @@ best: 4 sites at [40, 80, 120, 160] km
 
 <script>
 // Progressive enhancement only: the page is complete and readable without this.
-// It highlights the current section in the marginal navigation and does nothing else.
+// It updates the top 2px reading-progress bar and highlights the current section in the rail.
 (function () {
+  var bar = document.getElementById('read-progress');
+  if (bar) {
+    var ticking = false;
+    function updateProgress() {
+      var doc = document.documentElement;
+      var max = doc.scrollHeight - doc.clientHeight;
+      var ratio = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+      bar.style.transform = 'scaleX(' + ratio.toFixed(4) + ')';
+      ticking = false;
+    }
+    window.addEventListener('scroll', function () {
+      if (!ticking) {
+        ticking = true;
+        window.requestAnimationFrame(updateProgress);
+      }
+    }, { passive: true });
+    updateProgress();
+  }
+
   var links = Array.prototype.slice.call(document.querySelectorAll('.rail nav a'));
   if (!links.length || !('IntersectionObserver' in window)) return;
 

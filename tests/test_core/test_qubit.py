@@ -1,5 +1,7 @@
 import numpy as np
+import pytest
 from quantumnet.core import QubitState
+from quantumnet.core.noise import depolarizing_channel_2
 
 
 def test_zero_state():
@@ -56,3 +58,13 @@ def test_concurrence():
 
     mixed = QubitState.maximally_mixed(2)
     assert np.isclose(mixed.concurrence(), 0.0)
+
+
+def test_concurrence_werner_states():
+    bell = QubitState.bell_phi_plus()
+    werner_sep = depolarizing_channel_2((4.0 / 3.0) * (1.0 - 0.5)).apply(bell)
+    assert werner_sep.concurrence() == pytest.approx(0.0, abs=1e-12)
+
+    f = 0.7
+    werner_ent = depolarizing_channel_2((4.0 / 3.0) * (1.0 - f)).apply(bell)
+    assert werner_ent.concurrence() == pytest.approx(2.0 * f - 1.0)

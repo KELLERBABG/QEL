@@ -42,6 +42,8 @@ import math
 from dataclasses import dataclass, field
 from typing import Callable
 
+import numpy as np
+
 from .graph import QuantumTopology
 from .routing import Route, optimal_swap_order
 
@@ -264,6 +266,129 @@ def register_routing(name: str, strategy: type[RoutingStrategy] | None = None):
     return _register(strategy) if strategy is not None else _register
 
 
+def path_secret_key_rate(
+    topology: QuantumTopology,
+    path: list[str],
+    *,
+    p_bsm: float = 0.5,
+    swap_fidelity: float = 1.0,
+    t_swap_s: float = 0.0,
+    serial_sharing: bool = True,
+    qber_model: str = "werner",
+) -> dict:
+    """Compute exact end-to-end Secret Key Rate (bps) along `path`."""
+    from .placement import key_fraction
+
+    if len(path) < 2:
+        return {"skr_hz": 0.0, "e2e_fidelity": 0.0, "e2e_rate_hz": 0.0, "hops": 0}
+    h = len(path) - 1
+    rates: list[float] = []
+    w_prod = 1.0
+    for a, b in zip(path, path[1:]):
+        link = topology.link(a, b)
+        if link is None:
+            return {"skr_hz": 0.0, "e2e_fidelity": 0.0, "e2e_rate_hz": 0.0, "hops": h}
+        rates.append(float(link.generation_rate()))
+        w_e = max(0.0, (4.0 * float(link.fidelity()) - 1.0) / 3.0)
+        if t_swap_s > 0.0:
+            node_a = topology.nodes[a]
+            gamma = (0.0 if node_a.t1_s <= 0 else 1.0 / node_a.t1_s) + (
+                0.0 if node_a.t2_s <= 0 else 1.0 / node_a.t2_s
+            )
+            w_e *= float(np.exp(-gamma * t_swap_s))
+        w_prod *= w_e
+
+    w_swap = max(0.0, (4.0 * float(swap_fidelity) - 1.0) / 3.0)
+    w_e2e = w_prod * (w_swap ** (h - 1))
+    f_e2e = (1.0 + 3.0 * w_e2e) / 4.0
+    bottleneck = min(rates)
+    sync_rate = (bottleneck / h) if serial_sharing else bottleneck
+    e2e_rate = sync_rate * (float(p_bsm) ** (h - 1))
+    kf = key_fraction(f_e2e, qber_model=qber_model)
+    return {
+        "skr_hz": float(e2e_rate * kf),
+        "e2e_fidelity": float(f_e2e),
+        "e2e_rate_hz": float(e2e_rate),
+        "key_fraction": float(kf),
+        "hops": h,
+    }
+
+
+@dataclass
+class SKROptimalRouting(RoutingStrategy):
+    """Exact polynomial-time Secret-Key-Rate-Optimal Routing (08 §3.3 Formulation A).
+
+    Stratifies over distinct link generation rates R_(q) and runs an h_max-layered
+    Bellman-Ford / shortest-path DP on -log(W_e) to find the global SKR-optimal simple path.
+    """
+
+    name: str = "skr-optimal"
+    p_bsm: float = 0.5
+    swap_fidelity: float = 1.0
+    t_swap_s: float = 0.0
+    max_hops: int = 8
+    serial_sharing: bool = True
+    qber_model: str = "werner"
+
+    def _select(self, topology: QuantumTopology, src: str, dst: str) -> list[str] | None:
+        if src not in topology.nodes or dst not in topology.nodes or src == dst:
+            return None
+        distinct_rates = sorted({float(l.generation_rate()) for l in topology.links.values() if l.generation_rate() > 0})
+        if not distinct_rates:
+            return None
+
+        h_limit = min(self.max_hops, max(1, len(topology.nodes) - 1))
+        best_path: list[str] | None = None
+        best_Tuple: tuple[float, float] = (-1.0, -1.0)  # (skr_hz, e2e_fidelity)
+
+        for r_min in distinct_rates:
+            # dp[h][node] = (min_cost, path_list)
+            dp: list[dict[str, tuple[float, list[str]]]] = [{} for _ in range(h_limit + 1)]
+            dp[0][src] = (0.0, [src])
+            for h in range(1, h_limit + 1):
+                prev_layer = dp[h - 1]
+                if not prev_layer:
+                    break
+                cur_layer = dp[h]
+                for u, (cost_u, path_u) in prev_layer.items():
+                    for v in topology.neighbors(u):
+                        if v in path_u:
+                            continue
+                        link = topology.link(u, v)
+                        if link is None or link.generation_rate() + 1e-12 < r_min:
+                            continue
+                        step = fidelity_weight(link)
+                        if not math.isfinite(step):
+                            continue
+                        if self.t_swap_s > 0.0:
+                            na = topology.nodes[u]
+                            gamma = (0.0 if na.t1_s <= 0 else 1.0 / na.t1_s) + (
+                                0.0 if na.t2_s <= 0 else 1.0 / na.t2_s
+                            )
+                            step += gamma * self.t_swap_s
+                        new_cost = cost_u + step
+                        existing = cur_layer.get(v)
+                        if existing is None or new_cost < existing[0] - 1e-12:
+                            cur_layer[v] = (new_cost, path_u + [v])
+                if dst in cur_layer:
+                    cand_path = cur_layer[dst][1]
+                    info = path_secret_key_rate(
+                        topology,
+                        cand_path,
+                        p_bsm=self.p_bsm,
+                        swap_fidelity=self.swap_fidelity,
+                        t_swap_s=self.t_swap_s,
+                        serial_sharing=self.serial_sharing,
+                        qber_model=self.qber_model,
+                    )
+                    score = (info["skr_hz"], info["e2e_fidelity"])
+                    if score > best_Tuple:
+                        best_Tuple = score
+                        best_path = cand_path
+        return best_path
+
+
+register_routing("skr-optimal", SKROptimalRouting)
 register_routing("fidelity-optimal", FidelityOptimalRouting)
 register_routing("fidelity", FidelityOptimalRouting)
 register_routing("log-w", FidelityOptimalRouting)

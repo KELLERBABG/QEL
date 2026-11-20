@@ -231,21 +231,21 @@ def prepare_logical_bell_pair() -> dict:
     """The deterministic Pauli frame of a logical Bell pair.
 
     ``|Phi+>_L = (|00>_L + |11>_L)/sqrt2`` is prepared from ``|0>_L |0>_L`` by a
-    Hadamard on B followed by a logical CNOT A->B.  As a **frame** this introduces
+    Hadamard on A followed by a logical CNOT A->B.  As a **frame** this introduces
     no Pauli at all: the preparation is deterministic, and the frame records only
     the corrections owed.  What it *does* produce is the pair of logical operators
     that stabilise the state, which is what makes it a Bell pair rather than a
     product state.
     """
-    frame_a = LogicalPauliFrame(PAULI_I, ["init |0>_L on A"])
+    frame_a = LogicalPauliFrame(PAULI_I, ["init |0>_L on A",
+                                          "Hadamard on A (logical)"])
     frame_b = LogicalPauliFrame(PAULI_I, ["init |0>_L on B",
-                                          "Hadamard on B (logical)",
                                           "logical CNOT A->B"])
     # A logical Bell pair is stabilised by X_A X_B and Z_A Z_B.
     return {
         "frames": {"A": frame_a, "B": frame_b},
         "stabilisers": (("X", "A", "X", "B"), ("Z", "A", "Z", "B")),
-        "preparation": "|0>_L|0>_L -> H_B -> CNOT_{A->B}",
+        "preparation": "|0>_L|0>_L -> H_A -> CNOT_{A->B}",
     }
 
 
@@ -255,7 +255,7 @@ BELL_OUTCOME_CORRECTIONS: dict[tuple[int, int], tuple[int, int]] = {
     (0, 0): PAULI_I,
     (0, 1): PAULI_X,
     (1, 0): PAULI_Z,
-    (1, 1): PAULI_Z,      # X then Z; the order is irrelevant up to phase
+    (1, 1): PAULI_Y,      # X then Z; the order is irrelevant up to phase
 }
 
 

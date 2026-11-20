@@ -88,9 +88,31 @@ def fidelity_to_depolarizing_rate(fidelity: float) -> float:
     return float(np.clip(2.0 * (1.0 - fidelity), 0.0, 1.0))
 
 
-def pair_key_fraction(fidelity: float) -> float:
-    """Werner-pair key fraction: `max(0, 1 - 2 h((1-F)/2))`."""
+def pair_key_fraction(fidelity: float, *, qber_model: str = "bitflip") -> float:
+    """Werner-pair key fraction: `max(0, 1 - 2 h((1-F)/2))`.
+
+    ``qber_model`` selects the error-rate law, mirroring
+    :func:`quantumnet.core.logical.pair_key_fraction`: ``"bitflip"`` is the legacy
+    ``qber = (1 - F) / 2``; ``"werner"`` is the exact Werner BBM92 rate
+    ``qber = 2 (1 - F) / 3``; ``"six-state"`` is the Bell-diagonal hashing bound.
+    """
     from ..protocols.bb84 import binary_entropy
+
+    if qber_model == "werner":
+        g = float(np.clip(fidelity, 0.25, 1.0))
+        qber = 2.0 * (1.0 - g) / 3.0
+        if qber >= 0.5:
+            return 0.0
+        return float(max(0.0, min(1.0, 1.0 - 2.0 * binary_entropy(qber))))
+    if qber_model == "six-state":
+        g = float(np.clip(fidelity, 0.25, 1.0))
+        probs = [g, (1.0 - g) / 3.0, (1.0 - g) / 3.0, (1.0 - g) / 3.0]
+        shannon = -sum(p * np.log2(p) for p in probs if p > 0.0)
+        return float(max(0.0, min(1.0, 1.0 - shannon)))
+    if qber_model != "bitflip":
+        raise ValueError(
+            f"qber_model must be 'bitflip', 'werner' or 'six-state', got {qber_model!r}"
+        )
 
     f = float(np.clip(fidelity, 0.0, 1.0))
     return float(max(0.0, 1.0 - 2.0 * binary_entropy((1.0 - f) / 2.0)))
@@ -106,7 +128,7 @@ def coupled_key_rate(physical_fidelity: float, distance: int, noise: float,
     error is a property of the node, and conflating the two would let a good link
     flatter a bad processor.
     """
-    from .logical import logical_error_rate
+    from .logical import compose_pair_fidelity, logical_error_rate
 
     rounds = distance if rounds is None else rounds
     memory = logical_error_rate(distance, noise, rounds=rounds, shots=shots,
@@ -116,9 +138,8 @@ def coupled_key_rate(physical_fidelity: float, distance: int, noise: float,
     # A logical pair held for `rounds` rounds survives only if neither end flips.
     survival = (1.0 - 2.0 * p_round) ** rounds
     pair_error = 1.0 - survival
-    logical_fidelity = (physical_fidelity * survival
-                        + (1.0 - physical_fidelity) * pair_error)
-    logical_fidelity = float(np.clip(logical_fidelity, 0.0, 1.0))
+    logical_fidelity = compose_pair_fidelity(
+        physical_fidelity, 1.0 - pair_error / 2.0, pair_error)
 
     code = RotatedSurfaceCode(distance)
     return BreakEven(

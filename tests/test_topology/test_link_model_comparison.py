@@ -21,6 +21,7 @@ from quantumnet.core.photonics import (
     Detector,
     PhotonicLink,
     BarrettKok,
+    barrett_kok_exact_trajectory,
     compare_link_models,
     elementary_link_from_specs,
     single_photon_attempt_probability,
@@ -126,3 +127,20 @@ def test_a_span_too_long_to_be_useful_reports_underflow_not_a_false_ratio():
     assert comparison["barrett_kok_rate_hz"] == 0.0
     assert comparison["legacy_rate_hz"] > 0.0
     assert comparison["ratio"] is None
+
+
+# ---------------------------------------------------------------------------
+# Exact two-round trajectory: the O((eta_A + eta_B) p_d) cross-term
+# ---------------------------------------------------------------------------
+
+def test_barrett_kok_exact_trajectory_captures_photon_dark_cross_term():
+    # 150 km at 0.2 dB/km (eta = 1e-3 * 0.8 = 8e-4), V = 1.0
+    r1 = barrett_kok_exact_trajectory(8e-4, 8e-4, p_d=1e-5, visibility=1.0)
+    r2 = barrett_kok_exact_trajectory(8e-4, 8e-4, p_d=1e-4, visibility=1.0)
+
+    assert r1["exact_fidelity"] == pytest.approx(0.9311, abs=1e-3)
+    assert r2["exact_fidelity"] == pytest.approx(0.6031, abs=1e-3)
+    # Smiling DoS gate: raising p_d from 1e-5 to 1e-4 INCREASES apparent herald rate
+    # while crashing fidelity below the BBM92 threshold 0.835!
+    assert r2["success_probability"] > r1["success_probability"]
+    assert r1["exact_fidelity"] > 0.835 > r2["exact_fidelity"]

@@ -127,6 +127,10 @@ class PlacementProblem:
     #: ``"sequential"`` fuses the leftmost pair repeatedly. A better order is known to
     #: exist but no efficient construction was found, so this is a reproducible reference.
     fusion_order: str = "sequential"
+    #: Which QBER->key-fraction law ``key_fraction`` uses. ``"bitflip"`` is the legacy
+    #: ``qber = (1 - F) / 2`` model; ``"werner"`` is the exact Werner BBM92 law
+    #: ``qber = 2 (1 - F) / 3``; ``"six-state"`` is the Bell-diagonal hashing bound.
+    qber_model: str = "bitflip"
 
     def __post_init__(self):
         if self.end_b.position_km <= self.end_a.position_km:
@@ -350,7 +354,37 @@ def chain_quality(positions_km: list[float], problem: PlacementProblem,
     return _chain_from_positions(ordered, problem, t1_s, t2_s, memory_wait_s)
 
 
-def key_fraction(fidelity: float, problem: PlacementProblem) -> float:
+def werner_bbm92_key_fraction(fidelity: float, f_ec: float = 1.0) -> float:
+    """Exact asymptotic BBM92 secret-key fraction for a Werner state of fidelity F.
+
+    In a Werner state, lambda_1 = F and lambda_2 = lambda_3 = lambda_4 = (1 - F) / 3.
+    Both Z-basis and X-basis QBER equal lambda_3 + lambda_4 = 2 * (1 - F) / 3.
+    Zero-key cutoff at f_ec=1.0 is F* = 1 - 1.5 * 0.11002786 = 0.8349582.
+    """
+    from ..protocols.bb84 import binary_entropy
+
+    f = float(np.clip(fidelity, 0.25, 1.0))
+    qber = 2.0 * (1.0 - f) / 3.0
+    if qber >= 0.5:
+        return 0.0
+    fraction = 1.0 - (1.0 + float(f_ec)) * binary_entropy(qber)
+    return float(max(0.0, min(1.0, fraction)))
+
+
+def six_state_key_fraction(fidelity: float) -> float:
+    """Exact asymptotic Six-State / Bell-diagonal hashing bound 1 - H(lambda_1..4).
+
+    Exploits X-Z (Y-error) correlation in a Werner state; zero-key cutoff sits at
+    F* = 0.810710 (QBER* = 2*(1-F*)/3 = 0.126193).
+    """
+    f = float(np.clip(fidelity, 0.25, 1.0))
+    probs = [f, (1.0 - f) / 3.0, (1.0 - f) / 3.0, (1.0 - f) / 3.0]
+    shannon = -sum(p * np.log2(p) for p in probs if p > 0.0)
+    return float(max(0.0, min(1.0, 1.0 - shannon)))
+
+
+def key_fraction(fidelity: float, problem: PlacementProblem | None = None, *,
+                 qber_model: str | None = None) -> float:
     """Secret-key bits per delivered pair, for a pair of fidelity ``fidelity``.
 
     This is the standard BBM92/entanglement-based rate for a Werner pair, not a
@@ -380,6 +414,14 @@ def key_fraction(fidelity: float, problem: PlacementProblem) -> float:
     reasoning about the formula instead of evaluating it.)
     """
     from ..protocols.bb84 import binary_entropy
+
+    model = qber_model or getattr(problem, "qber_model", "bitflip")
+    if model == "werner":
+        return werner_bbm92_key_fraction(fidelity)
+    if model == "six-state":
+        return six_state_key_fraction(fidelity)
+    if model != "bitflip":
+        raise ValueError(f"qber_model must be 'bitflip', 'werner' or 'six-state', got {model!r}")
 
     f = float(np.clip(fidelity, 0.0, 1.0))
     qber = (1.0 - f) / 2.0
@@ -735,7 +777,7 @@ def robust_placement(problem: PlacementProblem,
 
     # A cheap prefilter on single spans in the worst scenario: it only rejects an edge
     # that cannot work on its own, so it never drops a span a completed chain needs.
-    worst = min(scenarios, key=lambda s: s.t1_s * s.t2_s)
+    worst = min(scenarios, key=lambda s: 1.0 / (1.0 / s.t1_s + 1.0 / s.t2_s))
     viable: set[tuple[int, int]] = set()
     for i in range(n):
         for j in range(i + 1, n):

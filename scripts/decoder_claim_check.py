@@ -122,7 +122,7 @@ def measure(distance: int, shots: int) -> dict:
                 continue
             r["shots"] += 1
 
-            mp, _ = decode_edges_and_observables(dem, det[i])
+            mp, _ = decode_edges_and_observables(dem, np.flatnonzero(det[i]))
             mine = {norm(a, b) for a, b in mp}
             ref = {norm(u, v) for u, v in np.atleast_2d(m.decode_to_edges_array(det[i]))}
 

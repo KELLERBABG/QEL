@@ -406,3 +406,30 @@ def test_result_is_json_serialisable():
     import json
     r = run_bb84_decoy(50.0)
     json.dumps(r)  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# Post-PLOB capacities, mode-pairing QKD and non-Markovian memory
+# ---------------------------------------------------------------------------
+
+def test_mode_pairing_qkd_beats_plob_at_long_distance_and_respects_k2_ceiling():
+    from quantumnet.protocols.bb84 import mode_pairing_qkd_rate
+
+    res = mode_pairing_qkd_rate(380.0, dark_count_hz=0.5, detector_efficiency=0.85, l_max=40_000, laser_linewidth_hz=500.0)
+    assert res["beats_plob"] is True
+    assert res["key_rate_per_pulse"] > res["plob_bound_per_use"] > 0.0
+    # Ceiling Assertion: a 1-station relay can NEVER exceed the k=2 repeater bound K_2(eta)!
+    assert res["key_rate_per_pulse"] < res["k2_repeater_bound_per_use"]
+
+
+def test_non_markovian_short_hold_plateau_and_cumulative_age_penalty():
+    from quantumnet.core.physical import bell_pair_fidelity_non_markovian
+
+    # At dt/T2 = 0.1 (t1=inf), beta=3 spin-bath loses ~95x less coherence than beta=1 Markovian
+    f_b1 = bell_pair_fidelity_non_markovian(1.0, 0.1, t1=0.0, t2_hahn=1.0, beta=1.0)
+    f_b3 = bell_pair_fidelity_non_markovian(1.0, 0.1, t1=0.0, t2_hahn=1.0, beta=3.0)
+    assert (1.0 - f_b1) / (1.0 - f_b3) == pytest.approx(95.2, rel=0.02)
+    # Without DD reset, holding for dt=0.5 after previous_age_s=0.5 decays more than fresh dt=0.5
+    f_fresh = bell_pair_fidelity_non_markovian(1.0, 0.5, t1=0.0, t2_hahn=1.0, beta=3.0, previous_age_s=0.0)
+    f_aged = bell_pair_fidelity_non_markovian(1.0, 0.5, t1=0.0, t2_hahn=1.0, beta=3.0, previous_age_s=0.5)
+    assert f_aged < f_fresh

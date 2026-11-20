@@ -2,21 +2,42 @@
 
 import numpy as np
 from ..core import QubitState
+from ..core.noise import amplitude_damping_channel, dephasing_channel
 
 
 def apply_t1_t2_noise(state, t, t1, t2):
-    rho = state.rho.copy()
+    """Apply amplitude-damping (T1) and pure-dephasing (T2) noise for duration ``t``.
+
+    Note that ``t2`` acts as the pure-dephasing time ``T_phi`` (applied
+    independently of ``t1`` rather than as total transverse relaxation ``T_2``).
+    For single-qubit states a fast direct 2x2 update is used; for multi-qubit
+    states the single-qubit amplitude-damping and dephasing channels are applied
+    to every qubit target ``0 .. state.num_qubits - 1``.
+    """
+    if state.num_qubits == 1:
+        rho = state.rho.copy()
+        if t1 > 0:
+            p = 1 - np.exp(-t / t1)
+            rho[0, 0] = rho[0, 0] + p * rho[1, 1]
+            rho[1, 1] = rho[1, 1] * (1 - p)
+            rho[0, 1] = rho[0, 1] * np.sqrt(1 - p)
+            rho[1, 0] = rho[1, 0] * np.sqrt(1 - p)
+        if t2 > 0:
+            p = 1 - np.exp(-t / t2)
+            rho[0, 1] = rho[0, 1] * (1 - p)
+            rho[1, 0] = rho[1, 0] * (1 - p)
+        return QubitState(rho, dims=state.dims)
+
+    out = QubitState(state.rho.copy(), dims=state.dims)
     if t1 > 0:
-        p = 1 - np.exp(-t / t1)
-        rho[0, 0] = rho[0, 0] + p * rho[1, 1]
-        rho[1, 1] = rho[1, 1] * (1 - p)
-        rho[0, 1] = rho[0, 1] * np.sqrt(1 - p)
-        rho[1, 0] = rho[1, 0] * np.sqrt(1 - p)
+        amp = amplitude_damping_channel(float(1 - np.exp(-t / t1)))
+        for q in range(out.num_qubits):
+            out = amp.apply(out, targets=[q])
     if t2 > 0:
-        p = 1 - np.exp(-t / t2)
-        rho[0, 1] = rho[0, 1] * (1 - p)
-        rho[1, 0] = rho[1, 0] * (1 - p)
-    return QubitState(rho, dims=state.dims)
+        deph = dephasing_channel(float(0.5 * (1.0 - np.exp(-t / t2))))
+        for q in range(out.num_qubits):
+            out = deph.apply(out, targets=[q])
+    return out
 
 
 def memory_fidelity_over_time(initial_state, times, t1, t2):
