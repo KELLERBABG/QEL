@@ -810,7 +810,7 @@ decoy-state path implements the LCWX bound.
 - Licence: Apache-2.0
 - Citation metadata: `CITATION.cff`
 - Documentation: `README.md`, covering usage, results, and the scope statement
-- Verification: `py -m pytest -q` (1161 tests across 64 modules; 16,923 source lines and 13,060
+- Verification: `py -m pytest -q` (1151 tests across 64 modules; 16,932 source lines and 13,060
   lines in `tests/`), `py -m quantumnet validate` (published comparisons, scored and explicitly
   unscored), `py scripts/claim_audit.py` (documentation drift), `py scripts/decoder_claim_check.py`
   (weight and accuracy agreement against PyMatching), `py scripts/ontology_audit.py`

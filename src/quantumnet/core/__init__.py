@@ -63,6 +63,7 @@ from .physical import (
     t2_dephase_probability,
     memory_fidelity_after_dt,
     bell_pair_fidelity_after_dt,
+    bell_pair_fidelity_non_markovian,
     depolarizing_from_distance,
 )
 from .ipc_node import (
@@ -71,6 +72,7 @@ from .ipc_node import (
     MessageType,
     IPCMessage,
 )
+from . import logical_entanglement, readout_chain
 
 __all__ = [
     "QubitState",
@@ -98,6 +100,8 @@ __all__ = [
     "dark_count_probability",
     "t1_decay_probability", "t2_dephase_probability",
     "memory_fidelity_after_dt", "bell_pair_fidelity_after_dt",
+    "bell_pair_fidelity_non_markovian",
     "depolarizing_from_distance",
     "IPCNode", "TopologyRunner", "MessageType", "IPCMessage",
+    "logical_entanglement", "readout_chain",
 ]

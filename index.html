@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>QEL — A Quantum-Network Simulator with an In-Package Surface-Code Decoder</title>
-<meta name="description" content="QEL simulates quantum communication networks end to end across 64 modules and 1161 tests: 4-parameter non-Pauli X-states, exact Barrett-Kok cross-terms, non-Markovian beta-memory, -log W and polynomial-time SKR-optimal routing, exact 1D Gamma_eff chance-constrained placement, post-PLOB Mode-Pairing QKD, and an exact T-join surface-code decoder matching PyMatching on 100.0% of total weights.">
+<meta name="description" content="QEL simulates quantum communication networks end to end across 64 modules and 1151 tests: 4-parameter non-Pauli X-states, exact Barrett-Kok cross-terms, non-Markovian beta-memory, -log W and polynomial-time SKR-optimal routing, exact 1D Gamma_eff chance-constrained placement, post-PLOB Mode-Pairing QKD, and an exact T-join surface-code decoder matching PyMatching on 100.0% of total weights.">
 <meta name="theme-color" content="#fbfaf7">
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -283,7 +283,7 @@ footer a:hover{color:var(--accent)}
     <div>Licence <a href="https://github.com/KELLERBABG/QEL/blob/main/LICENSE">Apache-2.0</a></div>
     <div>Source <a href="https://github.com/KELLERBABG/QEL">GitHub</a></div>
     <div>Cite <a href="https://github.com/KELLERBABG/QEL/blob/main/CITATION.cff">CITATION.cff</a></div>
-    <div>Tests <span class="mono">1161 tests</span></div>
+    <div>Tests <span class="mono">1151 tests</span></div>
     <div>Modules <span class="mono">64 modules</span></div>
     <div>CLI <span class="mono">21 CLI commands</span></div>
     <div>Scope <span class="mono">10 protocols</span></div>
@@ -352,7 +352,7 @@ footer a:hover{color:var(--accent)}
     <dt>Routing weight</dt>
     <dd><b>−log W</b> is exact for fidelity; stratified <i>h</i>-hop search (<b>skr-optimal</b>) under Werner QBER <span class="mono">2(1−F)/3</span> and <span class="mono">p_BSM ≤ 1/2</span> yields <b>+19.4% secret key</b> (<span class="mono">19,822 vs 16,608 bits/s</span>)</dd>
     <dt>Verification</dt>
-    <dd><span class="mono">1161 tests</span> · <span class="mono">py -m quantumnet validate</span> · <span class="mono">py scripts/claim_audit.py</span> · <span class="mono">py scripts/ontology_audit.py</span></dd>
+    <dd><span class="mono">1151 tests</span> · <span class="mono">py -m quantumnet validate</span> · <span class="mono">py scripts/claim_audit.py</span> · <span class="mono">py scripts/ontology_audit.py</span></dd>
   </dl>
 </section>
 
@@ -1276,8 +1276,8 @@ best: 4 sites at [40, 80, 120, 160] km
         <tr><td>Licence</td><td>Apache-2.0</td></tr>
         <tr><td>Citation</td><td><span class="mono">CITATION.cff</span></td></tr>
         <tr><td>Documentation</td><td><span class="mono">README.md</span> and <span class="mono">WHITEPAPER.md</span>, covering usage, results and scope</td></tr>
-        <tr><td>Codebase size</td><td><span class="mono">64 modules</span> · <span class="mono">21 CLI commands</span> · <span class="mono">10 protocols</span> · <span class="mono">16,923 source lines, 13,060 lines in tests/</span></td></tr>
-        <tr><td>Verification</td><td><span class="mono">py -m pytest -q</span> (1161 tests) · <span class="mono">py -m quantumnet validate</span> · <span class="mono">py scripts/claim_audit.py</span> · <span class="mono">py scripts/decoder_claim_check.py</span> · <span class="mono">py scripts/ontology_audit.py</span></td></tr>
+        <tr><td>Codebase size</td><td><span class="mono">64 modules</span> · <span class="mono">21 CLI commands</span> · <span class="mono">10 protocols</span> · <span class="mono">16,932 source lines, 13,060 lines in tests/</span></td></tr>
+        <tr><td>Verification</td><td><span class="mono">py -m pytest -q</span> (1151 tests) · <span class="mono">py -m quantumnet validate</span> · <span class="mono">py scripts/claim_audit.py</span> · <span class="mono">py scripts/decoder_claim_check.py</span> · <span class="mono">py scripts/ontology_audit.py</span></td></tr>
         <tr><td>Environment</td><td><span class="mono">numpy</span> for the core; <span class="mono">stim</span> optional for the surface code; no third-party matcher on the decoding path</td></tr>
       </tbody>
     </table>

@@ -11,10 +11,10 @@ top. Everything runs in Python on a laptop. No hardware, no optics, no
 network sockets.
 
 ```text
-1161 tests passing · 21 CLI commands · 10 protocols and codes · 64 modules
+1151 tests passing · 21 CLI commands · 10 protocols and codes · 64 modules
 ```
 
-> These counts are measurements, not claims: `1161` is the output of
+> These counts are measurements, not claims: `1151` is the output of
 > `py -m pytest -q` and `21` is the top-level command count from
 > `py -m quantumnet --help`, both re-run whenever this line changes. If you change
 > the code, re-run them and update this line in the same commit. `py scripts/claim_audit.py`
@@ -31,7 +31,7 @@ Each command prints what it measured beside what the text claims, so you can che
 documents against the code rather than taking either on trust.
 
 ```bash
-py -m pytest -q                  # 1161 tests, about 6 minutes
+py -m pytest -q                  # 1151 tests, about 6 minutes
 py -m quantumnet validate        # every published comparison, scored or explicitly unscored
 py scripts/claim_audit.py        # every numeric claim in the docs, beside what is measured
 py scripts/ontology_audit.py     # five checks where a one-parameter model diverges from the full one
@@ -243,7 +243,7 @@ That is the whole contract. The import layer only *produces* `nodes` and
 ```bash
 py -m pip install -e ".[dev]"
 
-py -m pytest -q                     # 1161 tests, ~6m
+py -m pytest -q                     # 1151 tests, ~6m
 py -m quantumnet all                # every protocol demo
 py -m quantumnet topology --help    # build / route / visualise a topology
 py -m quantumnet import --help      # route over a parsed topology export
@@ -600,7 +600,7 @@ src/quantumnet/topology/    graphs, fidelity & SKR routing, schedules, visualisa
 src/quantumnet/calibration/ library models checked against published datasets
 src/quantumnet/cli.py       the 21-command interface, JSON on stdout, everything else on stderr
 src/quantumnet/topology/importers/   QEL native JSON, legacy Ghost-Net bridge, Graphviz, SeQUeNCe
-tests/                      1161 tests, 64 modules, across core, protocols, topology and the CLI
+tests/                      1151 tests, 64 modules, across core, protocols, topology and the CLI
 validation/                 decoder-agnostic instruments: syndrome invariant, benchmarking
 scripts/                    six development tools, all listed below
 notebooks/demo.ipynb        worked demonstration
@@ -691,7 +691,7 @@ statements transcribed from Lo–Ma–Chen do not reproduce, and both are report
 reason rather than tuned away. The test suite fails if the decoy reach drifts toward
 *better* agreement, because that would mean a bound had been loosened.
 
-## Is 1161 tests a lot?
+## Is 1151 tests a lot?
 
 Measured against comparable libraries rather than against intuition. The QEL row is
 re-measured; the three comparator rows are from the original survey and were not
@@ -703,16 +703,17 @@ re-measured here:
 | scipy | 340,112 | 234,272 | 0.69 |
 | networkx | 116,857 | 74,878 | 0.64 |
 | sympy | 492,618 | 260,744 | 0.53 |
-| **QEL** | 16,923 | 13,060 | 0.77 |
+| **QEL** | 16,932 | 13,060 | 0.77 |
 
 QEL sits inside that range. The *absolute* count is large relative to the line count
-because those 1161 tests come from **995 `def test_*` functions**, 57 of them parametrised and
+because those 1151 tests come from **985 `def test_*` functions**, 57 of them parametrised and
 expanding into many cases. One geometric invariant checked at five distances is five
 tests from one function. The ratio, not the count, is the meaningful figure.
 
 > Every figure in the table above was stale before this revision. An earlier heading still
-> read 1036 (and then 1138) while the line counts read 15,351 / 11,529 (and then 16,182 /
-> 12,358) as the tree grew to **16,923 source lines and 13,060 lines in `tests/`**. This is
+> read 1036 (and then 1138, which had included 10 scratch tests from a git-ignored prototype
+> directory) while the line counts read 15,351 / 11,529 (and then 16,182 / 12,358) as the
+> tree grew to **16,932 source lines and 13,060 lines in `tests/`**. This is
 > the same failure mode the headline count block warns about, recurring in a second place,
 > which is why `py scripts/claim_audit.py` now measures all of them rather than leaving them
 > to be noticed.

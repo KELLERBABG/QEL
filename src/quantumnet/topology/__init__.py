@@ -41,6 +41,7 @@ from .strategies import (
     LengthRouting,
     RoutingError,
     RoutingStrategy,
+    SKROptimalRouting,
     StaticRouting,
     StrategyComparison,
     available_strategies,
@@ -48,6 +49,7 @@ from .strategies import (
     compare_strategies,
     fidelity_weight,
     make_strategy,
+    path_secret_key_rate,
     register_routing,
     route_from_path,
     route_with,
@@ -65,6 +67,7 @@ from .ghostnet import (
     parse_positions,
     route_ghost,
 )
+from . import chance_placement, commodities, dijkstra, placement
 
 __all__ = [
     "QuantumLink", "QuantumNode", "QuantumTopology",
@@ -77,12 +80,14 @@ __all__ = [
     "NodeEntanglementManager", "Reservation", "ReservationState",
     "ResourceError", "ResourceManager", "resolve_contention",
     "FidelityOptimalRouting", "HopCountRouting", "LengthRouting",
-    "RoutingError", "RoutingStrategy", "StaticRouting",
+    "RoutingError", "RoutingStrategy", "SKROptimalRouting", "StaticRouting",
     "StrategyComparison", "available_strategies", "compare_instances",
     "compare_strategies", "fidelity_weight", "make_strategy",
-    "register_routing", "route_from_path", "route_with", "werner_parameter",
+    "path_secret_key_rate", "register_routing", "route_from_path",
+    "route_with", "werner_parameter",
     "TOPOLOGY_BUILDERS", "bcube", "build_topology", "fat_tree",
     "topology_report",
     "plot_matplotlib", "render_topology",
     "describe_ghost_result", "parse_positions", "route_ghost",
+    "chance_placement", "commodities", "dijkstra", "placement",
 ]
