@@ -310,41 +310,29 @@ footer a:hover{color:var(--accent)}
   <div class="abstract">
     <h2>Abstract</h2>
     <p>
-      QEL simulates quantum communication networks end to end across <b>64 modules</b> and
-      <b>1161 tests</b> (<b>16,923 source lines and 13,060 lines in <span class="mono">tests/</span></b>): density-matrix states under
-      depolarising, dephasing and amplitude-damping noise; both the 1-parameter Werner algebra
-      and the closed <b>4-parameter Bell-block-diagonal X-state manifold</b>
-      (<span class="mono">XState</span>) under non-unital T1/GAD relaxation, Tφ dephasing and
-      entanglement swapping; distance-dependent fibre attenuation and <b>exact four-branch
-      Barrett–Kok O((η_A+η_B)p_d) false-herald photonics</b>; Markovian (β = 1) and
-      <b>non-Markovian spin-bath (β = 3) memory dynamics</b>; distillation; resource contention
-      with three-tier circular-economy classification; topology routing; repeater placement;
-      post-PLOB capacities and asynchronous Mode-Pairing QKD; and a rotated surface code with
-      its own exact decoder.
+      QEL simulates quantum communication networks end to end: density-matrix states under
+      depolarising, dephasing and amplitude-damping noise; distance-dependent fibre
+      attenuation; memory relaxation on T1 and T2 (and stretched-exponential spin-bath
+      dephasing); entanglement swapping in both the one-parameter Werner algebra and the
+      four-parameter Bell-block-diagonal X-state family; distillation; resource contention;
+      topology routing; repeater placement; and a rotated surface code with its own exact
+      decoder.
     </p>
     <p>
-      Three results are specific to this work. First, an in-package surface-code decoder that
-      computes an exact minimum-weight T-join, <b>matches PyMatching on 100.0% of total
-      matching weights</b> (<span class="mono">647/647</span> at d = 3,
-      <span class="mono">2239/2239</span> at d = 5, <span class="mono">max gap 0.00</span>)
-      and on accuracy (<b>24 against 26</b> logical errors over 18,000 shots at d = 3, 5 and 7,
-      recovering a threshold near <b>p ≈ 0.007</b>), and extends to two-pass correlated matching
-      (<span class="mono">decode_correlated</span>) and heralded erasure conversion
-      (<span class="mono">w = 0, d → 2d</span>). An earlier report of a weight gap against
-      PyMatching is retracted in §5.7: it was caused by a one-line boolean-vector bug in
-      <span class="mono">scripts/decoder_claim_check.py:125</span>. Second, while
-      <b>−log W</b> is the exact additive routing weight for end-to-end Werner fidelity (unlike
-      −log F, which picks a worse path ~1.3% of the time), maximising end-to-end secret bits/s
-      (<span class="mono">skr-optimal</span>) via polynomial-time bottleneck-stratified
-      <i>h</i>-hop Dijkstra with linear-optics BSM efficiency
-      <span class="mono">p_BSM^(h−1)</span> and exact Werner BBM92 QBER
-      <span class="mono">2(1−F)/3</span> inverts the fidelity-optimal route and delivers
-      <b>+19.4% more secret key</b> (<span class="mono">19,822 vs 16,608 bits/s</span>). Third,
-      the two-parameter continuous chance constraint on repeater placement reduces <b>exactly</b>
-      to a 1D quantile of the effective decay rate
-      <span class="mono">Γ_eff = 1/T₁ + 1/T₂</span> (§4.4), and an automated five-gap
-      adversarial physics audit (<span class="mono">scripts/ontology_audit.py</span>, §4.6)
-      quantifies where 1-parameter simulator abstractions break down.
+      Two results are specific to this work. First, a surface-code decoder that computes an
+      exact minimum-weight T-join and <b>matches PyMatching on both accuracy and total
+      matching weight</b> on this package's circuits: 24 against 26 logical errors over 18,000
+      shots at d = 3, 5 and 7 (recovering a threshold near <b>p ≈ 0.007</b>), and identical
+      total weight on 647 of 647 non-trivial shots at d = 3 and 2,239 of 2,239 at d = 5
+      (<span class="mono">max gap 0.00</span>). An earlier report of a weight gap on
+      four-fifths of those shots was a one-line indexing bug in the comparison script
+      (<span class="mono">scripts/decoder_claim_check.py</span>), retracted in §5.7. Second,
+      while <b>−log W</b> is the exact additive routing weight for Werner-state fidelity
+      (unlike −log F, which selects a worse path about 1.3% of the time), routing for
+      secret-key rate (<span class="mono">skr-optimal</span>) must also count the
+      linear-optics Bell-state-measurement efficiency <span class="mono">p_BSM ≤ 1/2</span>
+      at each swap, and a stratified <i>h</i>-hop search picks a 1-hop route delivering
+      <b>19.4% more secret key</b> than the 3-hop −log W winner (§4.1).
     </p>
     <p>
       Of four statements transcribed from the decoy-state literature, <b>two reproduce</b>.
@@ -355,14 +343,14 @@ footer a:hover{color:var(--accent)}
   </div>
 
   <dl class="findings">
-    <dt>Threshold &amp; decoder equivalence</dt>
-    <dd><b>p ≈ 0.007</b> · <b>24 vs 26</b> logical errors over 18,000 shots · <b>100.0% total-weight match</b> with PyMatching at d = 3, 5 (<span class="mono">max gap 0.00</span>) + correlated &amp; erasure decoding</dd>
+    <dt>Threshold</dt>
+    <dd><b>p ≈ 0.007</b>, ordering reverses above it · 20,000 shots per point</dd>
+    <dt>Decoder accuracy &amp; weight</dt>
+    <dd><b>24 against 26</b> logical errors over 18,000 shots · <b>100.0% total-weight agreement</b> with PyMatching (<span class="mono">647/647</span> at d = 3, <span class="mono">2239/2239</span> at d = 5, <span class="mono">max gap 0.00</span>)</dd>
     <dt>Published reproduction</dt>
     <dd><b>140.61 km</b> against a published <b>140.55 km</b>, a 60-metre difference</dd>
-    <dt>Routing weights &amp; inversion</dt>
-    <dd><b>−log W</b> is exact for fidelity; stratified <i>h</i>-hop Dijkstra (<b>skr-optimal</b>) with exact Werner BBM92 QBER <span class="mono">2(1−F)/3</span> yields <b>+19.4% secret key</b> (<span class="mono">19,822 vs 16,608 bits/s</span>)</dd>
-    <dt>Chance constraint &amp; ontology audit</dt>
-    <dd>Exact 1D <span class="mono">Γ_eff = 1/T₁ + 1/T₂</span> isoquantile reduction · <b>5/5 ontology gaps</b> verified (<span class="mono">XState</span> 9.5× concurrence, Barrett–Kok <span class="mono">O(η p_d)</span> Smiling DoS, β = 3 95.2× hold gain, Mode-Pairing 350× over PLOB)</dd>
+    <dt>Routing weight</dt>
+    <dd><b>−log W</b> is exact for fidelity; stratified <i>h</i>-hop search (<b>skr-optimal</b>) under Werner QBER <span class="mono">2(1−F)/3</span> and <span class="mono">p_BSM ≤ 1/2</span> yields <b>+19.4% secret key</b> (<span class="mono">19,822 vs 16,608 bits/s</span>)</dd>
     <dt>Verification</dt>
     <dd><span class="mono">1161 tests</span> · <span class="mono">py -m quantumnet validate</span> · <span class="mono">py scripts/claim_audit.py</span> · <span class="mono">py scripts/ontology_audit.py</span></dd>
   </dl>
@@ -431,22 +419,23 @@ footer a:hover{color:var(--accent)}
     Clifford circuits, with measurement by GF(2) solving.
   </p>
 
-  <h3>2.2 Werner states and the 4-parameter non-Pauli X-state manifold</h3>
+  <h3>2.2 Werner states, and where four parameters are needed instead</h3>
   <p>
     For isotropic depolarising channels, a two-qubit entangled pair is represented by its
-    Werner parameter <span class="mono">W = (4F−1)/3</span>, because the 1-parameter Werner
+    Werner parameter <span class="mono">W = (4F−1)/3</span>, because the one-parameter Werner
     family is closed under isotropic depolarisation and entanglement swapping
-    (<span class="mono">W_swap = W₁W₂</span>). Both operations are exact in this
+    (<span class="mono">W_swap = W₁W₂</span>). Both operations are exact in that
     representation, which is what makes the fidelity routing result in §4.1 possible.
   </p>
   <p>
-    Physical quantum memories, however, relax via non-unital amplitude damping (T₁ / GAD)
-    toward <span class="mono">|00⟩⟨00|</span> while dephasing on Tφ. Under local T₁/GAD,
-    Tφ dephasing, and linear-optics Bell-state measurements, pairs with zero cross-subspace
-    coherences evolve inside a closed <b>4-parameter Bell-block-diagonal X-state
-    submanifold</b> (<span class="mono">core/xstate.py</span>), parameterised by
+    Physical memories do not contract toward <span class="mono">I/4</span>, though: T₁
+    relaxation drives population toward <span class="mono">|00⟩⟨00|</span> while T₂ damps the
+    off-diagonal terms. Under local amplitude damping, pure dephasing and Bell-state
+    swapping, a pair does not stay in the one-parameter Werner family, but it does stay
+    closed inside a four-parameter Bell-block-diagonal X-state family
+    (<span class="mono">core/xstate.py</span>), parameterised by
     <span class="mono">(P_Φ, Δ_Φ, α, β)</span> with exact closed-form Wootters concurrence
-    and BSM-conditioned post-swap recursions (§4.6, Gap 1).
+    and BSM-conditioned post-swap recursions (§4.6).
   </p>
 
   <h3>2.3 The surface code</h3>
@@ -955,63 +944,63 @@ best: 4 sites at [40, 80, 120, 160] km
     </figcaption>
   </div>
 
-  <h3>4.6 The five ontology gaps (<span class="mono">scripts/ontology_audit.py</span>)</h3>
+  <h3>4.6 Where a one-parameter model gives the wrong answer</h3>
   <p>
-    Standard quantum-network simulators rely on five 1-parameter abstractions: Werner states
-    for link fidelity, additive <span class="mono">−log W</span> for routing,
-    <span class="mono">O(p_d²)</span> double dark counts for Barrett–Kok heralding, Markovian
-    <span class="mono">exp(−t/T₂)</span> for memory dephasing, and the repeaterless PLOB
-    ceiling<sup class="cite"><a href="#ref-11">[11]</a></sup> for point-to-point QKD.
-    <span class="mono">py scripts/ontology_audit.py</span> tests each assumption against the
-    exact multi-parameter physics in QEL and exits 0 only when all five divergences reproduce.
+    Most network simulators reduce five parts of the stack to one scalar each: a single
+    Werner fidelity <span class="mono">F</span> for link state, a single additive weight
+    <span class="mono">−log W</span> for routing, <span class="mono">O(p_d²)</span> two-dark
+    coincidences for Barrett–Kok heralding, exponential <span class="mono">exp(−t/T₂)</span>
+    memory decay, and the repeaterless PLOB bound<sup class="cite"><a href="#ref-11">[11]</a></sup>
+    for point-to-point QKD. <span class="mono">py scripts/ontology_audit.py</span> runs each
+    one-parameter reduction beside the full calculation in this package:
   </p>
 
   <div class="tbl wide-bleed">
     <table>
       <thead>
         <tr>
-          <th>Ontology Gap</th>
-          <th>1-Parameter Assumption</th>
-          <th>Exact Physics in QEL</th>
-          <th>Measured Divergence (<span class="mono">ontology_audit.py</span>)</th>
+          <th>Comparison</th>
+          <th>One-parameter approximation</th>
+          <th>Full model in QEL</th>
+          <th>Measured difference (<span class="mono">ontology_audit.py</span>)</th>
         </tr>
       </thead>
       <tbody>
         <tr class="hi">
-          <td><b>1. Non-Pauli State Manifold</b></td>
-          <td>1-parameter Werner state <span class="mono">ρ_W(F)</span> (uniform marginals)</td>
-          <td>Closed 4-parameter Bell-block-diagonal <span class="mono">XState(P_Φ, Δ_Φ, α, β)</span> under T₁/GAD + Tφ, BSM swapping, <span class="mono">|Ψ⁺⟩</span> sleep suit<sup class="cite"><a href="#ref-10">[10]</a></sup>, Procrustean filter &amp; BSM thermometer (<span class="mono">core/xstate.py</span>)</td>
-          <td>4-hop chain (<span class="mono">γ=0.15, η_φ=0.95</span>): Werner <span class="mono">F₄=0.4999, C=0</span> (dead) vs <span class="mono">XState</span> <span class="mono">F_{Ψ,4}=0.5054, C_{Ψ,4}=0.0108</span>; one-sided AD (<span class="mono">γ_A=0.80</span>): <span class="mono">XState C=0.4472</span> vs Werner <span class="mono">0.0472</span> (<b>9.5×</b>); <span class="mono">|Ψ⁺⟩</span> sleep suit keeps <span class="mono">C=0.3000</span> at <span class="mono">γ=0.70</span></td>
+          <td><b>1. Non-Pauli link state</b></td>
+          <td>1-parameter Werner state <span class="mono">ρ_W(F)</span></td>
+          <td>4-parameter Bell-block-diagonal <span class="mono">XState(P_Φ, Δ_Φ, α, β)</span> under T₁/T₂ and swapping<sup class="cite"><a href="#ref-10">[10]</a></sup> (<span class="mono">core/xstate.py</span>)</td>
+          <td>4-hop chain (<span class="mono">γ=0.15, η_φ=0.95</span>): Werner <span class="mono">F₄=0.4999, C=0</span> vs <span class="mono">XState</span> <span class="mono">F_{Ψ,4}=0.5054, C_{Ψ,4}=0.0108</span>; one-sided damping (<span class="mono">γ_A=0.80</span>): <span class="mono">XState C=0.4472</span> vs Werner <span class="mono">0.0472</span> (<b>9.5×</b>); <span class="mono">|Ψ⁺⟩</span> pre-flip keeps <span class="mono">C=0.3000</span> at <span class="mono">γ=0.70</span></td>
         </tr>
         <tr>
-          <td><b>2. Routing &amp; Memory Economy</b></td>
-          <td>Additive <span class="mono">−log W</span> maximises end-to-end utility; pairs below <span class="mono">F* = 0.835</span> are discarded</td>
-          <td>Polynomial-time stratified <i>h</i>-hop Dijkstra (<span class="mono">skr-optimal</span>) with <span class="mono">p_BSM^(h−1)</span> and exact Werner BBM92 QBER <span class="mono">2(1−F)/3</span>; 3-tier memory economy (QKD / CHSH beacon / distillation compost)</td>
-          <td><span class="mono">−log W</span> picks 3-hop path (<span class="mono">F=0.9372, 16,608 bits/s</span>); <span class="mono">skr-optimal</span> picks 1-hop path (<span class="mono">F=0.9200, 19,822 bits/s</span>, <b>+19.4% secret key</b>); pairs with <span class="mono">0.7803 &lt; F ≤ 0.8350</span> violate CHSH (<span class="mono">S &gt; 2</span>)</td>
+          <td><b>2. Routing objective</b></td>
+          <td>Additive <span class="mono">−log W</span> maximises end-to-end fidelity</td>
+          <td>Stratified <i>h</i>-hop Dijkstra (<span class="mono">skr-optimal</span>) with <span class="mono">p_BSM^(h−1)</span> and Werner BBM92 QBER <span class="mono">2(1−F)/3</span></td>
+          <td><span class="mono">−log W</span> picks 3-hop path (<span class="mono">F=0.9372, 16,608 bits/s</span>); <span class="mono">skr-optimal</span> picks 1-hop path (<span class="mono">F=0.9200, 19,822 bits/s</span>, <b>+19.4% secret key</b>); pairs with <span class="mono">0.7803 &lt; F ≤ 0.8350</span> still violate CHSH (<span class="mono">S &gt; 2</span>)</td>
         </tr>
         <tr class="hi">
-          <td><b>3. Barrett–Kok False Heralds</b></td>
-          <td>Double-dark <span class="mono">O(p_d²)</span> coincidence dominates false heralds</td>
-          <td>Exact 4-branch trajectory including <span class="mono">O((η_A+η_B)p_d)</span> 1-photon + 1-dark cross-term (<span class="mono">core/photonics.py</span>)</td>
-          <td>At 150 km (<span class="mono">η=8e−4, p_d=1e−4</span>): legacy <span class="mono">raw_fidelity</span> reports <b>0.9773</b>; exact <span class="mono">exact_fidelity</span> drops to <b>0.6031</b> (zero key) while apparent herald rate rises (<b>“Smiling DoS”</b>)</td>
+          <td><b>3. Barrett–Kok dark counts</b></td>
+          <td>Two-dark <span class="mono">O(p_d²)</span> coincidence (<span class="mono">raw_fidelity</span>)</td>
+          <td>Four-branch trajectory including <span class="mono">O((η_A+η_B)p_d)</span> 1-photon + 1-dark false herald (<span class="mono">core/photonics.py</span>)</td>
+          <td>At 150 km (<span class="mono">η=8e−4, p_d=1e−4</span>): <span class="mono">raw_fidelity</span> reports <b>0.9773</b> while <span class="mono">exact_fidelity</span> drops to <b>0.6031</b> (zero key) and apparent herald rate rises</td>
         </tr>
         <tr>
-          <td><b>4. Quantum Memory Bath</b></td>
+          <td><b>4. Spin-bath memory</b></td>
           <td>Markovian exponential decay <span class="mono">exp(−t/T₂)</span> (<span class="mono">β = 1</span>)</td>
-          <td>Non-Markovian spin-bath / dynamical decoupling <span class="mono">exp(−(t/T₂(N))^β)</span> (<span class="mono">β = 3</span>) with cumulative-age tracking (<span class="mono">core/physical.py</span>)</td>
-          <td>At <span class="mono">t/T₂ = 0.1</span>: <span class="mono">β = 3</span> loses <b>95.2× less coherence</b> (<span class="mono">7.50e−4 vs 7.14e−2</span>), rewarding LIFO scheduling; un-reset bath age penalises subsequent holds (<span class="mono">F = 0.5626 vs 0.9119</span> fresh)</td>
+          <td>Stretched-exponential spin-bath decay <span class="mono">exp(−(t/T₂(N))^β)</span> (<span class="mono">β = 3</span>) with cumulative bath age (<span class="mono">core/physical.py</span>)</td>
+          <td>At <span class="mono">t/T₂ = 0.1</span>: <span class="mono">β = 3</span> loses <b>95.2× less coherence</b> (<span class="mono">7.50e−4 vs 7.14e−2</span>); un-reset bath age penalises the next hold (<span class="mono">F = 0.5626 vs 0.9119</span> fresh)</td>
         </tr>
         <tr class="hi">
-          <td><b>5. Post-PLOB vs 1-Repeater</b></td>
+          <td><b>5. Point-to-point vs 1-repeater</b></td>
           <td>Point-to-point QKD bounded by <span class="mono">K_PLOB(η) = −log₂(1−η)</span></td>
-          <td>Asynchronous Mode-Pairing QKD<sup class="cite"><a href="#ref-12">[12]</a></sup> (<span class="mono">mode_pairing_qkd_rate</span>, <span class="mono">O(√η)</span>) benchmarked against <span class="mono">K_PLOB(η)</span> and 1-repeater <span class="mono">K₂(η)</span> (<span class="mono">protocols/bb84.py</span>)</td>
-          <td>At 380 km (<span class="mono">η=2.14e−8</span>): memoryless Mode-Pairing reaches <span class="mono">R = 1.08e−5 bits/pulse</span>, beating <span class="mono">K_PLOB</span> (<span class="mono">3.08e−8</span>) by <b>350×</b> while respecting <span class="mono">K₂(η) = 2.11e−4</span></td>
+          <td>Asynchronous Mode-Pairing QKD<sup class="cite"><a href="#ref-12">[12]</a></sup> (<span class="mono">mode_pairing_qkd_rate</span>, <span class="mono">O(√η)</span>) checked against <span class="mono">K_PLOB(η)</span> and <span class="mono">K₂(η)</span> (<span class="mono">protocols/bb84.py</span>)</td>
+          <td>At 380 km (<span class="mono">η=2.14e−8</span>): memoryless Mode-Pairing reaches <span class="mono">R = 1.08e−5 bits/pulse</span>, <b>350× above</b> <span class="mono">K_PLOB</span> (<span class="mono">3.08e−8</span>) while staying below <span class="mono">K₂(η) = 2.11e−4</span></td>
         </tr>
       </tbody>
     </table>
     <figcaption>
-      <b>Table 5.</b> The five ontology gaps verified by <span class="mono">py scripts/ontology_audit.py</span>
-      (<span class="mono">5/5 ontology gaps reproduce; 0 failed</span>).
+      <b>Table 5.</b> Five comparisons between one-parameter approximations and the full
+      calculations in this package, checked by <span class="mono">py scripts/ontology_audit.py</span>.
     </figcaption>
   </div>
 </section>
@@ -1148,67 +1137,70 @@ best: 4 sites at [40, 80, 120, 160] km
     </li>
   </ul>
 
-  <h3>5.7 The “unexplained decoder weight discrepancy” was a one-line bug in the comparison script</h3>
+  <h3>5.7 The “unexplained decoder weight discrepancy” was a bug in the comparison script</h3>
   <p>
-    Version 0.1.0 of this page (§4.2 and §6) reported that <span class="mono">tjoin_decoder</span>
+    An earlier version of §4.2 and §6 reported that <span class="mono">tjoin_decoder</span>
     agreed with PyMatching's edge set on only <span class="mono">1 / 647</span> non-trivial
     shots at d = 3 and <span class="mono">0 / 2239</span> at d = 5, and returned a heavier
-    matching in ~4/5 of shots (<span class="mono">max gap 15.80</span> and
-    <span class="mono">45.91</span>). That discrepancy was an artifact of
-    <span class="mono">scripts/decoder_claim_check.py:125</span>: whereas
-    <span class="mono">decode_batch</span> passes <span class="mono">np.flatnonzero(row)</span>
-    (the integer indices of fired detectors) to
-    <span class="mono">decode_edges_and_observables</span>, the comparison script passed the
-    raw length-<span class="mono">N_det</span> boolean array <span class="mono">det[i]</span>.
-    Inside <span class="mono">decode_edges_and_observables</span>,
-    <span class="mono">[int(d) for d in fired_detectors]</span> coerced every
-    <span class="mono">False → 0</span> and <span class="mono">True → 1</span>, collapsing
-    every non-empty syndrome on the lattice into detectors <span class="mono">{0, 1}</span>.
-    Fixing that single call site to <span class="mono">np.flatnonzero(det[i])</span> yields
-    <b>100.0% total-weight agreement</b> at both d = 3 and d = 5 (<span class="mono">max gap 0.00</span>).
+    matching in roughly four cases out of five (<span class="mono">max gap 15.80</span> and
+    <span class="mono">45.91</span>). That table was the output of
+    <span class="mono">scripts/decoder_claim_check.py</span>, and the fault was in the script
+    rather than the decoder: whereas <span class="mono">decode_batch</span> passes
+    <span class="mono">np.flatnonzero(row)</span> (the integer indices of fired detectors) to
+    <span class="mono">decode_edges_and_observables</span>, line 125 of the script passed the
+    raw boolean vector <span class="mono">det[i]</span>. Inside
+    <span class="mono">decode_edges_and_observables</span>,
+    <span class="mono">[int(d) for d in fired_detectors]</span> turned every
+    <span class="mono">False</span> into <span class="mono">0</span> and every
+    <span class="mono">True</span> into <span class="mono">1</span>, so every non-empty
+    syndrome on the lattice was decoded as a subset of detectors <span class="mono">{0, 1}</span>.
+    Passing <span class="mono">np.flatnonzero(det[i])</span> brings total-weight agreement to
+    <span class="mono">647 / 647</span> at d = 3 and <span class="mono">2239 / 2239</span> at
+    d = 5 (<span class="mono">max gap 0.00</span>).
   </p>
 
-  <h3>5.8 Six quiet physics and quantile-tail bugs caught by adversarial audit</h3>
+  <h3>5.8 Six further defects caught while auditing the physics layer</h3>
   <ul class="tight">
     <li>
       <b>Inverted quantile tail in <span class="mono">chance_placement.py</span>:</b>
       <span class="mono">margin_scenario</span> and <span class="mono">common_scenario</span>
-      evaluated <span class="mono">1 − ε/2</span> and <span class="mono">1 − ε</span> (the
-      optimistic upper tail of T₁, T₂) instead of <span class="mono">ε/2</span> and
-      <span class="mono">ε</span> (the pessimistic lower tail), and ordered worst-case
-      scenarios by <span class="mono">T₁ · T₂</span> rather than the harmonic rate
+      took quantiles at <span class="mono">1 − ε/2</span> and <span class="mono">1 − ε</span>
+      (the optimistic upper tail of T₁, T₂) instead of <span class="mono">ε/2</span> and
+      <span class="mono">ε</span> (the pessimistic lower tail), and ranked scenarios by
+      <span class="mono">T₁ · T₂</span> instead of the effective coherence time
       <span class="mono">1/(1/T₁ + 1/T₂)</span>.
     </li>
     <li>
-      <b>Two-qubit dephasing coherence revival (“Lazarus bug”) in <span class="mono">protocols/memory.py</span>:</b>
+      <b>Two-qubit dephasing rebound in <span class="mono">protocols/memory.py</span>:</b>
       passing <span class="mono">γ = 1 − exp(−t/T₂)</span> to <span class="mono">dephasing_channel(γ)</span>
       scaled single-qubit coherences by <span class="mono">1 − 2γ = 2exp(−t/T₂) − 1 → −1</span>;
-      on two qubits, <span class="mono">(−1)×(−1) = +1</span> caused Bell fidelity to dip to
-      0.5 at <span class="mono">t = T₂ ln 2</span> and rebound to <b>0.9999 at t = 500 s</b>.
-      Fixed by passing <span class="mono">p = ½(1 − exp(−t/Tφ))</span>.
+      on two qubits, <span class="mono">(−1)×(−1) = +1</span> made Bell fidelity dip to
+      0.5 at <span class="mono">t = T₂ ln 2</span> and climb back to <b>0.9999 at t = 500 s</b>.
+      Fixed by passing <span class="mono">p = ½(1 − exp(−t/T₂))</span>.
     </li>
     <li>
-      <b>Missing square root in Wootters concurrence (<span class="mono">core/qubit.py</span>):</b>
-      <span class="mono">QubitState.concurrence()</span> omitted <span class="mono">√λ_i</span>
-      on the eigenvalues of <span class="mono">ρρ̃</span> and used raw <span class="mono">PAULI_Y</span>
-      without <span class="mono">.real</span> on <span class="mono">σ_y ⊗ σ_y</span>.
+      <b>Missing square root in <span class="mono">QubitState.concurrence()</span> (<span class="mono">core/qubit.py</span>):</b>
+      the Wootters formula requires the square roots of the eigenvalues of
+      <span class="mono">ρρ̃</span>; the method had omitted <span class="mono">√λ_i</span> and
+      used <span class="mono">PAULI_Y</span> without <span class="mono">.real</span> on
+      <span class="mono">σ_y ⊗ σ_y</span>.
     </li>
     <li>
-      <b>Post-measurement Hadamard and depolarising parameter in <span class="mono">protocols/distillation.py</span>:</b>
-      DEJMPS/BBPSSW applied X-basis Hadamards <i>after</i> <span class="mono">measure()</span>
+      <b>Hadamards applied after measurement in <span class="mono">protocols/distillation.py</span>:</b>
+      DEJMPS and BBPSSW applied X-basis Hadamards <i>after</i> <span class="mono">measure()</span>
       and parameterised two-qubit Werner states with <span class="mono">p = 1 − F</span>
       instead of <span class="mono">p = 4(1 − F)/3</span>.
     </li>
     <li>
-      <b>Logical Bell Pauli-Y and transversal CNOT in <span class="mono">core/logical_entanglement.py</span>:</b>
-      the syndrome table mapped <span class="mono">(1, 1) → I</span> instead of
+      <b>Syndrome table and transversal CNOT in <span class="mono">core/logical_entanglement.py</span>:</b>
+      the syndrome map sent <span class="mono">(1, 1) → I</span> instead of
       <span class="mono">PAULI_Y</span> and applied <span class="mono">H^(⊗n)</span> before
-      transversal CNOT (producing a 2<i>n</i>-qubit GHZ state for <i>n</i> &gt; 1).
+      transversal CNOT (producing a 2<i>n</i>-qubit GHZ state when <i>n</i> &gt; 1).
     </li>
     <li>
-      <b>Linear fidelity mixture in <span class="mono">core/coupled.py</span>:</b>
-      <span class="mono">effective_fidelity</span> still used the retracted linear combination
-      from §5.3 instead of the Werner product <span class="mono">compose_pair_fidelity</span>.
+      <b>Linear fidelity mixture left in <span class="mono">core/coupled.py</span>:</b>
+      <span class="mono">effective_fidelity</span> had kept the retracted linear combination
+      from §5.3 instead of <span class="mono">compose_pair_fidelity</span>.
     </li>
   </ul>
 </section>

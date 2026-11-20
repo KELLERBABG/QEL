@@ -6,51 +6,36 @@
 
 ## Abstract
 
-QEL is a simulator for quantum communication networks across **64 modules** and **1161 tests**
-(**16,923 source lines and 13,060 lines in `tests/`**). It models the full path rather than a link budget:
-density-matrix states under depolarising, dephasing and amplitude-damping noise; both the
-1-parameter Werner algebra and the closed **4-parameter Bell-block-diagonal `XState` manifold**
-under non-unital $T_1$/GAD relaxation, $T_\varphi$ dephasing and entanglement swapping;
-distance-dependent fibre attenuation and **exact four-branch Barrett–Kok $O((\eta_A+\eta_B)p_d)$
-false-herald photonics**; Markovian ($\beta=1$) and **non-Markovian spin-bath ($\beta=3$) memory
-dynamics**; distillation; resource contention with three-tier circular-economy pair classification;
-**`-log W` fidelity-optimal and polynomial-time `skr-optimal` routing**; Pareto-exact and
-**exact 1D $\Gamma_{\text{eff}}$ continuous chance-constrained repeater placement**; post-PLOB
-repeater capacities and **asynchronous Mode-Pairing QKD**; and a rotated surface code with its
-own **exact minimum-weight T-join decoder**, extended with two-pass correlated matching and
-heralded erasure conversion.
+QEL is a simulator for quantum communication networks. It models the full path rather
+than a link budget: density-matrix states under depolarising, dephasing and
+amplitude-damping noise; distance-dependent fibre attenuation; memory relaxation on
+T1 and T2 (and stretched-exponential spin-bath dephasing); entanglement swapping in both
+the one-parameter Werner algebra and the four-parameter Bell-block-diagonal X-state
+family; distillation; resource contention; topology routing; repeater placement; and a
+rotated surface code with its own exact decoder.
 
 This document reports what the implementation reproduces from published work, what it
 computes that is not a reproduction, and in as much detail as the positive results,
 **what it gets wrong, what was retracted, and where it disagrees with its own sources.**
 
-The three headline results are:
+The two headline results are:
 
 1. **An in-package surface-code decoder that removes the third-party matcher from the
-   threshold path, matches PyMatching on 100.0% of total matching weights, and supports
-   two-pass correlated matching and heralded erasure conversion.** It computes an exact
-   minimum-weight T-join on the detector error model graph, matches PyMatching's accuracy
-   on the circuits this package generates (**24 against 26 logical errors** over 18,000
-   shots at $d=3, 5$ and $7$, recovering a threshold near $p \approx 0.007$), and matches
-   PyMatching's total matching weight on **100.0% of non-trivial shots** (`647/647` at
-   $d=3$, `2239/2239` at $d=5$, `max gap 0.00`, edge-set agreement `100.0%` and `99.7%`).
-   An earlier report of a weight gap against PyMatching is retracted in §6.7: it was caused
-   by a one-line boolean-vector bug in `scripts/decoder_claim_check.py:125`.
-2. **Exact additive fidelity routing (`-log W`), and its exact polynomial-time inversion
-   under secret-key-rate routing (`skr-optimal`).** Entanglement swapping multiplies the
-   Werner parameter, so `-log W` is *exactly* additive for end-to-end fidelity while the
-   widely used substitute `-log F` picks a strictly worse path about 1.3% of the time. When
-   the objective is secret bits/s rather than fidelity, `SKROptimalRouting` runs a
-   bottleneck-stratified $h$-hop Dijkstra in $O(|E|\,h_{\max}(|E|+|V|\log|V|))$ incorporating
-   the linear-optics Bell-state-measurement tax $p_{\text{BSM}}^{h-1}$ ($\le 0.5$) and the
-   exact Werner BBM92 QBER $2(1-F)/3$, selecting a 1-hop route (`19,822 bits/s`, $F=0.9200$)
-   that yields **+19.4% more secret key** than the 3-hop `-log W` route (`16,608 bits/s`,
-   $F=0.9372$).
-3. **An exact 1D $\Gamma_{\text{eff}} = 1/T_1 + 1/T_2$ isoquantile reduction for continuous
-   chance-constrained repeater placement (§5.4) and an automated five-gap adversarial
-   physics audit (`scripts/ontology_audit.py`, §5.6)** quantifying where 1-parameter
-   quantum-network abstractions break down across state representation, routing, photonics,
-   memory bath physics, and post-PLOB key rates.
+   threshold path.** It computes an exact minimum-weight T-join and matches PyMatching on
+   both accuracy (24 against 26 logical errors over 18,000 shots at d=3, 5 and 7,
+   recovering a threshold near p ≈ 0.007) and total matching weight (647 of 647
+   non-trivial shots at d=3 and 2,239 of 2,239 at d=5, max gap 0.00). An earlier version
+   of this document reported a weight discrepancy on four-fifths of those shots; that was
+   a one-line indexing bug in the comparison script (`scripts/decoder_claim_check.py`),
+   retracted in §6.7.
+2. **A correction to a common approximation in fidelity-based routing, and the point where
+   key-rate routing reverses it.** Entanglement swapping multiplies the Werner parameter,
+   so `-log W` is *exactly* additive and makes shortest-path search optimal for fidelity,
+   whereas `-log F` picks a strictly worse path about 1.3% of the time on random graphs.
+   When the objective is secret bits per second rather than fidelity, each swap also pays
+   the linear-optics Bell-state-measurement efficiency `p_BSM <= 1/2`, and a stratified
+   `h`-hop search (`skr-optimal`) picks a 1-hop route delivering 19.4% more secret key
+   than the 3-hop `-log W` winner (§5.1).
 
 **Scope, stated first because it governs every number below.** Nothing in this work has
 been validated against physical hardware. These are simulator results and they do not
@@ -118,11 +103,11 @@ visualisation knows where a topology came from.
 
 | Layer | Contents |
 |---|---|
-| **Core** | density-matrix states, Wootters concurrence, **4-parameter Bell-block-diagonal `XState` algebra** (`core/xstate.py`), gates, POVM measurement, noise channels, Clifford stabiliser tableau, discrete-event scheduler, multi-process nodes |
-| **Hardware** | detector impairment models, **Barrett–Kok double-heralded generation with exact $O((\eta_A+\eta_B)p_d)$ four-branch false-herald accounting** (`core/photonics.py`), **non-Markovian $\beta$-memory** (`core/physical.py`), explicit time-division multiplexing, latency accounting |
-| **Protocols** | BB84 (decoy state, finite-key LCWX bound, **exact Werner BBM92 & Six-State QBER `2(1-F)/3`, PLOB/$K_k$ capacities, asynchronous Mode-Pairing QKD**), E91, teleportation, superdense coding, swapping, BBPSSW/Deutsch/DEJMPS distillation, multi-qubit $T_1/T_\varphi$ memory dynamics, Shor and Steane codes |
-| **Topology** | graphs, pluggable routing policies (**`fidelity-optimal` `-log W` and polynomial-time `skr-optimal`**), schedules, resource contention (**LIFO/FIFO policies and 3-tier QKD / CHSH beacon / distillation compost classification**), Pareto-exact placement, **exact 1D $\Gamma_{\text{eff}}$ continuous chance-constrained placement**, multi-commodity routing, ASCII visualisation |
-| **QEC** | rotated surface code, space-time detector model, **exact T-join decoder with two-pass correlated matching (`decode_correlated`) and heralded erasure conversion**, logical key rate |
+| **Core** | density-matrix states, four-parameter Bell-block-diagonal X-states (`core/xstate.py`), gates, POVM measurement, noise channels, Clifford stabiliser tableau, discrete-event scheduler, multi-process nodes |
+| **Hardware** | detector impairment models, Barrett–Kok double-heralded generation (with both two-dark and single-photon-plus-dark false heralds), stretched-exponential spin-bath memory decay, explicit time-division multiplexing, latency accounting |
+| **Protocols** | BB84 (decoy state, finite-key LCWX bound, PLOB / `k`-repeater capacities, asynchronous Mode-Pairing QKD), E91, teleportation, superdense coding, swapping, BBPSSW/Deutsch/DEJMPS distillation, Shor and Steane codes |
+| **Topology** | graphs, pluggable routing policies (`fidelity-optimal` and `skr-optimal`), schedules, resource contention, placement, chance-constrained placement, multi-commodity routing, ASCII visualisation |
+| **QEC** | rotated surface code, space-time detector model, exact T-join decoder (with two-pass correlated reweighting and heralded erasure support), logical key rate |
 | **Calibration** | library models checked against transcribed published datasets |
 | **Interop** | native versioned schema, Ghost-Net bridge, a Graphviz subset, SeQUeNCe `RouterNetTopo` |
 
@@ -147,29 +132,25 @@ A stabiliser tableau runs alongside for Clifford circuits, with measurement impl
 by GF(2) solving, so codes and distillation circuits can be simulated at sizes where a
 density matrix would not fit.
 
-### 3.2 Werner states and the 4-parameter non-Pauli `XState` manifold
+### 3.2 Werner states, and where four parameters are needed instead
 
-For isotropic depolarising noise, a two-qubit entangled pair is represented by its Werner
-parameter $W = (4F-1)/3$, because the 1-parameter Werner family is closed under isotropic
-depolarisation and entanglement swapping ($W_{\text{swap}} = W_1 W_2$). Both operations are
-exact in this representation, which is what makes §5.1 possible.
+For isotropic depolarising noise a two-qubit entangled pair is represented by its Werner
+parameter `W = (4F-1)/3`, because the Werner family is closed under the operations that
+matter there: a Bell-state measurement followed by a swap multiplies the parameters of the
+two contributing pairs (`W_swap = W_1 * W_2`), and a depolarising memory hold contracts
+toward `I/4`. Both operations are exact in that representation, which is what makes §5.1
+possible.
 
-However, physical quantum memories do not relax toward the maximally mixed state $I/4$;
-they relax via non-unital amplitude damping ($T_1$ / generalised amplitude damping) toward
-$|00\rangle\langle 00|$ while dephasing on $T_\varphi$. Under local $T_1$/GAD and $T_\varphi$
-channels and standard linear-optics Bell-state measurements, two-qubit states with empty
-cross-subspace coherences remain strictly closed inside a **4-parameter Bell-block-diagonal
-X-state submanifold** (`core/xstate.py`),
-
-$$\rho_X(P_\Phi, \Delta_\Phi, \alpha, \beta), \quad P_\Phi = \rho_{00,00} + \rho_{11,11}, \quad \Delta_\Phi = 2\operatorname{Re}\rho_{00,11}, \quad \alpha = \rho_{01,01} + \rho_{10,10} + 2\operatorname{Re}\rho_{01,10}, \quad \beta = \rho_{00,00} - \rho_{11,11},$$
-
-with exact closed-form Wootters concurrence
-
-$$C(\rho_X) = \max\!\left(0,\; |\Delta_\Phi| - \sqrt{(1 - P_\Phi)^2 - \delta^2},\; |\alpha + \delta - (1 - P_\Phi)| - \sqrt{P_\Phi^2 - \beta^2}\right)$$
-
-and exact BSM-conditioned post-swap recursions (`swap_with`, `swap_psi_branch`). Tracking
-these four parameters instead of projecting onto a 1-parameter Werner state exposes five
-distinct physical phenomena documented in §5.6.
+Physical memories do not contract toward `I/4`, though: `T1` relaxation drives population
+toward `|00⟩⟨00|` while `T2` damps the off-diagonal terms. Under local amplitude damping,
+pure dephasing and Bell-state swapping, a pair does not stay in the one-parameter Werner
+family, but it *does* stay closed inside a four-parameter Bell-block-diagonal X-state
+family (`core/xstate.py`), parameterised by `(P_Phi, Delta_Phi, alpha, beta)` with
+`P_Phi = rho_00,00 + rho_11,11`, `Delta_Phi = 2 Re(rho_00,11)`,
+`alpha = rho_01,01 + rho_10,10 + 2 Re(rho_01,10)`, and `beta = rho_00,00 - rho_11,11`.
+`XState` carries the exact Wootters concurrence and the post-swap recursions in those four
+numbers, so the error made by projecting onto a single Werner scalar can be measured
+directly (§5.6).
 
 ### 3.3 The surface code
 
@@ -193,11 +174,10 @@ verified: 0 of 556 / 3706 / 11830 components exceeded two detectors at d = 3 / 5
 The decoder computes an exact minimum-weight T-join on the merged graph: one edge per
 distinct detector pair, parallel mechanisms combined by parity, with log-likelihood
 weight `log((1-p)/p)`, and observables parsed **per component**. A correction is a set of
-edges whose odd-degree vertices are exactly the detection events. For depolarising $Y$-errors
-that correlate $X$- and $Z$-type detectors across `^`-separated components, `decode_correlated`
-performs a two-pass conditional log-likelihood reweighting; for neutral-atom or trapped-ion
-architectures with heralded leakage, `heralded_erasure_fraction` converts flagged fault
-locations into zero-weight ($w = \ln((1-0.5)/0.5) = 0$) erasure edges.
+edges whose odd-degree vertices are exactly the detection events. Two optional paths sit
+on top of the same graph builder: `decode_correlated` reweights partner edges in a second
+pass when a `^`-compound mechanism fires on the first pass, and `heralded_erasure_fraction`
+sets flagged erasure edges to weight `log((1 - 0.5)/0.5) = 0`.
 
 ### 3.5 Measurement protocol used throughout
 
@@ -244,7 +224,7 @@ with a one-decoy finite-key bound, so comparing rates would measure the protocol
 difference rather than the implementation. Their *loss budget* is comparable, since fibre loss
 is a property of the fibre, and all five rows of their Table I agree within 0.5 dB.
 
-### 4.2 Barrett–Kok double-heralded generation and exact $O((\eta_A+\eta_B)p_d)$ false heralds
+### 4.2 Barrett–Kok double-heralded generation
 
 The model follows Barrett and Kok (*Phys. Rev. A* **71**, 060310(R), 2005). Two published
 properties are checked: the ideal success probability is exactly **1/2** at zero loss
@@ -253,18 +233,13 @@ efficiency** (`p ∝ η²`) because both photons must survive and both must be d
 
 The consequence matters when reading any rate it prints: **loss costs rate, not
 fidelity.** A photon that fails to arrive is a failed attempt, not a corrupted pair. What
-degrades fidelity is a false-herald dark-count trajectory, indistinguishable from a real
-two-photon herald, along with mode mismatch and memory decoherence. In `core/photonics.py`,
-`BarrettKokResult` tracks all four double-herald trajectories rather than only the legacy
-$O(p_d^2)$ double-dark term:
-
-- $P_{\text{true}} = \frac{1}{2}\eta_A\eta_B(1 - p_d)^2$ (both clicks from real photons, fidelity $F_{\text{Visibility}}$),
-- $P_{\text{false},1\gamma} = \frac{1}{2}\big[\eta_A(1-\eta_B) + \eta_B(1-\eta_A)\big]p_d(1-p_d)$ (one real photon in Round 1 and one dark count in Round 2, or vice versa, contributing an uncorrelated product state of fidelity $1/4$),
-- $P_{\text{false},0\gamma} = (1-\eta_A)(1-\eta_B)p_d^2$ (dark counts in both rounds, fidelity $1/4$).
-
-Because $\eta \gg p_d$ across metropolitan and inter-city fibre ($50\text{–}150\text{ km}$),
-the $O((\eta_A+\eta_B)p_d)$ cross-term dominates $O(p_d^2)$ by two to three orders of
-magnitude (§5.6, Gap 3).
+degrades fidelity is a dark-count false herald, indistinguishable from a real two-photon
+event and contributing an uncorrelated state of fidelity 1/4, along with mode mismatch and
+memory decoherence. `core/photonics.py` reports both the legacy `O(p_d²)` two-dark
+expression (`raw_fidelity()`) and the full four-branch expression (`exact_fidelity()`),
+which includes the `O((η_A + η_B) p_d)` event where one round is triggered by a real
+photon and the other by a dark count. At 50–150 km `η` is still much larger than `p_d`, so
+that cross-term dominates the two-dark term by two to three orders of magnitude (§5.6).
 
 ### 4.3 Calibration against a decoy-state figure
 
@@ -343,7 +318,7 @@ have told the reader nothing about where it stops being trustworthy.
 
 ## 5. Results specific to this work
 
-### 5.1 Fidelity routing uses `-log W`, not `-log F` — and `skr-optimal` inverts it when the BSM tax dominates
+### 5.1 The routing weight is `-log W`, not `-log F` — and key-rate routing (`skr-optimal`) can invert it
 
 Entanglement swapping multiplies the Werner parameter, so a path's parameter is
 `W_path = Π W_i` and `-log W` is **exactly additive**. Optimum-fidelity routing is
@@ -365,49 +340,44 @@ shortest-distance   F = 0.700000   1 hop
 fidelity-optimal    F = 0.970398   3 hops
 ```
 
-**Why highest fidelity is not highest secret-key throughput (`skr-optimal`).** For an
-entanglement-based BBM92 link on a Werner state $\rho_W(F) = W|\Phi^+\rangle\langle\Phi^+| + (1-W)I/4$,
-the maximally mixed weight $(1-W)$ splits into four equal Bell populations $(1-W)/4 = (1-F)/3$.
-Because $Z$-basis errors arise on $|\Psi^+\rangle$ and $|\Psi^-\rangle$ and $X$-basis errors on
-$|\Phi^-\rangle$ and $|\Psi^-\rangle$, the true Werner BBM92 QBER in *each* basis is
+**When the objective is secret key rate rather than fidelity.** On a Werner state
+`rho_W(F) = W |Phi+⟩⟨Phi+| + (1-W) I/4`, the isotropic term `(1-W)/4 = (1-F)/3` sits
+equally on all four Bell states. Two of the three non-`|Phi+⟩` states flip the Z basis and
+two flip the X basis, so the BBM92 quantum bit error rate in each basis is `2(1-F)/3`
+rather than the pure-bitflip substitute `(1-F)/2`. That puts the zero-key threshold at
+`F* = 0.83496` (and `0.81071` for the six-state protocol) instead of `0.7800`. At
+`F = 0.90` with `f_EC = 1.0`, the Werner key fraction is `0.293281` against `(1-F)/2`'s
+`0.427206`.
 
-$$e_Z = e_X = \frac{2(1 - F)}{3}, \qquad r_\infty^{\text{BBM92}}(F) = \max\!\left(0,\; 1 - (1 + f_{\text{EC}}) H_2\!\left(\frac{2(1 - F)}{3}\right)\right)$$
-
-with zero-key threshold $F^*_{\text{BBM92}} = 1 - \frac{3}{2}h_2^{-1}(1/2) \approx 0.83496$
-(and Six-State threshold $F^*_{\text{6-state}} \approx 0.81071$), rather than the pure-bitflip
-substitute $(1-F)/2$ ($F^* = 0.7800$). At $F = 0.90$ and $f_{\text{EC}} = 1.0$, the exact
-Werner secret-key fraction is `0.293281` against `(1-F)/2`'s `0.427206` (a 31% overstatement
-by the bitflip formula).
-
-When routing for end-to-end secret bits/s across $h$ hops, each intermediate node performs a
-Bell-state measurement whose linear-optics success probability is bounded by $p_{\text{BSM}} \le 1/2$,
-so under synchronous no-cutoff pipelining the end-to-end secret-key rate is
-
-$$R_{\text{SKR}}(P) = \frac{\min_{e \in P} R_{\text{gen}}(e)}{h} \cdot p_{\text{BSM}}^{h - 1} \cdot r_\infty^{\text{BBM92}}\!\left(\frac{1 + 3\prod_{e \in P} W_e}{4}\right).$$
-
-Because $R_{\text{SKR}}(P)$ couples a bottleneck minimum ($\min R_e$), a hop count ($h$), and
-a multiplicative product ($\prod W_e$), no single scalar link weight can optimise it. However,
-because distinct bottleneck rates are bounded by $|E|$ and simple-path hop counts by
-$h \le |V|-1$, fixing $(R_{\min}, h)$ reduces the remaining objective to maximising $\prod W_e$,
-which is a standard $h$-hop layered shortest-path search on $w_e = -\ln W_e$ over the subgraph
-$\{e \in E : R_{\text{gen}}(e) \ge R_{\min}\}$. `SKROptimalRouting` (`"skr-optimal"`) evaluates
-this stratified family in $O(|E|\,h_{\max}(|E| + |V|\log|V|))$ polynomial time and is **provably
-exact**. On the benchmark topology in `tests/test_topology/test_strategies.py`:
+Across an `h`-hop path, each swap at an intermediate node also pays the linear-optics
+Bell-state-measurement efficiency `p_BSM <= 1/2`, so the synchronous secret-key rate is
 
 ```
-fidelity-optimal (-log W)   S -> R1 -> R2 -> T (3 hops)   F = 0.9372   SKR = 16,608 bits/s
-skr-optimal                 S -> T             (1 hop)    F = 0.9200   SKR = 19,822 bits/s (+19.4%)
+R_SKR(P) = (min_{e in P} R_gen(e) / h) * p_BSM^(h - 1) * max(0, 1 - (1 + f_EC) H_2(2(1 - F_e2e)/3))
 ```
 
-Paying two linear-optics BSM taxes ($0.5^2 = 0.25$) and a $1/3$ pipelining factor to gain
-$+0.0172$ end-to-end fidelity costs more raw pair rate than the lower QBER recovers.
+No single link weight can optimise that expression because it couples a bottleneck minimum,
+a hop count, and the product `Π W_e`. There are at most `|E|` distinct bottleneck rates and
+at most `|V| - 1` hops on a simple path, though, and once `(R_min, h)` is fixed the
+remaining problem is again shortest path on `-log W` over the links with `R_e >= R_min`.
+`SKROptimalRouting` (`"skr-optimal"`) checks each `(R_min, h)` pair in
+`O(|E| h_max (|E| + |V| log |V|))` time. On the two-route benchmark in
+`tests/test_topology/test_strategies.py`:
 
-### 5.2 An exact decoder with no third-party matcher, 100.0% weight agreement, correlated matching, and heralded erasures
+```
+fidelity-optimal (-log W)   S -> R1 -> R2 -> T (3 hops)   F = 0.9372   16,608 bits/s
+skr-optimal                 S -> T             (1 hop)    F = 0.9200   19,822 bits/s (+19.4%)
+```
+
+Two extra linear-optics swaps (`0.5² = 0.25`) and the `1/3` pipelining factor cost more raw
+pairs than the extra `0.0172` in fidelity saves in key fraction.
+
+### 5.2 An exact decoder with no third-party matcher
 
 The decoder computes an exact minimum-weight T-join on the merged detector graph. Three
 properties matter, and they are separate claims:
 
-**(a) It is accurate, and the numbers carry their uncertainty.** Logical error rate
+**(a) It is accurate, and the numbers now carry their uncertainty.** Logical error rate
 against distance, pooled over five seeds at 6000 shots each, 30 000 shots per point:
 
 ```
@@ -446,11 +416,10 @@ Threshold sweep, 20 000 shots per point, decoder alone:
 is only a real result if additional distance eventually *hurts*, and the test suite
 asserts the ordering reverses rather than checking only the sub-threshold half.
 
-**(b) Its accuracy and total matching weight match PyMatching's.** Over 18,000 shots at
-d = 3, 5 and 7 the two decoders make **24 and 26 logical errors** respectively. Across
-1,000 shots per noise level ($p \in \{0.001, 0.003, 0.005\}$, 3,000 shots per distance) at
-$d = 3$ and $d = 5$, `py scripts/decoder_claim_check.py --shots 1000 --distances 3 5`
-measures:
+**(b) Its accuracy and its total matching weight both match the reference's.** Over 18,000
+shots at d = 3, 5 and 7 the two decoders make **24 and 26 logical errors** respectively.
+Measured on 1000 shots per noise level (`p` in `{0.001, 0.003, 0.005}`, 3000 shots per
+distance) by `py scripts/decoder_claim_check.py --shots 1000 --distances 3 5`:
 
 ```
                                       d = 3              d = 5
@@ -463,32 +432,22 @@ measures:
   maximum weight gap                   0.00               0.00
 ```
 
-Every single non-trivial shot at both $d = 3$ and $d = 5$ reaches the **exact same minimum
-total matching weight** as PyMatching (`max gap 0.00`, floating-point difference
-$\le 7.1 \times 10^{-15}$); the 6 shots out of 2,239 at $d = 5$ where the edge set differs
-are exact equal-weight ties on the lattice. An earlier version of this table reported
-`1 / 647` and `0 / 2239` edge-set agreement and a heavier weight in four-fifths of shots;
-as documented in §6.7, that discrepancy was an artifact of a one-line boolean-vector bug in
-`scripts/decoder_claim_check.py:125`.
+Every non-trivial shot at d = 3 and d = 5 reaches the **same total matching weight** as
+PyMatching (within floating-point round-off, `<= 7.1e-15`). The six shots at d = 5 where
+the edge sets differ have identical total weight and are equal-weight ties on the lattice.
+An earlier version of this table read `1 / 647` and `0 / 2239` on edge sets and reported
+this decoder as heavier in four cases out of five. The decoder had not changed; the
+comparison script had been passing a boolean mask where detector indices were expected
+(§6.7).
 
-**(c) Two-pass correlated matching and heralded erasure conversion.** Standard MWPM
-decomposes each $Y$-error ($X \otimes Z$) into two independent graphlike components, throwing
-away the mutual information $I(X; Z) > 0$ between the two subgraphs. `core/tjoin_decoder.py`
-and `core/surface_code.py` add two extensions:
-
-- **Two-pass correlated matching (`parse_dem_correlations`, `decode_correlated`):** parses
-  compound `^`-separated DEM instructions (`error(p) D_a D_b ^ D_c D_d`), runs Pass 1 on
-  the marginal graph, updates partner-edge weights via the exact Bayes conditional
-  probability $p(e_2 = 1 \mid e_1 = 1) = (p_{\text{ind}}(e_2) + p_{\text{corr}} - 2p_{\text{ind}}(e_2)p_{\text{corr}})/(1 - 2p_{\text{ind}}(e_2)p_{\text{corr}})$
-  and $w'(e_2) = \ln((1 - p(e_2 \mid e_1))/p(e_2 \mid e_1))$, and runs Pass 2 to resolve
-  correlated syndromes that fool independent matching.
-- **Heralded erasure conversion (`heralded_erasure_fraction`, `erasure_edges`):** when a
-  fraction $f_e \in [0, 1]$ of faults are heralded by hardware leakage detection (e.g.,
-  neutral-atom `$^{171}\text{Yb}$` metastable decay or cavity-QED erasure flags), the known
-  fault location has 50% conditional Pauli probability and therefore weight
-  $w_e = \ln((1 - 0.5)/0.5) = 0.0$, shifting sub-threshold logical error scaling from
-  $P_L^{\text{Pauli}} \propto (p/p_{\text{th}})^{(d+1)/2}$ toward
-  $P_L^{\text{erasure}} \propto (p_e/p_{\text{th},e})^d$.
+**(c) Correlated two-pass reweighting and heralded erasures.** Decomposing a depolarising
+`Y` error (`X` and `Z` together) into two independent graph edges drops the correlation
+between the two subgraphs. `decode_correlated` reads the `^`-linked compound mechanisms
+from the DEM, runs a first T-join pass on the marginal graph, updates each partner edge's
+weight to the conditional log-likelihood `log((1 - p(e2 | e1)) / p(e2 | e1))` when `e1` is
+selected, and solves a second pass. For hardware models where a fraction of faults are
+flagged as erasures, `heralded_erasure_fraction` sets the flagged edge weights to
+`log((1 - 0.5) / 0.5) = 0`.
 
 ### 5.3 Repeater placement as an exact optimisation
 
@@ -511,7 +470,7 @@ suboptimal. (A first comparison appeared to show 43.89% suboptimality; the brute
 had been enumerating layouts the DP was forbidden to choose. The comparison was wrong,
 not the code, as recorded in §6.4.)
 
-### 5.4 An exact 1D $\Gamma_{\text{eff}}$ reduction for continuous chance-constrained placement
+### 5.4 A chance constraint over continuous uncertainty
 
 The existing literature on repeater placement, as far as a targeted search found,
 handles robustness through *discrete* formulations: selecting components from a
@@ -525,7 +484,7 @@ This work states one:
 Pr[ F(chain; T1, T2) >= F_req ] >= 1 - eps
 ```
 
-and reduces it without sampling during DP optimization. Three facts do the work:
+and reduces it without sampling inside the DP. Three facts do the work:
 
 - **Monotonicity.** `F(chain; T1, T2)` is non-decreasing in both coherence times: better
   memory never makes a chain worse. Verified numerically, and the tests additionally
@@ -536,21 +495,18 @@ and reduces it without sampling during DP optimization. Three facts do the work:
 - **The isoquantile principle.** For a non-decreasing function of one random variable,
   `Q_α(φ(X)) = φ(Q_α(X))`, so the constraint becomes a condition at a quantile with no
   distributional assumption beyond the quantiles themselves.
-- **Exact 1D reduction via the effective decay rate $\Gamma_{\text{eff}} = 1/T_1 + 1/T_2$.**
-  In a homogeneous repeater chain, every link $i$ holds its pair for wait time $t_i$ and
-  suffers decoherence solely through $\exp(-t_i(1/T_1 + 1/T_2)) = \exp(-t_i \Gamma_{\text{eff}})$.
-  Therefore, the two-parameter chain fidelity is a strictly decreasing function of a
-  *single* scalar random variable $\Gamma_{\text{eff}} = 1/T_1 + 1/T_2$:
+- **For a homogeneous chain, the two-parameter problem is actually one-dimensional.**
+  Every link hold time `t_i` in the chain enters memory survival through
+  `exp(-t_i * (1/T1 + 1/T2))`. The chain fidelity therefore depends on `(T1, T2)` only
+  through the single scalar rate `Gamma_eff = 1/T1 + 1/T2`, and is strictly decreasing in
+  it. Evaluating the chain at the `(1 - eps)`-quantile of `Gamma_eff`
+  (`exact_1d_scenario`, `exact_1d=True`) is therefore **exact** for any joint or
+  independent prior on `(T1, T2)`, rather than conservative.
 
-  $$F(\text{chain}; T_1, T_2) = g(\Gamma_{\text{eff}}), \qquad \Pr\!\big[F(\text{chain}; T_1, T_2) \ge F_{\text{req}}\big] \ge 1 - \varepsilon \iff g(\gamma_{1-\varepsilon}) \ge F_{\text{req}},$$
-
-  where $\gamma_{1-\varepsilon} = F_{\Gamma_{\text{eff}}}^{-1}(1 - \varepsilon)$ is the $(1-\varepsilon)$-quantile
-  of $\Gamma_{\text{eff}}$. This makes the two-parameter continuous chance constraint
-  **exact** (`exact_1d_scenario`, `exact_1d=True`) for *any* joint or independent prior on
-  $(T_1, T_2)$, eliminating the ~30% margin-split over-conservatism of Bonferroni bounds
-  while meeting the $1 - \varepsilon$ coverage target with equality. Both the product-margin
-  bound (`eps / 2` lower tail per coordinate) and the common-factor bound (`eps` lower tail)
-  are retained alongside `exact_1d=True` for comparison and for heterogeneous-node extensions.
+The two-dimensional product-margin bound (evaluating `T1` and `T2` at their lower `eps/2`
+tails) and the common-factor bound (lower `eps` tail) are kept alongside `exact_1d=True`:
+they show how much repeater count a Bonferroni split gives away (about 30% on the test
+priors), and they remain the fallback when nodes do not share a single `(T1, T2)` draw.
 
 ### 5.5 Logical key rate
 
@@ -571,78 +527,65 @@ qubits it cost is not an engineering figure. The report also names the decoder t
 produced the logical error rate, since a threshold is a property of the decoder as much
 as of the code.
 
-### 5.6 The five ontology gaps (`scripts/ontology_audit.py`)
+### 5.6 Where a one-parameter model gives the wrong answer
 
-Standard quantum-network simulators rely on five 1-parameter reductions: (1) Werner states
-for link fidelity, (2) additive `-log W` for routing, (3) $O(p_d^2)$ double dark counts for
-Barrett–Kok heralding, (4) Markovian $\exp(-t/T_2)$ for memory dephasing, and (5) the
-repeaterless PLOB bound for point-to-point QKD. `py scripts/ontology_audit.py` tests each
-assumption against the exact multi-parameter physics in QEL and exits 0 only if all five
-divergences reproduce:
+Most network simulators reduce five parts of the stack to one scalar each: a single Werner
+fidelity `F` for link state, a single additive weight `-log W` for routing, `O(p_d²)`
+two-dark coincidences for Barrett–Kok heralding, exponential `exp(-t/T2)` memory decay, and
+the repeaterless PLOB bound for point-to-point links. `py scripts/ontology_audit.py` runs
+each one-parameter reduction beside the full calculation in this package and checks the
+five differences:
 
-1. **Gap 1 — 4-parameter `XState` vs 1-parameter Werner (`core/xstate.py`).**
-   - *4-hop repeater survival:* At per-link amplitude damping $\gamma = 0.15$ and dephasing
-     $\eta_\phi = 0.95$, the Werner model predicts $F_4 = 0.4999 < 0.5$ ($C = 0$, dead),
-     whereas the exact 4-parameter `XState` preserves entanglement ($F_{\text{avg},4} = 0.5002$,
-     $C_{\text{avg},4} = 0.0031$; on the $|\Psi^\pm\rangle$ BSM branch, $F_{\Psi,4} = 0.5054$,
-     $C_{\Psi,4} = 0.0108$) because BSM parity sorting separates $|00\rangle/|11\rangle$ from
-     $|01\rangle/|10\rangle$.
-   - *Asymmetric wait times:* Under one-sided amplitude damping ($\gamma_A = 0.80, \gamma_B = 0$),
-     the exact concurrence is $C = \sqrt{1 - \gamma_A} = 0.4472$, whereas the Werner projection
-     from fidelity ($F = 0.5236$) predicts $C_{\text{Werner}} = 0.0472$ — a **$9.5\times$
-     underestimate**.
-   - *The $|\Psi^+\rangle$ "sleep suit" (`apply_sleep_suit`):* Applying a local Pauli $X$
-     before memory storage converts $|\Phi^+\rangle \to |\Psi^+\rangle$, which has zero
-     $|11\rangle\langle 11|$ population and therefore never populates the ground-state root
-     $ad$ in Wootters' concurrence formula under $T_1$ decay ($C = (1-\gamma) = 0.3000$ at
-     $\gamma = 0.70$, preventing Yu–Eberly entanglement sudden death where Werner predicts
-     $C = 0$ at $F = 0.3000$).
-   - *Single-copy Procrustean filtering (`procrustean_filter_one_sided`):* A local weak
-     POVM $K_0 = \operatorname{diag}(1, \sqrt{1 - \gamma_A})$ on the un-damped partner B
-     re-symmetrizes the state without consuming a second Bell pair (at $\gamma_A = 0.80$:
-     $p_{\text{succ}} = 0.6$, raising fidelity from $0.5236 \to 0.6000$).
-   - *In-band BSM cryostat thermometer & the no-signaling scar:* Under $T_1$ relaxation, the
-     four Bell outcomes at a swap node are non-uniform,
-     $\Delta P_{\text{BSM}} = P(\Phi^+ \vee \Phi^-) - P(\Psi^+ \vee \Psi^-) = 2(\alpha_1 - \beta_1)(\alpha_2 + \beta_2)$,
-     providing a zero-probe in-band remote $T_1$ diagnostic. Simultaneously, averaging over
-     all four classical BSM messages yields $\beta'_{\text{avg}} = (1 - P_2)\alpha_1 \neq 0$:
-     the ground-state population bias $\beta_2$ cannot disappear without the classical message,
-     because its instantaneous erasure would violate no-signaling ($\operatorname{Tr}_D(\rho'_{AD,\text{avg}}) = \operatorname{Tr}_C(\rho_{CD})$).
-2. **Gap 2 — `-log W` fidelity routing vs `skr-optimal` routing & the 3-tier memory circular
-   economy (`topology/strategies.py`, `core/memory.py`).** As shown in §5.1, `-log W` selects
-   the 3-hop path ($F = 0.9372$, `16,608 bits/s`) while `skr-optimal` selects the 1-hop path
-   ($F = 0.9200$, `19,822 bits/s`, **+19.4% secret key**). Pairs decaying in `MemoryArray`
-   are routed by `classify_entanglement_tiers()` into **Tier 1 QKD** ($F > 0.83496$),
-   **Tier 2 CHSH public randomness beacon** ($0.78033 < F \le 0.83496$, where $S_{\text{CHSH}} = 2\sqrt{2}\,W > 2$
-   certifies public randomness without requiring secret privacy against Eve), and **Tier 3
-   distillation compost** ($0.5 < F \le 0.78033$).
-3. **Gap 3 — Barrett–Kok $O((\eta_A+\eta_B)p_d)$ cross-term & the "Smiling Denial of Service"
-   (`core/photonics.py`).** At $150\text{ km}$ ($\eta = 8 \times 10^{-4}$), raising detector
-   dark counts from $10^{-5}$ to $10^{-4}$ causes `exact_fidelity()` to collapse from
-   **0.9311 to 0.6031** (zero BBM92 key) while the legacy $O(p_d^2)$ `raw_fidelity()` reports
-   **0.9773** and the apparent herald rate *increases* from $3.28 \times 10^{-7}$ to
-   $4.05 \times 10^{-7}$. An adversary injecting incoherent background light (or a failing
-   cryocooler) triggers a **"Smiling DoS"** in which link telemetry looks healthier while
-   true entanglement drops to zero.
-4. **Gap 4 — Non-Markovian $\beta = 3$ spin-bath memory (`core/physical.py`).** Under CPMG/XY8
-   dynamical decoupling on a slow nuclear spin bath ($\beta = 3$, $T_2(N) = T_{2,\text{Hahn}} N^{2/3}$),
-   the stretched-exponential decay $\exp(-(t/T_2)^\beta)$ has zero initial slope at $t \to 0^+$.
-   At short holds $t/T_2 = 0.1$, $\beta = 3$ loses **$95.2\times$ less coherence** than
-   Markovian $\beta = 1$ ($7.50 \times 10^{-4}$ vs $7.14 \times 10^{-2}$), rewarding
-   `"newest-first"` (LIFO) scheduling. Conversely, if a swap does not reset the spin bath,
-   the remaining memory accumulates a non-Markovian age penalty
-   $(t_{\text{prev}} + \Delta t)^\beta - t_{\text{prev}}^\beta > (\Delta t)^\beta$ ($F = 0.5626$
-   at $\Delta t/T_2 = 0.5$ after prior age $0.5$, vs $0.9119$ fresh).
-5. **Gap 5 — The "Valley of Repeater Shame" & post-PLOB Mode-Pairing QKD (`protocols/bb84.py`).**
-   Memoryless asynchronous Mode-Pairing QKD pairs independent detection clicks within a maximum
-   time-bin window $L_{\max}$ after the fact, achieving twin-field $O(\sqrt{\eta})$ scaling
-   without phase-locked optical interferometers or quantum memories. At $380\text{ km}$
-   ($\eta = 2.14 \times 10^{-8}$), `mode_pairing_qkd_rate` delivers $R = 1.08 \times 10^{-5}\text{ bits/pulse}$,
-   beating the repeaterless PLOB bound $K_{\text{PLOB}}(\eta) = -\log_2(1-\eta) = 3.08 \times 10^{-8}$
-   by **$350\times$** while respecting the 1-repeater ($k=2$) capacity ceiling
-   $K_2(\eta) = -\log_2(1-\sqrt{\eta}) = 2.11 \times 10^{-4}$. A single first-generation
-   quantum-memory repeater at $190+190\text{ km}$ must therefore beat not $K_{\text{PLOB}}(\eta)$,
-   but a memoryless Mode-Pairing relay living in the same $O(\sqrt{\eta})$ equivalence class.
+1. **Four-parameter `XState` against one-parameter Werner (`core/xstate.py`).**
+   - On a 4-hop chain with per-link amplitude damping `gamma = 0.15` and dephasing
+     `eta_phi = 0.95`, the Werner approximation gives `F_4 = 0.4999 < 0.5` (`C = 0`, no
+     entanglement left), whereas `XState` gives `F_avg,4 = 0.5002, C_avg,4 = 0.0031` (and
+     `F_Psi,4 = 0.5054, C_Psi,4 = 0.0108` on the `|Psi±⟩` BSM branch) because parity
+     projection separates `|00⟩/|11⟩` from `|01⟩/|10⟩`.
+   - Under one-sided damping (`gamma_A = 0.80, gamma_B = 0`), the exact concurrence is
+     `C = sqrt(1 - gamma_A) = 0.4472`; projecting the state's fidelity (`F = 0.5236`) onto
+     a Werner state predicts `C = 0.0472`, which is 9.5× too low.
+   - Applying a local Pauli `X` before storage (`apply_sleep_suit`) turns `|Phi+⟩` into
+     `|Psi+⟩`, which has no `|11⟩⟨11|` population, so `T1` relaxation never populates both
+     `|00⟩` and `|11⟩` at once. At `gamma = 0.70` on both arms, `|Psi+⟩` keeps
+     `C = 1 - gamma = 0.3000` at `F = 0.3000`, where a Werner state at the same fidelity is
+     separable (`C = 0`). A local weak POVM `K_0 = diag(1, sqrt(1 - gamma_A))` on the
+     un-damped partner (`procrustean_filter_one_sided`) partially restores symmetry on a
+     single copy (`p_succ = 0.6`, raising `F` from `0.5236` to `0.6000`).
+   - Under `T1` decay the four BSM outcomes at a swap node are no longer equally likely:
+     `P(Phi+ or Phi-) - P(Psi+ or Psi-) = 2(alpha_1 - beta_1)(alpha_2 + beta_2)`. Averaging
+     over all four outcomes without the classical BSM message leaves
+     `beta'_avg = (1 - P_2) alpha_1 != 0`, as required by no-signaling.
+2. **Fidelity routing (`-log W`) against key-rate routing (`skr-optimal`).** As shown in
+   §5.1, `-log W` picks the 3-hop path (`F = 0.9372`, `16,608 bits/s`) while `skr-optimal`
+   picks the 1-hop path (`F = 0.9200`, `19,822 bits/s`, +19.4%). For pairs waiting in
+   `MemoryArray`, `classify_entanglement_tiers()` separates slots above the BBM92 key
+   threshold (`F > 0.83496`), slots between `0.78033` and `0.83496` (which yield no BBM92
+   key under Werner QBER `2(1-F)/3` but still violate CHSH with `S = 2 sqrt(2) W > 2`), and
+   slots between `0.5` and `0.78033` (usable only as input to distillation).
+3. **The `O((η_A + η_B) p_d)` Barrett–Kok false-herald cross-term (`core/photonics.py`).**
+   At 150 km (`η = 8e-4`), raising detector dark counts from `1e-5` to `1e-4` drops
+   `exact_fidelity()` from **0.9311 to 0.6031** (zero BBM92 key), while the legacy
+   `O(p_d²)` expression `raw_fidelity()` still reports **0.9773** and the total herald
+   probability *rises* from `3.28e-7` to `4.05e-7`. A monitor watching only herald rate and
+   the `O(p_d²)` estimate sees a link that looks healthier while its secret-key capacity has
+   dropped to zero.
+4. **Stretched-exponential spin-bath memory (`beta = 3`, `core/physical.py`).** Under
+   dynamical decoupling on a slow spin bath (`beta = 3`, `T2(N) = T2_Hahn * N^(2/3)`),
+   `exp(-(t/T2)^beta)` has zero slope at `t = 0`. At a short hold `t/T2 = 0.1` it loses
+   **95.2× less coherence** than Markovian `beta = 1` (`7.50e-4` vs `7.14e-2`), which is
+   why `"newest-first"` (LIFO) slot allocation helps. When a swap does not reset the bath,
+   the surviving spin carries its prior age `t_prev` into the next wait and pays
+   `(t_prev + dt)^beta - t_prev^beta > dt^beta` (`F = 0.5626` for `dt/T2 = 0.5` after age
+   `0.5`, against `0.9119` for a fresh memory).
+5. **Asynchronous Mode-Pairing QKD against `K_PLOB` and `K_2` (`protocols/bb84.py`).**
+   Pairing independent detection clicks after the fact within a time-bin window `L_max`
+   (`mode_pairing_qkd_rate`) gives `O(sqrt(η))` rate scaling without quantum memory or
+   phase-locked lasers. At 380 km (`η = 2.14e-8`) it reaches `1.08e-5 bits/pulse`, which is
+   **350× above** the repeaterless PLOB bound `K_PLOB(η) = -log2(1 - η) = 3.08e-8` while
+   remaining below the one-repeater (`k = 2`) capacity `K_2(η) = -log2(1 - sqrt(η)) = 2.11e-4`.
+   A single memory repeater at the midpoint therefore has to beat a memoryless relay with
+   the same `O(sqrt(η))` scaling, not just `K_PLOB`.
 
 ---
 
@@ -659,8 +602,8 @@ An earlier phase concluded:
 > per-edge labels. The label and the reduction must be adopted together."*
 
 **This is retracted.** The decoder that now works is path-based, keeps the merged graph,
-and matches the reference's total matching weight on 100.0% of shots. The actual causes of
-the earlier failure were two specific bugs:
+and matches the reference's total weight on every shot tested. The actual causes were two
+specific bugs:
 
 1. **Observables were parsed across the whole instruction.** `stim` binds `L` targets per
    `^`-separated component: `error(0.0004) D4 D6 ^ D5 L0` attaches `L0` to the `D5`
@@ -746,58 +689,53 @@ is the opposite of the repository's origin story, in which the README advertised
 that did not run, but it is the same root cause: prose updated after each task and the
 tables not.
 
-### 6.7 The "unexplained decoder weight discrepancy" was a one-line bug in the comparison script
+### 6.7 The "unexplained decoder weight discrepancy" was a bug in the comparison script
 
-Version 0.1.0 of this whitepaper (§5.2 and §7) reported that `tjoin_decoder` agreed with
-PyMatching's edge set on only `1 / 647` non-trivial shots at $d = 3$ and `0 / 2239` at
-$d = 5$, and produced a heavier correction in roughly four-fifths of shots (`max gap 15.80`
-at $d = 3$, `45.91` at $d = 5$). That discrepancy was real in the output of
-`scripts/decoder_claim_check.py`, and it was **entirely caused by the script**:
+An earlier version of §5.2 and §7 reported that `tjoin_decoder` agreed with PyMatching's
+edge set on only `1 / 647` non-trivial shots at d = 3 and `0 / 2239` at d = 5, and returned
+a heavier correction in roughly four cases out of five (`max gap 15.80` at d = 3, `45.91`
+at d = 5). That table was the actual output of `scripts/decoder_claim_check.py`, and the
+fault was in the script rather than the decoder.
 
-- `decode_batch(dem, det)` converts each shot's boolean syndrome row `row` into fired
-  detector indices via `np.flatnonzero(row)` before calling `decode_edges_and_observables`.
-- `scripts/decoder_claim_check.py:125` called `decode_edges_and_observables(graph, det[i])`
-  directly, passing the raw length-$N_{\text{det}}$ boolean array `det[i]` where a list of
-  integer detector indices was expected.
-- Inside `decode_edges_and_observables`, `[int(d) for d in fired_detectors]` converted
-  every `False` to `0` and every `True` to `1`, collapsing every non-empty syndrome on the
-  entire surface code into a subset of detectors `{0, 1}`!
+`decode_batch` converts each shot's boolean syndrome row `row` into fired detector indices
+with `np.flatnonzero(row)` before calling `decode_edges_and_observables`. Line 125 of
+`scripts/decoder_claim_check.py` called `decode_edges_and_observables(graph, det[i])`
+directly, passing the raw boolean vector `det[i]`. Inside `decode_edges_and_observables`,
+`[int(d) for d in fired_detectors]` turned every `False` into `0` and every `True` into
+`1`, so every non-empty syndrome on the lattice was decoded as a subset of detectors
+`{0, 1}`. Passing `np.flatnonzero(det[i])` brings total-weight agreement to `647 / 647` at
+d = 3 and `2239 / 2239` at d = 5 (`max gap 0.00`). Like §6.4, a verification script
+convicted a working solver because the script violated its input contract.
 
-Replacing `det[i]` with `np.flatnonzero(det[i])` in `scripts/decoder_claim_check.py:125`
-immediately raised total-weight agreement to **100.0%** (`647/647` at $d=3$, `2239/2239`
-at $d=5$, `max gap 0.00`) and edge-set agreement to **100.0% / 99.7%**. This is the second
-time in the project (§6.4 being the first) that a verification harness convicted a correct
-algorithm because the harness itself violated an input invariant.
+### 6.8 Six further defects caught while auditing the physics layer
 
-### 6.8 Six quiet physics and quantile-tail bugs caught by adversarial audit
+Checking the modules against the five calculations in §5.6 exposed six bugs that had passed
+existing unit tests because the outputs still looked reasonable:
 
-During the ontology audit (§5.6), six defects were uncovered in existing modules that had
-passed unit tests because their outputs remained plausible:
-
-1. **Inverted quantile tail in `chance_placement.py`:** `margin_scenario` and
-   `common_scenario` evaluated `1.0 - eps / 2.0` and `1.0 - eps` (the *optimistic* upper
-   tail of $T_1, T_2$) instead of `eps / 2.0` and `eps` (the *pessimistic* lower tail),
-   and `robust_placement` ordered worst-case scenarios by the product $T_1 \cdot T_2$
-   rather than the harmonic effective coherence time $1/(1/T_1 + 1/T_2)$.
-2. **Two-qubit dephasing coherence revival ("Lazarus bug") in `protocols/memory.py`:**
-   passing $\gamma = 1 - e^{-t/T_2}$ into `dephasing_channel(gamma)` scaled single-qubit
-   coherences by $1 - 2\gamma = 2e^{-t/T_2} - 1 \to -1$ as $t \to \infty$; on two qubits,
-   $(-1)\times(-1) = +1$, causing a Bell pair's fidelity to dip to $0.5$ at $t = T_2\ln 2$
-   and **rebound to $0.9999$ at $t = 500\text{ s}$**. Fixed by passing
-   $p = \frac{1}{2}(1 - e^{-t/T_\varphi})$ so $1 - 2p = e^{-t/T_\varphi} \ge 0$ monotonically.
-3. **Missing square root in Wootters concurrence (`core/qubit.py`):** `QubitState.concurrence()`
-   omitted $\sqrt{\lambda_i}$ on the eigenvalues of $\rho\tilde{\rho}$ and used raw `PAULI_Y`
-   without `.real` on $\sigma_y \otimes \sigma_y$, returning $C(\Phi^+) = 0.0$ instead of $1.0$.
-4. **Post-measurement Hadamard and depolarising parameter in `protocols/distillation.py`:**
-   DEJMPS/BBPSSW applied X-basis Hadamards *after* `measure()` (measuring $Z$ instead of $X$)
-   and parameterised two-qubit Werner states with $p = 1 - F$ instead of $p = \frac{4}{3}(1 - F)$.
-5. **Logical Bell Pauli-$Y$ and stabilizer indices in `core/logical_entanglement.py`:**
-   the syndrome table mapped $(1, 1) \to I$ instead of `PAULI_Y` and entangled two
-   $[[n, 1, d]]$ blocks via transversal $\text{CNOT}(H^{\otimes n}|0_L\rangle)$ (which creates
-   a $2n$-qubit GHZ state for $n > 1$) rather than fault-tolerant Bell preparation.
-6. **Linear fidelity mixture in `core/coupled.py`:** `effective_fidelity` still used the
-   retracted linear combination $F_{\text{phys}}(1 - p_L) + (1 - F_{\text{phys}})p_L$ (§6.3)
-   instead of the Werner product `compose_pair_fidelity`.
+1. **Inverted quantile tail in `chance_placement.py`.** `margin_scenario` and
+   `common_scenario` took quantiles at `1 - eps/2` and `1 - eps` (the optimistic upper tail
+   of `T1, T2`) instead of `eps/2` and `eps` (the pessimistic lower tail), and
+   `robust_placement` ranked scenarios by `T1 * T2` instead of the effective coherence time
+   `1 / (1/T1 + 1/T2)`.
+2. **Two-qubit dephasing rebound in `protocols/memory.py`.** Passing
+   `gamma = 1 - exp(-t/T2)` to `dephasing_channel(gamma)` scales a single qubit's coherence
+   by `1 - 2*gamma = 2*exp(-t/T2) - 1`, which crosses zero at `t = T2 ln 2` and approaches
+   `-1` at large `t`. On two qubits the product `(-1) * (-1) = +1` made Bell-pair fidelity
+   dip to `0.5` and then climb back to `0.9999` at `t = 500 s`. Fixed by passing
+   `0.5 * (1 - exp(-t/T2))`.
+3. **Missing square root in `QubitState.concurrence()` (`core/qubit.py`).** The Wootters
+   formula requires the square roots of the eigenvalues of `rho * rho_tilde`; the method
+   had omitted the square root and used `PAULI_Y` without `.real` on `sigma_y ⊗ sigma_y`,
+   returning `0.0` on `|Phi+⟩`.
+4. **Hadamards applied after measurement in `protocols/distillation.py`.** DEJMPS and
+   BBPSSW applied the X-basis Hadamards *after* `measure()` (measuring Z instead of X) and
+   parameterised two-qubit Werner states with `p = 1 - F` instead of `p = 4(1 - F)/3`.
+5. **Syndrome table and transversal CNOT in `core/logical_entanglement.py`.** The syndrome
+   map sent `(1, 1)` to `I` instead of `PAULI_Y`, and entangled two `[[n, 1, d]]` blocks
+   with `H^(⊗n)` followed by transversal CNOT, which prepares a `2n`-qubit GHZ state when
+   `n > 1`.
+6. **Linear fidelity mixture left in `core/coupled.py`.** `effective_fidelity` had kept the
+   retracted linear combination from §6.3 instead of `compose_pair_fidelity`.
 
 ---
 
@@ -808,28 +746,26 @@ Stated as limits, not as future work.
 **No hardware validation.** Nothing here has been compared against a physical
 implementation. The outputs are model outputs.
 
-**Decoder complexity and correlated-matching scope.** On the standard independent detector
-graph at $d \in \{3, 5, 7\}$, `tjoin_decoder` agrees with PyMatching on **100.0% of total
-matching weights** (§5.2). However, its component solver `_solve_component_max_saving` uses
-an exact bitmask-DFS with a hard budget of `max_steps = 4000` per connected component: for
-sub-threshold syndromes at $d \le 7$ components are small and the solution is exact, whereas
-dense super-threshold components with $|U| \gtrsim 14$ odd vertices terminate at the best
-matching found within 4,000 steps rather than running full $O(|V|^3)$ blossom shrinking.
-Similarly, `decode_correlated` is a two-pass conditional-reweighting heuristic rather than
-hypergraph belief-propagation + OSD.
+**Decoder search budget and two-pass correlated matching.** On the independent detector
+graph at d ∈ {3, 5, 7}, `tjoin_decoder` matches PyMatching's total matching weight on
+100.0% of tested shots (§5.2). Its component solver `_solve_component_max_saving`,
+however, is a bitmask depth-first search capped at `max_steps = 4000` per connected
+component: at d <= 7 sub-threshold components are small enough that the search finishes
+exactly, whereas dense high-noise components with roughly 14 or more odd vertices return
+the best matching found when the step cap expires rather than running full `O(|V|³)`
+blossom shrinking. Similarly, `decode_correlated` is a two-pass reweighting heuristic, not
+a hypergraph decoder.
 
 **Calibration reproduces two of four published statements.** Both differences are
 explained and neither is tuned; the test suite fails if either drifts toward *better*
 agreement.
 
-**Where the exact 1D $\Gamma_{\text{eff}}$ chance-constraint reduction holds and where it
-breaks.** The reduction of $\Pr[F(\text{chain}; T_1, T_2) \ge F_{\text{req}}] \ge 1 - \varepsilon$
-to the single 1D quantile $\gamma_{1-\varepsilon}$ of $\Gamma_{\text{eff}} = 1/T_1 + 1/T_2$
-(§5.4) is exact when all nodes in a candidate chain share the same $(T_1, T_2)$ realization
-and memory decay is Markovian ($\beta = 1$). For heterogeneous chains with independent
-per-site priors $(T_{1,i}, T_{2,i})$ or non-Markovian stretched-exponential decay
-($\beta > 1$), chain fidelity no longer factors through a single link-independent scalar
-$\Gamma_{\text{eff}}$.
+**Where the 1D chance-constraint reduction stops being 1D.** Reducing
+`Pr[F(chain; T1, T2) >= F_req] >= 1 - eps` to a single quantile of
+`Gamma_eff = 1/T1 + 1/T2` (§5.4) relies on every node in the candidate chain sharing the
+same `(T1, T2)` draw under exponential (`beta = 1`) memory decay. With independent
+per-site priors `(T1_i, T2_i)` or stretched-exponential decay (`beta > 1`), chain fidelity
+no longer factors through one link-independent scalar.
 
 **Detector recovery is a minimum slot spacing**, not a per-detector state machine. A full
 recovery trace would need the detector's internal curve, which this package does not have.
@@ -861,8 +797,8 @@ approximations that say so, not silent failures. What was wrong was this documen
 *description* of the defect, which asserted a specific boundary bug that the measurement
 does not isolate.
 
-**Estimator scope.** The asymptotic decoy-state, BBM92, and Mode-Pairing paths use standard
-asymptotic rate formulas, not finite-block composable-security proofs. The finite-key
+**Estimator scope.** The asymptotic decoy-state, BBM92 and Mode-Pairing paths use standard
+asymptotic rate expressions, not composable finite-block security proofs. The finite-key
 decoy-state path implements the LCWX bound.
 
 ---
@@ -877,8 +813,8 @@ decoy-state path implements the LCWX bound.
 - Verification: `py -m pytest -q` (1161 tests across 64 modules; 16,923 source lines and 13,060
   lines in `tests/`), `py -m quantumnet validate` (published comparisons, scored and explicitly
   unscored), `py scripts/claim_audit.py` (documentation drift), `py scripts/decoder_claim_check.py`
-  (100.0% weight agreement and accuracy against PyMatching), `py scripts/ontology_audit.py`
-  (5/5 ontology gaps)
+  (weight and accuracy agreement against PyMatching), `py scripts/ontology_audit.py`
+  (five one-parameter vs multi-parameter model checks)
 
 **What is deliberately not published.** Two categories of artifact are held back, and the
 reasons are recorded here rather than left to look like omissions:
